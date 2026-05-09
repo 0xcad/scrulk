@@ -1,0 +1,160 @@
+import browser from "webextension-polyfill";
+import { hostnameOf, isTracked } from "../shared/domain";
+import { getDayState, getSettings, setDayState } from "../shared/storage";
+import {
+  currentWakeDayStart,
+  nextWakeUpAt,
+} from "../shared/wakeDay";
+import { effectiveMs, type DayState } from "../shared/types";
+import { scheduleBreaktimeAlarm } from "./breaktime";
+
+const DAY_RESET_ALARM = "scrulk:day-reset";
+/**
+ * The tracker is *event-driven*. We never tick a counter. Instead we
+ * maintain `dayState.activeSince`: the moment the user became active on a
+ * tracked page. Any state change closes the open segment (totalMs += elapsed)
+ * and may open a new one. The displayed time is computed live as
+ * totalMs + (now - activeSince).
+ *
+ * The recompute() function below is the single decision point. It is called
+ * from every relevant event listener and is idempotent.
+ */
+
+type ActivityInputs = {
+  windowFocused: boolean;
+  activeTabUrl: string | undefined;
+  idleState: chrome.idle.IdleState;
+  trackedSites: string[];
+};
+
+async function readActivity(): Promise<ActivityInputs> {
+  const [settings, focusedWindow] = await Promise.all([
+    getSettings(),
+    browser.windows
+      .getLastFocused({ populate: true })
+      .catch(() => null),
+  ]);
+
+  let activeTabUrl: string | undefined;
+  let windowFocused = false;
+  if (focusedWindow && focusedWindow.focused && focusedWindow.tabs) {
+    windowFocused = true;
+    const active = focusedWindow.tabs.find((t) => t.active);
+    activeTabUrl = active?.url;
+  }
+
+  // queryState requires an interval; 60s matches the user spec.
+  const idleState = await browser.idle.queryState(60).catch(
+    () => "active" as chrome.idle.IdleState,
+  );
+
+  return {
+    windowFocused,
+    activeTabUrl,
+    idleState,
+    trackedSites: settings.trackedSites,
+  };
+}
+
+function shouldBeActive(inputs: ActivityInputs): boolean {
+  if (!inputs.windowFocused) return false;
+  if (inputs.idleState !== "active") return false;
+  const host = hostnameOf(inputs.activeTabUrl);
+  if (!host) return false;
+  return isTracked(host, inputs.trackedSites);
+}
+
+export async function recompute(): Promise<void> {
+  const settings = await getSettings();
+  const now = Date.now();
+  const expectedStart = currentWakeDayStart(now, settings.wakeUpHour);
+  let state = await getDayState();
+
+  // If we somehow missed an alarm-driven reset (browser was off across the
+  // boundary), do it lazily here.
+  if (state.wakeDayStart !== expectedStart) {
+    state = {
+      wakeDayStart: expectedStart,
+      totalMs: 0,
+      activeSince: null,
+      lastBreaktimeAt: 0,
+      breaktimeOpen: false,
+    };
+  }
+
+  const inputs = await readActivity();
+  // Tracking pauses while a break alert is open: the user shouldn't accrue
+  // time on the modal itself, and re-entry after "I'm done" should land on
+  // a paused clock.
+  const wantActive = !state.breaktimeOpen && shouldBeActive(inputs);
+  let next = applyTransition(state, wantActive, now);
+
+  // If we've crossed the breaktime threshold while active and no alert is
+  // currently open, raise it. Content scripts on tracked tabs pick this up
+  // via storage.onChanged and mount the overlay.
+  if (
+    !next.breaktimeOpen &&
+    next.activeSince !== null &&
+    effectiveMs(next, now) - next.lastBreaktimeAt >=
+      settings.breaktimeMinutes * 60_000
+  ) {
+    next = { ...next, breaktimeOpen: true };
+  }
+
+  if (!stateEqual(state, next)) {
+    await setDayState(next);
+  }
+  await ensureDayResetAlarm(settings.wakeUpHour);
+  await scheduleBreaktimeAlarm(next, settings);
+}
+
+function applyTransition(
+  state: DayState,
+  wantActive: boolean,
+  now: number,
+): DayState {
+  const isActive = state.activeSince !== null;
+  if (wantActive && !isActive) {
+    return { ...state, activeSince: now };
+  }
+  if (!wantActive && isActive) {
+    const elapsed = Math.max(0, now - (state.activeSince ?? now));
+    return { ...state, totalMs: state.totalMs + elapsed, activeSince: null };
+  }
+  return state;
+}
+
+function stateEqual(a: DayState, b: DayState): boolean {
+  return (
+    a.wakeDayStart === b.wakeDayStart &&
+    a.totalMs === b.totalMs &&
+    a.activeSince === b.activeSince &&
+    a.lastBreaktimeAt === b.lastBreaktimeAt &&
+    a.breaktimeOpen === b.breaktimeOpen
+  );
+}
+
+export async function ensureDayResetAlarm(wakeUpHour: number): Promise<void> {
+  const when = nextWakeUpAt(Date.now(), wakeUpHour);
+  const existing = await browser.alarms.get(DAY_RESET_ALARM).catch(() => null);
+  if (existing && Math.abs(existing.scheduledTime - when) < 1000) return;
+  await browser.alarms.create(DAY_RESET_ALARM, { when });
+}
+
+export async function handleDayResetAlarm(): Promise<void> {
+  const settings = await getSettings();
+  const now = Date.now();
+  const state = await getDayState();
+  // Close any open segment against the previous day, then open a fresh day.
+  const wasActive = state.activeSince !== null;
+  await setDayState({
+    wakeDayStart: currentWakeDayStart(now, settings.wakeUpHour),
+    totalMs: 0,
+    activeSince: wasActive ? now : null,
+    lastBreaktimeAt: 0,
+    breaktimeOpen: false,
+  });
+  await ensureDayResetAlarm(settings.wakeUpHour);
+}
+
+export const ALARM_NAMES = { DAY_RESET: DAY_RESET_ALARM } as const;

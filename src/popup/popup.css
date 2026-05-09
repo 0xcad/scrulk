@@ -1,0 +1,105 @@
+:root {
+  color-scheme: light dark;
+  font-family: system-ui, sans-serif;
+}
+
+body {
+  margin: 0;
+  min-width: 280px;
+  font-size: 14px;
+}
+
+main {
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+h1 {
+  font-size: 13px;
+  font-weight: 600;
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  opacity: 0.7;
+}
+
+p {
+  margin: 0;
+}
+
+.host {
+  font-weight: 600;
+  word-break: break-all;
+}
+
+.status {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  background: color-mix(in srgb, currentColor 12%, transparent);
+}
+
+.status.tracked {
+  color: #c0392b;
+}
+
+.status.untracked {
+  color: #27867a;
+}
+
+button {
+  font: inherit;
+  cursor: pointer;
+  padding: 6px 10px;
+  border: 1px solid currentColor;
+  background: transparent;
+  border-radius: 6px;
+  color: inherit;
+}
+
+button:hover {
+  background: color-mix(in srgb, currentColor 8%, transparent);
+}
+
+nav {
+  display: flex;
+  gap: 8px;
+  border-top: 1px solid color-mix(in srgb, currentColor 15%, transparent);
+  padding-top: 10px;
+}
+
+nav button {
+  flex: 1;
+}
+
+.usage {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 1px solid color-mix(in srgb, currentColor 15%, transparent);
+  border-radius: 8px;
+}
+
+.usage-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  opacity: 0.6;
+}
+
+.usage-time {
+  font-size: 18px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  margin-left: auto;
+}
+
+.usage small {
+  opacity: 0.6;
+  font-size: 11px;
+}

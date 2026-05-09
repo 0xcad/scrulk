@@ -6,14 +6,16 @@
 export interface Settings {
   trackedSites: string[];
   installedAt: number;
-  /** Hour-of-day (0-23) at which the day boundary rolls over. Default 7. */
-  wakeUpHour: number;
+  /** Local time-of-day "HH:MM" (24h) at which the day boundary rolls over. Default "07:00". */
+  wakeUpTime: string;
   /** Minutes of accumulated tracked usage between breaktime alerts. Default 30. */
   breaktimeMinutes: number;
   /** Max simultaneous tabs whose host is tracked. Excess tabs auto-close. Default 3. */
   tabLimit: number;
   /** Per tracked-domain saved overlay position. */
   clockPositions: Record<string, ClockPosition>;
+  /** Single global position for the universal sleep clock. */
+  sleepClockPosition: ClockPosition | null;
 }
 
 export interface ClockPosition {
@@ -24,10 +26,11 @@ export interface ClockPosition {
 export const DEFAULT_SETTINGS: Settings = {
   trackedSites: [],
   installedAt: 0,
-  wakeUpHour: 7,
+  wakeUpTime: "07:00",
   breaktimeMinutes: 30,
   tabLimit: 3,
   clockPositions: {},
+  sleepClockPosition: null,
 };
 
 export const SETTINGS_KEY = "settings" as const;
@@ -49,6 +52,8 @@ export interface DayState {
   lastBreaktimeAt: number;
   /** True while a breaktime alert is currently outstanding. */
   breaktimeOpen: boolean;
+  /** Set true when the tab limit blocked a new tracked tab; popup clears on view. */
+  tabLimitWarning: boolean;
 }
 
 export const DEFAULT_DAY_STATE: DayState = {
@@ -57,6 +62,7 @@ export const DEFAULT_DAY_STATE: DayState = {
   activeSince: null,
   lastBreaktimeAt: 0,
   breaktimeOpen: false,
+  tabLimitWarning: false,
 };
 
 export const DAY_STATE_KEY = "dayState" as const;

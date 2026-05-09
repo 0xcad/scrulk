@@ -126,13 +126,34 @@ Implementation notes:
   for that. Messages are reserved for *commands* the content script needs
   the background to execute (close tab, advance the cycle).
 
-## Slice 5 — Tab limit
+## Slice 5 — Tab limit ✅
 
-- `tabs.onCreated` + `tabs.onUpdated` (URL changes): count tabs across all
-  windows whose host is tracked. If over `tabLimit`, `tabs.remove(newTab)`.
-- Show a brief in-popup warning the next time the popup opens.
+- `tabs.onUpdated` (URL changes): count tabs across all windows whose host
+  is tracked. If `count > settings.tabLimit`, close the just-changed tab.
+  `onCreated` is unnecessary — fresh tabs have no URL yet, and the URL
+  assignment fires `onUpdated` with `changeInfo.url`.
+- Lives in `src/background/tabLimit.ts` and is wired into the existing
+  `tabs.onUpdated` listener in `src/background/index.ts`.
+- Reuses the `hostnameOf` + `isTracked` + `tabs.query({})` pattern from
+  `handleBreaktimeDone` for counting.
+- Popup warning is a `dayState.tabLimitWarning: boolean` flag, set true on
+  any block. The popup reads it on mount, shows a one-line banner, and
+  immediately writes the flag back to false. Resets at wake-day boundary.
 
-## Slice 6 — Survey + calendar
+## Slice 6 — Sleep clock ✅
+
+- Universal content-script overlay (Shadow DOM) shown only in
+  `[wakeUp - 10h, wakeUp]`. Counts down to wake-up time.
+- Re-uses the slice-2 Shadow-DOM Preact-island pattern: lives in
+  `src/content/SleepClock.tsx`, rendered unconditionally from
+  `Root.tsx` (it self-hides outside the 10h window).
+- Mount controller (`src/content/index.tsx`) now mounts on every page —
+  not just tracked ones — since the sleep clock is universal. `Root.tsx`
+  treats `matchedDomain: string | null`: `UsageClock` and
+  `BreaktimeOverlay` only render when the page is tracked, `SleepClock`
+  renders always.
+
+## Slice 7 — Survey + calendar
 
 - IndexedDB schema (`idb` wrapper):
   `days { date: 'YYYY-MM-DD' (wake-day), totalMs, regret: 1-5|null, notes: string|null }`.
@@ -151,12 +172,6 @@ Implementation notes:
   breaktime alert was shown), the popup and Home page show a banner
   prompting the user to fill out yesterday's survey. Badge dot on the
   toolbar icon.
-
-## Slice 7 — Sleep clock
-
-- Universal content-script overlay (Shadow DOM) shown only in
-  `[wakeUp - 10h, wakeUp]`. Counts down to wake-up time.
-- Re-uses the slice-2 Shadow-DOM Preact-island pattern.
 
 ## Slice 8 — Polish
 

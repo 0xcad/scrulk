@@ -1,5 +1,7 @@
+import { useEffect, useState } from "preact/hooks";
 import { TrackedSitesList } from "../components/TrackedSitesList";
 import { NumberField } from "../components/NumberField";
+import { getSettings, onSettingsChange, setSettings } from "../../shared/storage";
 
 export function Settings() {
   return (
@@ -19,13 +21,7 @@ export function Settings() {
           The day runs from your wake-up time to the next day's wake-up time.
           Usage and (later) the regret survey bucket against this.
         </p>
-        <NumberField
-          field="wakeUpHour"
-          label="Wake-up hour"
-          min={0}
-          max={23}
-          hint="0 – 23 (local time)"
-        />
+        <WakeUpTimeField />
       </section>
 
       <section>
@@ -57,5 +53,41 @@ export function Settings() {
         />
       </section>
     </>
+  );
+}
+
+function WakeUpTimeField() {
+  const [value, setValue] = useState<string | null>(null);
+
+  useEffect(() => {
+    void getSettings().then((s) => setValue(s.wakeUpTime));
+    return onSettingsChange((s) => setValue(s.wakeUpTime));
+  }, []);
+
+  if (value === null) return <p>Loading…</p>;
+
+  const commit = async (next: string) => {
+    if (!/^\d{2}:\d{2}$/.test(next)) {
+      const current = await getSettings();
+      setValue(current.wakeUpTime);
+      return;
+    }
+    await setSettings({ wakeUpTime: next });
+  };
+
+  return (
+    <label class="row">
+      <span>Wake-up time</span>
+      <input
+        type="time"
+        value={value}
+        onChange={(e) => {
+          const next = (e.target as HTMLInputElement).value;
+          setValue(next);
+          void commit(next);
+        }}
+      />
+      <small>Local time. Day boundary for usage totals.</small>
+    </label>
   );
 }

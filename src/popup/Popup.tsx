@@ -6,6 +6,7 @@ import {
   getSettings,
   onDayStateChange,
   onSettingsChange,
+  setDayState,
   setSettings,
 } from "../shared/storage";
 import type { DayState, Settings } from "../shared/types";
@@ -29,7 +30,14 @@ export function Popup() {
   useEffect(() => {
     void getSettings().then(setLocal);
     void getActiveTabHost().then(setHost);
-    void getDayState().then(setState);
+    void getDayState().then((s) => {
+      setState(s);
+      // Acknowledge the warning the moment the user opens the popup; we
+      // keep showing it for this popup-mount via local React state.
+      if (s.tabLimitWarning) {
+        void setDayState({ ...s, tabLimitWarning: false });
+      }
+    });
     const offSettings = onSettingsChange(setLocal);
     const offState = onDayStateChange(setState);
     return () => {
@@ -37,6 +45,11 @@ export function Popup() {
       offState();
     };
   }, []);
+
+  const [warnSeen, setWarnSeen] = useState(false);
+  useEffect(() => {
+    if (state.tabLimitWarning) setWarnSeen(true);
+  }, [state.tabLimitWarning]);
 
   useEffect(() => {
     if (state.activeSince === null) return;
@@ -77,6 +90,12 @@ export function Popup() {
   return (
     <main>
       <h1>Scroll Unlock</h1>
+
+      {warnSeen && (
+        <p class="warning" role="alert">
+          You can't open more than {settings.tabLimit} tracked tabs at once.
+        </p>
+      )}
 
       <section class="usage">
         <span class="usage-label">Today</span>

@@ -10,8 +10,15 @@ import {
 
 export async function getSettings(): Promise<Settings> {
   const stored = await browser.storage.local.get(SETTINGS_KEY);
-  const raw = stored[SETTINGS_KEY] as Partial<Settings> | undefined;
-  return { ...DEFAULT_SETTINGS, ...(raw ?? {}) };
+  const raw = stored[SETTINGS_KEY] as
+    | (Partial<Settings> & { wakeUpHour?: number })
+    | undefined;
+  const merged = { ...DEFAULT_SETTINGS, ...(raw ?? {}) };
+  // Migration: pre-minute-precision storage used `wakeUpHour: number`.
+  if (raw?.wakeUpHour !== undefined && raw.wakeUpTime === undefined) {
+    merged.wakeUpTime = `${String(raw.wakeUpHour).padStart(2, "0")}:00`;
+  }
+  return merged;
 }
 
 export async function setSettings(patch: Partial<Settings>): Promise<Settings> {

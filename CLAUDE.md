@@ -25,7 +25,7 @@ icon. The full slice plan lives in `roadmap.md`.
 - **`webextension-polyfill`** so we always write `browser.*` and it works on
   both browsers.
 - **`browser.storage.local`** for settings + day state. **IndexedDB** (via
-  `idb`) for time-series history — added in slice 6.
+  `idb`) for time-series history — added in slice 7.
 - Plain CSS. Shadow DOM for content-script overlays in slice 2+.
 
 ## Layout
@@ -89,7 +89,7 @@ manifest.config.ts ts-typed manifest, consumed by @crxjs at build time
 7. **Content script is universal + reactive.** `src/content/index.tsx` runs
    on `<all_urls>`, bails fast when host isn't tracked, and (un)mounts on
    `storage.onChanged`. When you add a new content-script feature
-   (slice 7 sleep clock; slice 4 breaktime overlay), add another component
+   (slice 6 sleep clock; slice 4 breaktime overlay), add another component
    in `src/content/` and conditionally mount it from `index.tsx` — don't
    register a second content script.
 
@@ -105,13 +105,14 @@ manifest.config.ts ts-typed manifest, consumed by @crxjs at build time
    the union there is the single source of truth.
 
 9. **Content-script root structure.** `src/content/index.tsx` is the
-   mount controller (decides whether to mount the Shadow-DOM root for the
-   current host). `src/content/Root.tsx` is the React tree inside the
-   shadow root — it composes the always-on `UsageClock` plus any
-   conditionally-shown overlays (today: `BreaktimeOverlay`; later:
-   `SleepClock`, `ResumeAfterSurveyOverlay`). When you add a new content
-   feature, add a component under `src/content/` and conditionally render
-   it from `Root.tsx`. Don't add a second content script.
+   mount controller. The Shadow-DOM root is mounted on **every** page
+   (universal) because `SleepClock` is universal; `Root.tsx` decides per-
+   feature what to render via `matchedDomain: string | null`. Currently:
+   `UsageClock` (tracked only), `SleepClock` (universal, self-hides
+   outside the 10h window), `BreaktimeOverlay` (tracked + flag). Later
+   additions: `ResumeAfterSurveyOverlay`. When you add a new content
+   feature, add a component under `src/content/` and conditionally
+   render it from `Root.tsx`. Don't add a second content script.
 
 ## How to add a new setting
 

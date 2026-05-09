@@ -13,40 +13,65 @@ function localTs(year: number, month: number, day: number, hour = 0, min = 0): n
 describe("currentWakeDayStart", () => {
   it("returns today at wake-up when after wake-up", () => {
     const now = localTs(2026, 5, 8, 14, 30);
-    const start = currentWakeDayStart(now, 7);
+    const start = currentWakeDayStart(now, "07:00");
     expect(new Date(start)).toEqual(new Date(localTs(2026, 5, 8, 7)));
   });
 
   it("returns yesterday at wake-up when before wake-up", () => {
     const now = localTs(2026, 5, 8, 3, 0);
-    const start = currentWakeDayStart(now, 7);
+    const start = currentWakeDayStart(now, "07:00");
     expect(new Date(start)).toEqual(new Date(localTs(2026, 5, 7, 7)));
   });
 
   it("treats wake-up minute exactly as a fresh day", () => {
     const now = localTs(2026, 5, 8, 7, 0);
-    const start = currentWakeDayStart(now, 7);
+    const start = currentWakeDayStart(now, "07:00");
     expect(new Date(start)).toEqual(new Date(localTs(2026, 5, 8, 7)));
+  });
+
+  it("honors non-zero minutes", () => {
+    const before = localTs(2026, 5, 8, 7, 29);
+    expect(new Date(currentWakeDayStart(before, "07:30"))).toEqual(
+      new Date(localTs(2026, 5, 7, 7, 30)),
+    );
+    const after = localTs(2026, 5, 8, 7, 31);
+    expect(new Date(currentWakeDayStart(after, "07:30"))).toEqual(
+      new Date(localTs(2026, 5, 8, 7, 30)),
+    );
+  });
+
+  it("falls back to 07:00 on a malformed string", () => {
+    const now = localTs(2026, 5, 8, 14, 30);
+    expect(new Date(currentWakeDayStart(now, "garbage"))).toEqual(
+      new Date(localTs(2026, 5, 8, 7)),
+    );
   });
 });
 
 describe("nextWakeUpAt", () => {
   it("returns today's wake-up when before it", () => {
     const now = localTs(2026, 5, 8, 3, 0);
-    const next = nextWakeUpAt(now, 7);
+    const next = nextWakeUpAt(now, "07:00");
     expect(new Date(next)).toEqual(new Date(localTs(2026, 5, 8, 7)));
   });
 
   it("returns tomorrow's wake-up when after it", () => {
     const now = localTs(2026, 5, 8, 9, 0);
-    const next = nextWakeUpAt(now, 7);
+    const next = nextWakeUpAt(now, "07:00");
     expect(new Date(next)).toEqual(new Date(localTs(2026, 5, 9, 7)));
   });
 
   it("rolls forward at the boundary minute", () => {
     const now = localTs(2026, 5, 8, 7, 0);
-    const next = nextWakeUpAt(now, 7);
+    const next = nextWakeUpAt(now, "07:00");
     expect(new Date(next)).toEqual(new Date(localTs(2026, 5, 9, 7)));
+  });
+
+  it("honors non-zero minutes", () => {
+    const now = localTs(2026, 5, 8, 7, 15);
+    expect(new Date(nextWakeUpAt(now, "07:30"))).toEqual(
+      new Date(localTs(2026, 5, 8, 7, 30)),
+    );
   });
 });
 

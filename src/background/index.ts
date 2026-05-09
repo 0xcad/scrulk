@@ -12,6 +12,7 @@ import {
   handleBreaktimeDone,
   handleBreaktimeResume,
 } from "./breaktime";
+import { enforceTabLimit } from "./tabLimit";
 import type { Message } from "../shared/messages";
 
 // MV3 service worker: ephemeral. No long-lived module-level state.
@@ -24,14 +25,14 @@ browser.runtime.onInstalled.addListener(async () => {
     await setSettings({ installedAt: Date.now() });
   }
   await refreshAllTabIcons(current.trackedSites);
-  await ensureDayResetAlarm(current.wakeUpHour);
+  await ensureDayResetAlarm(current.wakeUpTime);
   await recompute();
 });
 
 browser.runtime.onStartup.addListener(async () => {
   const settings = await getSettings();
   await refreshAllTabIcons(settings.trackedSites);
-  await ensureDayResetAlarm(settings.wakeUpHour);
+  await ensureDayResetAlarm(settings.wakeUpTime);
   await recompute();
 });
 
@@ -48,6 +49,11 @@ browser.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
   if (!changeInfo.url && changeInfo.status !== "loading") return;
   const { trackedSites } = await getSettings();
   await updateIconForTab(tabId, tab.url, trackedSites);
+  if (changeInfo.url) {
+    // A tab just navigated to a (possibly) tracked URL — only moment a fresh
+    // tracked tab can push us over the limit.
+    await enforceTabLimit(tabId, changeInfo.url);
+  }
   if (changeInfo.url || changeInfo.status === "complete") {
     await recompute();
   }
@@ -88,6 +94,6 @@ browser.runtime.onMessage.addListener((message: unknown) => {
 
 onSettingsChange(async (next) => {
   await refreshAllTabIcons(next.trackedSites);
-  await ensureDayResetAlarm(next.wakeUpHour);
+  await ensureDayResetAlarm(next.wakeUpTime);
   await recompute();
 });

@@ -3,18 +3,33 @@
  * Both functions use local time.
  */
 
-export function currentWakeDayStart(now: number, wakeUpHour: number): number {
+export function currentWakeDayStart(now: number, wakeUpTime: string): number {
+  const { hour, minute } = parseWakeUpTime(wakeUpTime);
   const d = new Date(now);
-  d.setHours(wakeUpHour, 0, 0, 0);
+  d.setHours(hour, minute, 0, 0);
   if (d.getTime() > now) d.setDate(d.getDate() - 1);
   return d.getTime();
 }
 
-export function nextWakeUpAt(now: number, wakeUpHour: number): number {
+export function nextWakeUpAt(now: number, wakeUpTime: string): number {
+  const { hour, minute } = parseWakeUpTime(wakeUpTime);
   const d = new Date(now);
-  d.setHours(wakeUpHour, 0, 0, 0);
+  d.setHours(hour, minute, 0, 0);
   if (d.getTime() <= now) d.setDate(d.getDate() + 1);
   return d.getTime();
+}
+
+function parseWakeUpTime(s: string): { hour: number; minute: number } {
+  const [h, m] = s.split(":");
+  const hour = Number.parseInt(h ?? "", 10);
+  const minute = Number.parseInt(m ?? "", 10);
+  if (
+    !Number.isFinite(hour) || hour < 0 || hour > 23 ||
+    !Number.isFinite(minute) || minute < 0 || minute > 59
+  ) {
+    return { hour: 7, minute: 0 };
+  }
+  return { hour, minute };
 }
 
 export function formatDuration(ms: number): string {

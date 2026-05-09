@@ -67,7 +67,7 @@ function shouldBeActive(inputs: ActivityInputs): boolean {
 export async function recompute(): Promise<void> {
   const settings = await getSettings();
   const now = Date.now();
-  const expectedStart = currentWakeDayStart(now, settings.wakeUpHour);
+  const expectedStart = currentWakeDayStart(now, settings.wakeUpTime);
   let state = await getDayState();
 
   // If we somehow missed an alarm-driven reset (browser was off across the
@@ -79,6 +79,7 @@ export async function recompute(): Promise<void> {
       activeSince: null,
       lastBreaktimeAt: 0,
       breaktimeOpen: false,
+      tabLimitWarning: false,
     };
   }
 
@@ -104,7 +105,7 @@ export async function recompute(): Promise<void> {
   if (!stateEqual(state, next)) {
     await setDayState(next);
   }
-  await ensureDayResetAlarm(settings.wakeUpHour);
+  await ensureDayResetAlarm(settings.wakeUpTime);
   await scheduleBreaktimeAlarm(next, settings);
 }
 
@@ -130,12 +131,13 @@ function stateEqual(a: DayState, b: DayState): boolean {
     a.totalMs === b.totalMs &&
     a.activeSince === b.activeSince &&
     a.lastBreaktimeAt === b.lastBreaktimeAt &&
-    a.breaktimeOpen === b.breaktimeOpen
+    a.breaktimeOpen === b.breaktimeOpen &&
+    a.tabLimitWarning === b.tabLimitWarning
   );
 }
 
-export async function ensureDayResetAlarm(wakeUpHour: number): Promise<void> {
-  const when = nextWakeUpAt(Date.now(), wakeUpHour);
+export async function ensureDayResetAlarm(wakeUpTime: string): Promise<void> {
+  const when = nextWakeUpAt(Date.now(), wakeUpTime);
   const existing = await browser.alarms.get(DAY_RESET_ALARM).catch(() => null);
   if (existing && Math.abs(existing.scheduledTime - when) < 1000) return;
   await browser.alarms.create(DAY_RESET_ALARM, { when });
@@ -148,13 +150,14 @@ export async function handleDayResetAlarm(): Promise<void> {
   // Close any open segment against the previous day, then open a fresh day.
   const wasActive = state.activeSince !== null;
   await setDayState({
-    wakeDayStart: currentWakeDayStart(now, settings.wakeUpHour),
+    wakeDayStart: currentWakeDayStart(now, settings.wakeUpTime),
     totalMs: 0,
     activeSince: wasActive ? now : null,
     lastBreaktimeAt: 0,
     breaktimeOpen: false,
+    tabLimitWarning: false,
   });
-  await ensureDayResetAlarm(settings.wakeUpHour);
+  await ensureDayResetAlarm(settings.wakeUpTime);
 }
 
 export const ALARM_NAMES = { DAY_RESET: DAY_RESET_ALARM } as const;

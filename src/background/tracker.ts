@@ -93,6 +93,10 @@ export async function recompute(): Promise<void> {
     effectiveMs(next, now) - next.lastBreaktimeAt >=
       settings.breaktimeMinutes * 60_000
   ) {
+    // Raising the alert pauses tracking — close the open segment now so the
+    // clock stops the moment the alert appears, even if the user stays on
+    // the page (no focus/idle event would otherwise fire to recompute).
+    next = applyTransition(next, false, now);
     next = { ...next, breaktimeOpen: true, breaktimeShownToday: true };
   }
 
@@ -129,6 +133,7 @@ function stateEqual(a: DayState, b: DayState): boolean {
     a.tabLimitWarning === b.tabLimitWarning &&
     a.surveyFilledFor === b.surveyFilledFor &&
     a.breaktimeShownToday === b.breaktimeShownToday &&
+    a.surveyContinueAllowed === b.surveyContinueAllowed &&
     a.missedSurveyDate === b.missedSurveyDate
   );
 }
@@ -163,6 +168,7 @@ export async function rolloverDay(
     tabLimitWarning: false,
     surveyFilledFor: null,
     breaktimeShownToday: false,
+    surveyContinueAllowed: false,
     missedSurveyDate: missed,
   };
 }

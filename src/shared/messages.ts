@@ -20,8 +20,12 @@ export type Message =
   | {
       type: "survey:open";
       date: string; // 'YYYY-MM-DD'; opens survey page in a new tab
-      closeTrackedTabs?: boolean; // re-entry "edit survey" sets this true
     }
+  | {
+      type: "survey:redirect";
+      date: string; // 'YYYY-MM-DD'; close sender tab + open survey for date
+    }
+  | { type: "survey:continue" } // survey page → background; allow tracked tabs again
   | { type: "missed:dismiss" };
 
 export type MessageType = Message["type"];

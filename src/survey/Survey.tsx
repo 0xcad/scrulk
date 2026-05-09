@@ -2,8 +2,9 @@ import { useEffect, useState } from "preact/hooks";
 import browser from "webextension-polyfill";
 import { dateKey, getDay, type Regret } from "../shared/history";
 import type { Message } from "../shared/messages";
-import { getSettings } from "../shared/storage";
-import { currentWakeDayStart } from "../shared/wakeDay";
+import { getDayState, getSettings, onDayStateChange } from "../shared/storage";
+import { DEFAULT_DAY_STATE, type DayState, effectiveMs } from "../shared/types";
+import { currentWakeDayStart, formatDuration } from "../shared/wakeDay";
 
 const REGRETS: Regret[] = [1, 2, 3, 4, 5];
 
@@ -28,26 +29,47 @@ function formatDateLong(date: string): string {
 
 export function Survey() {
   const [date, setDate] = useState<string | null>(null);
+  const [currentDate, setCurrentDate] = useState<string | null>(null);
   const [regret, setRegret] = useState<Regret | null>(null);
   const [notes, setNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  /** Was the survey already filled for this date when the page opened? */
+  const [alreadyFilled, setAlreadyFilled] = useState(false);
+  /** Recorded totalMs from history (used when viewing a past day). */
+  const [recordTotalMs, setRecordTotalMs] = useState<number | null>(null);
+  const [dayState, setDayState] = useState<DayState>(DEFAULT_DAY_STATE);
+  const [now, setNow] = useState(Date.now());
 
   useEffect(() => {
     void (async () => {
       const fromUrl = readDateFromUrl();
-      const resolved =
-        fromUrl ??
-        dateKey(
-          currentWakeDayStart(Date.now(), (await getSettings()).wakeUpTime),
-        );
+      const settings = await getSettings();
+      const today = dateKey(currentWakeDayStart(Date.now(), settings.wakeUpTime));
+      const resolved = fromUrl ?? today;
       setDate(resolved);
+      setCurrentDate(today);
       const existing = await getDay(resolved);
       if (existing) {
-        if (existing.regret !== null) setRegret(existing.regret);
+        if (existing.regret !== null) {
+          setRegret(existing.regret);
+          setAlreadyFilled(true);
+        }
         if (existing.notes !== null) setNotes(existing.notes);
+        setRecordTotalMs(existing.totalMs);
       }
+      setDayState(await getDayState());
     })();
+    return onDayStateChange(setDayState);
   }, []);
+
+  // Tick once per second so the live usage clock advances when this date is
+  // the current wake-day and a tracking segment is open.
+  useEffect(() => {
+    if (date === null || date !== currentDate) return;
+    if (dayState.activeSince === null) return;
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, [date, currentDate, dayState.activeSince]);
 
   const onSubmit = async (e: Event) => {
     e.preventDefault();
@@ -59,7 +81,18 @@ export function Survey() {
     window.close();
   };
 
+  const onContinue = async () => {
+    const msg: Message = { type: "survey:continue" };
+    await browser.runtime.sendMessage(msg).catch(() => null);
+    window.close();
+  };
+
   if (date === null) return null;
+
+  const isToday = date === currentDate;
+  const usageMs = isToday
+    ? effectiveMs(dayState, now)
+    : recordTotalMs;
 
   return (
     <main>
@@ -67,6 +100,13 @@ export function Survey() {
         <h1>How was {formatDateLong(date)}?</h1>
         <p class="subtitle">A quick reflection on time spent on tracked sites.</p>
       </header>
+
+      {usageMs !== null && (
+        <div class="usage">
+          <span class="usage-label">Time on tracked sites</span>
+          <span class="usage-value">{formatDuration(usageMs)}</span>
+        </div>
+      )}
 
       <form onSubmit={onSubmit}>
         <label>Regret level</label>
@@ -106,6 +146,12 @@ export function Survey() {
           </button>
         </div>
       </form>
+
+      {alreadyFilled && isToday && (
+        <button type="button" class="continue-link" onClick={onContinue}>
+          Continue to tracked sites
+        </button>
+      )}
     </main>
   );
 }

@@ -16,7 +16,6 @@ import {
 } from "./tracker";
 import {
   BREAKTIME_ALARM,
-  closeTrackedTabs,
   handleBreaktimeDone,
   handleBreaktimeResume,
   openSurveyTab,
@@ -109,6 +108,12 @@ browser.runtime.onMessage.addListener((message: unknown, sender: browser.Runtime
   if (msg.type === "survey:open") {
     return handleSurveyOpen(msg);
   }
+  if (msg.type === "survey:redirect") {
+    return handleSurveyRedirect(msg, sender?.tab?.id);
+  }
+  if (msg.type === "survey:continue") {
+    return handleSurveyContinue(sender?.tab?.id);
+  }
   if (msg.type === "missed:dismiss") {
     return handleMissedDismiss();
   }
@@ -130,7 +135,12 @@ async function handleSurveySubmit(
     ...(totalMs !== undefined ? { totalMs } : {}),
   });
   const patch: Partial<typeof state> = {};
-  if (msg.date === currentDate) patch.surveyFilledFor = msg.date;
+  if (msg.date === currentDate) {
+    patch.surveyFilledFor = msg.date;
+    // Re-editing the survey kicks off the redirect chain again until the
+    // user explicitly clicks "Continue" on the survey page.
+    patch.surveyContinueAllowed = false;
+  }
   if (state.missedSurveyDate === msg.date) patch.missedSurveyDate = null;
   if (Object.keys(patch).length > 0) {
     await setDayState({ ...state, ...patch });
@@ -143,11 +153,28 @@ async function handleSurveySubmit(
 async function handleSurveyOpen(
   msg: Extract<Message, { type: "survey:open" }>,
 ): Promise<void> {
-  if (msg.closeTrackedTabs) {
-    await openSurveyTab(msg.date);
-    await closeTrackedTabs();
-  } else {
-    await openSurveyTab(msg.date);
+  await openSurveyTab(msg.date);
+}
+
+async function handleSurveyRedirect(
+  msg: Extract<Message, { type: "survey:redirect" }>,
+  senderTabId: number | undefined,
+): Promise<void> {
+  await openSurveyTab(msg.date);
+  if (senderTabId !== undefined) {
+    await browser.tabs.remove(senderTabId).catch(() => null);
+  }
+}
+
+async function handleSurveyContinue(
+  senderTabId: number | undefined,
+): Promise<void> {
+  const state = await getDayState();
+  if (!state.surveyContinueAllowed) {
+    await setDayState({ ...state, surveyContinueAllowed: true });
+  }
+  if (senderTabId !== undefined) {
+    await browser.tabs.remove(senderTabId).catch(() => null);
   }
 }
 

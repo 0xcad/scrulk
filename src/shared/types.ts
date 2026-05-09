@@ -59,6 +59,13 @@ export interface DayState {
   /** True once the breaktime alert has been shown at least once this wake-day. */
   breaktimeShownToday: boolean;
   /**
+   * True once the user has clicked "Continue" on the post-survey page for
+   * the current wake-day. While false (and `surveyFilledFor` is set), any
+   * tracked tab gets closed and redirected to the survey. Resets on rollover
+   * and on a fresh `survey:submit`.
+   */
+  surveyContinueAllowed: boolean;
+  /**
    * Most recent past wake-day where breaktime fired but the user never
    * submitted the survey. Populated at day-reset; cleared on submit. Most-
    * recent only — older missed days are silently dropped.
@@ -75,6 +82,7 @@ export const DEFAULT_DAY_STATE: DayState = {
   tabLimitWarning: false,
   surveyFilledFor: null,
   breaktimeShownToday: false,
+  surveyContinueAllowed: false,
   missedSurveyDate: null,
 };
 

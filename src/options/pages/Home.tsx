@@ -10,6 +10,7 @@ import { DEFAULT_DAY_STATE, effectiveMs } from "../../shared/types";
 import type { DayState, Settings } from "../../shared/types";
 import { formatDuration, formatUptime } from "../../shared/wakeDay";
 import { CalendarGrid } from "../components/CalendarGrid";
+import { DayDrawer } from "../components/DayDrawer";
 import { MissedSurveyBanner } from "../components/MissedSurveyBanner";
 
 export function Home() {
@@ -17,6 +18,7 @@ export function Home() {
   const [state, setState] = useState<DayState>(DEFAULT_DAY_STATE);
   const [now, setNow] = useState(Date.now());
   const [days, setDays] = useState<DayRecord[]>([]);
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
   const refreshDays = () => {
     void getAllDays().then(setDays);
@@ -69,6 +71,17 @@ export function Home() {
       <dl>
         <dt>Tracked sites</dt>
         <dd>{settings.trackedSites.length}</dd>
+        <dt>Average time / day</dt>
+        <dd>
+          {days.length > 0
+            ? formatDuration(
+                days.reduce((acc, d) => acc + d.totalMs, 0) / days.length,
+              )
+            : "—"}
+          {days.length > 0 ? (
+            <small> (over {days.length} {days.length === 1 ? "day" : "days"})</small>
+          ) : null}
+        </dd>
         <dt>Uptime</dt>
         <dd>
           {uptime}
@@ -81,10 +94,13 @@ export function Home() {
       <h2>This month</h2>
       <CalendarGrid
         days={days}
-        selectedDate={dateKey(state.wakeDayStart || Date.now())}
-        onSelect={() => {
-          /* Home calendar is read-only; full drawer lives on Calendar tab. */
-        }}
+        selectedDate={selectedDate ?? dateKey(state.wakeDayStart || Date.now())}
+        onSelect={setSelectedDate}
+      />
+      <DayDrawer
+        days={days}
+        selectedDate={selectedDate}
+        onSelect={setSelectedDate}
       />
     </section>
   );

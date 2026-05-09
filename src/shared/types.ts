@@ -54,6 +54,16 @@ export interface DayState {
   breaktimeOpen: boolean;
   /** Set true when the tab limit blocked a new tracked tab; popup clears on view. */
   tabLimitWarning: boolean;
+  /** 'YYYY-MM-DD' wake-day key the survey was submitted for, else null. */
+  surveyFilledFor: string | null;
+  /** True once the breaktime alert has been shown at least once this wake-day. */
+  breaktimeShownToday: boolean;
+  /**
+   * Most recent past wake-day where breaktime fired but the user never
+   * submitted the survey. Populated at day-reset; cleared on submit. Most-
+   * recent only — older missed days are silently dropped.
+   */
+  missedSurveyDate: string | null;
 }
 
 export const DEFAULT_DAY_STATE: DayState = {
@@ -63,6 +73,9 @@ export const DEFAULT_DAY_STATE: DayState = {
   lastBreaktimeAt: 0,
   breaktimeOpen: false,
   tabLimitWarning: false,
+  surveyFilledFor: null,
+  breaktimeShownToday: false,
+  missedSurveyDate: null,
 };
 
 export const DAY_STATE_KEY = "dayState" as const;

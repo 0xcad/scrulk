@@ -175,6 +175,12 @@ Implementation notes:
 
 ## Slice 8 — Polish
 
+- Survey page should show usage time for the day on it
+- Bug: when the break time alert first appears, the count still does not pause. If the user exits the page, and opens it again, the count pauses. But not if the alert appears and the user stays on the page.
+- TODO: Clicking a day on the calendar displays nothing. Should show survey data + free response if present in a drawer.
+- Change behavior: If the survey has already been filled out for the day, when visiting a tracked page again, the tab should be closed, and the user should get redirected to their survey page. Only then, should the user see a "Continue" button in muted text below the survey response (hidden the first time survey appears). Clicking that should allow the user to go back to tracked pages and see the regular break alerts
+
+
 - Home: "tracked sites count," "time on tracked sites since wake-up,"
   "average time on tracked sites" (running mean over recorded days).
 - Drawer trend arrow (uses the running average from above).

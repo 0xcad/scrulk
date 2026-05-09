@@ -34,6 +34,14 @@ export default defineConfig({
     sourcemap: true,
     // setIcon needs real file paths in MV3, not data URLs — keep PNGs as files.
     assetsInlineLimit: 0,
+    // The survey page isn't referenced by manifest entry points (popup,
+    // options, background); it's opened via tabs.create + getURL. Register
+    // it as an extra HTML input so Vite/crxjs bundles its scripts and CSS.
+    rollupOptions: {
+      input: {
+        survey: resolve(__dirname, "src/survey/index.html"),
+      },
+    },
   },
   server: {
     port: 5173,

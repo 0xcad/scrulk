@@ -1,6 +1,13 @@
 import browser from "webextension-polyfill";
-import { getSettings, onSettingsChange, setSettings } from "../shared/storage";
-import { refreshAllTabIcons, updateIconForTab } from "./icon";
+import {
+  getDayState,
+  getSettings,
+  onDayStateChange,
+  onSettingsChange,
+  setDayState,
+  setSettings,
+} from "../shared/storage";
+import { refreshAllTabIcons, setMissedBadge, updateIconForTab } from "./icon";
 import {
   ALARM_NAMES,
   ensureDayResetAlarm,
@@ -9,11 +16,16 @@ import {
 } from "./tracker";
 import {
   BREAKTIME_ALARM,
+  closeTrackedTabs,
   handleBreaktimeDone,
   handleBreaktimeResume,
+  openSurveyTab,
 } from "./breaktime";
 import { enforceTabLimit } from "./tabLimit";
+import { dateKey, upsertDay } from "../shared/history";
 import type { Message } from "../shared/messages";
+import { effectiveMs } from "../shared/types";
+import { currentWakeDayStart } from "../shared/wakeDay";
 
 // MV3 service worker: ephemeral. No long-lived module-level state.
 // All listeners must be registered synchronously at top level so the worker
@@ -26,6 +38,7 @@ browser.runtime.onInstalled.addListener(async () => {
   }
   await refreshAllTabIcons(current.trackedSites);
   await ensureDayResetAlarm(current.wakeUpTime);
+  await syncMissedBadge();
   await recompute();
 });
 
@@ -33,6 +46,7 @@ browser.runtime.onStartup.addListener(async () => {
   const settings = await getSettings();
   await refreshAllTabIcons(settings.trackedSites);
   await ensureDayResetAlarm(settings.wakeUpTime);
+  await syncMissedBadge();
   await recompute();
 });
 
@@ -81,7 +95,7 @@ browser.alarms.onAlarm.addListener(async (alarm) => {
   }
 });
 
-browser.runtime.onMessage.addListener((message: unknown) => {
+browser.runtime.onMessage.addListener((message: unknown, sender: browser.Runtime.MessageSender) => {
   const msg = message as Message;
   if (msg.type === "breaktime:resume") {
     return handleBreaktimeResume().then(() => recompute());
@@ -89,11 +103,71 @@ browser.runtime.onMessage.addListener((message: unknown) => {
   if (msg.type === "breaktime:done") {
     return handleBreaktimeDone().then(() => recompute());
   }
+  if (msg.type === "survey:submit") {
+    return handleSurveySubmit(msg, sender?.tab?.id);
+  }
+  if (msg.type === "survey:open") {
+    return handleSurveyOpen(msg);
+  }
+  if (msg.type === "missed:dismiss") {
+    return handleMissedDismiss();
+  }
   return undefined;
 });
+
+async function handleSurveySubmit(
+  msg: Extract<Message, { type: "survey:submit" }>,
+  senderTabId: number | undefined,
+): Promise<void> {
+  const settings = await getSettings();
+  const state = await getDayState();
+  const currentDate = dateKey(currentWakeDayStart(Date.now(), settings.wakeUpTime));
+  const totalMs =
+    msg.date === currentDate ? effectiveMs(state, Date.now()) : undefined;
+  await upsertDay(msg.date, {
+    regret: msg.regret,
+    notes: msg.notes,
+    ...(totalMs !== undefined ? { totalMs } : {}),
+  });
+  const patch: Partial<typeof state> = {};
+  if (msg.date === currentDate) patch.surveyFilledFor = msg.date;
+  if (state.missedSurveyDate === msg.date) patch.missedSurveyDate = null;
+  if (Object.keys(patch).length > 0) {
+    await setDayState({ ...state, ...patch });
+  }
+  if (senderTabId !== undefined) {
+    await browser.tabs.remove(senderTabId).catch(() => null);
+  }
+}
+
+async function handleSurveyOpen(
+  msg: Extract<Message, { type: "survey:open" }>,
+): Promise<void> {
+  if (msg.closeTrackedTabs) {
+    await openSurveyTab(msg.date);
+    await closeTrackedTabs();
+  } else {
+    await openSurveyTab(msg.date);
+  }
+}
+
+async function syncMissedBadge(): Promise<void> {
+  const state = await getDayState();
+  await setMissedBadge(state.missedSurveyDate !== null);
+}
+
+async function handleMissedDismiss(): Promise<void> {
+  const state = await getDayState();
+  if (state.missedSurveyDate === null) return;
+  await setDayState({ ...state, missedSurveyDate: null });
+}
 
 onSettingsChange(async (next) => {
   await refreshAllTabIcons(next.trackedSites);
   await ensureDayResetAlarm(next.wakeUpTime);
   await recompute();
+});
+
+onDayStateChange((state) => {
+  void setMissedBadge(state.missedSurveyDate !== null);
 });

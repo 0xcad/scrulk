@@ -1,5 +1,6 @@
 import browser from "webextension-polyfill";
 import { hostnameOf, isTracked } from "../shared/domain";
+import { dateKey, upsertDay } from "../shared/history";
 import { getDayState, getSettings, setDayState } from "../shared/storage";
 import {
   currentWakeDayStart,
@@ -73,14 +74,7 @@ export async function recompute(): Promise<void> {
   // If we somehow missed an alarm-driven reset (browser was off across the
   // boundary), do it lazily here.
   if (state.wakeDayStart !== expectedStart) {
-    state = {
-      wakeDayStart: expectedStart,
-      totalMs: 0,
-      activeSince: null,
-      lastBreaktimeAt: 0,
-      breaktimeOpen: false,
-      tabLimitWarning: false,
-    };
+    state = await rolloverDay(state, expectedStart);
   }
 
   const inputs = await readActivity();
@@ -99,7 +93,7 @@ export async function recompute(): Promise<void> {
     effectiveMs(next, now) - next.lastBreaktimeAt >=
       settings.breaktimeMinutes * 60_000
   ) {
-    next = { ...next, breaktimeOpen: true };
+    next = { ...next, breaktimeOpen: true, breaktimeShownToday: true };
   }
 
   if (!stateEqual(state, next)) {
@@ -132,8 +126,45 @@ function stateEqual(a: DayState, b: DayState): boolean {
     a.activeSince === b.activeSince &&
     a.lastBreaktimeAt === b.lastBreaktimeAt &&
     a.breaktimeOpen === b.breaktimeOpen &&
-    a.tabLimitWarning === b.tabLimitWarning
+    a.tabLimitWarning === b.tabLimitWarning &&
+    a.surveyFilledFor === b.surveyFilledFor &&
+    a.breaktimeShownToday === b.breaktimeShownToday &&
+    a.missedSurveyDate === b.missedSurveyDate
   );
+}
+
+/**
+ * Compute the next-day state from an outgoing day. Persists the outgoing
+ * day's totalMs to IndexedDB and, if breaktime fired without a survey
+ * submission, records `missedSurveyDate` (most-recent only — overwrites any
+ * earlier missed date, never queues).
+ */
+export async function rolloverDay(
+  outgoing: DayState,
+  newWakeDayStart: number,
+): Promise<DayState> {
+  const now = Date.now();
+  // Close any open segment to compute the outgoing day's final totalMs.
+  const finalTotalMs = effectiveMs(outgoing, now);
+  const outgoingDate = dateKey(outgoing.wakeDayStart);
+  if (outgoing.wakeDayStart > 0) {
+    await upsertDay(outgoingDate, { totalMs: finalTotalMs }).catch(() => null);
+  }
+  const missed =
+    outgoing.breaktimeShownToday && outgoing.surveyFilledFor !== outgoingDate
+      ? outgoingDate
+      : outgoing.missedSurveyDate;
+  return {
+    wakeDayStart: newWakeDayStart,
+    totalMs: 0,
+    activeSince: outgoing.activeSince !== null ? now : null,
+    lastBreaktimeAt: 0,
+    breaktimeOpen: false,
+    tabLimitWarning: false,
+    surveyFilledFor: null,
+    breaktimeShownToday: false,
+    missedSurveyDate: missed,
+  };
 }
 
 export async function ensureDayResetAlarm(wakeUpTime: string): Promise<void> {
@@ -147,16 +178,11 @@ export async function handleDayResetAlarm(): Promise<void> {
   const settings = await getSettings();
   const now = Date.now();
   const state = await getDayState();
-  // Close any open segment against the previous day, then open a fresh day.
-  const wasActive = state.activeSince !== null;
-  await setDayState({
-    wakeDayStart: currentWakeDayStart(now, settings.wakeUpTime),
-    totalMs: 0,
-    activeSince: wasActive ? now : null,
-    lastBreaktimeAt: 0,
-    breaktimeOpen: false,
-    tabLimitWarning: false,
-  });
+  const next = await rolloverDay(
+    state,
+    currentWakeDayStart(now, settings.wakeUpTime),
+  );
+  await setDayState(next);
   await ensureDayResetAlarm(settings.wakeUpTime);
 }
 

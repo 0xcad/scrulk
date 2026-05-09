@@ -41,6 +41,16 @@ export default defineManifest({
     open_in_tab: true,
   },
 
+  // The survey page is opened in a tab via browser.tabs.create + getURL. Listed
+  // here so crxjs treats it as an entry HTML and bundles it; web_accessible
+  // makes the moz-extension:// URL loadable from a fresh tab.
+  web_accessible_resources: [
+    {
+      resources: ["src/survey/index.html"],
+      matches: ["<all_urls>"],
+    },
+  ],
+
   icons: {
     "16": "src/assets/icon-inactive-16.png",
     "32": "src/assets/icon-inactive-32.png",

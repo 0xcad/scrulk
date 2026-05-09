@@ -11,6 +11,7 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "idb": "^8.0.3",
     "preact": "^10.22.0",
     "webextension-polyfill": "^0.12.0"
   },

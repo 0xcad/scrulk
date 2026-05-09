@@ -12,6 +12,7 @@ import {
 import type { DayState, Settings } from "../shared/types";
 import { DEFAULT_DAY_STATE, effectiveMs } from "../shared/types";
 import { formatDuration } from "../shared/wakeDay";
+import { MissedSurveyBanner } from "../options/components/MissedSurveyBanner";
 
 async function getActiveTabHost(): Promise<string | null> {
   const [tab] = await browser.tabs.query({
@@ -96,6 +97,9 @@ export function Popup() {
           You can't open more than {settings.tabLimit} tracked tabs at once.
         </p>
       )}
+
+      <MissedSurveyBanner missedDate={state.missedSurveyDate} />
+
 
       <section class="usage">
         <span class="usage-label">Today</span>

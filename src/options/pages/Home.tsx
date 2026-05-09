@@ -1,4 +1,5 @@
 import { useEffect, useState } from "preact/hooks";
+import { type DayRecord, dateKey, getAllDays } from "../../shared/history";
 import {
   getDayState,
   getSettings,
@@ -8,17 +9,28 @@ import {
 import { DEFAULT_DAY_STATE, effectiveMs } from "../../shared/types";
 import type { DayState, Settings } from "../../shared/types";
 import { formatDuration, formatUptime } from "../../shared/wakeDay";
+import { CalendarGrid } from "../components/CalendarGrid";
+import { MissedSurveyBanner } from "../components/MissedSurveyBanner";
 
 export function Home() {
   const [settings, setSettings] = useState<Settings | null>(null);
   const [state, setState] = useState<DayState>(DEFAULT_DAY_STATE);
   const [now, setNow] = useState(Date.now());
+  const [days, setDays] = useState<DayRecord[]>([]);
+
+  const refreshDays = () => {
+    void getAllDays().then(setDays);
+  };
 
   useEffect(() => {
     void getSettings().then(setSettings);
     void getDayState().then(setState);
+    refreshDays();
     const offS = onSettingsChange(setSettings);
-    const offD = onDayStateChange(setState);
+    const offD = onDayStateChange((s) => {
+      setState(s);
+      refreshDays();
+    });
     return () => {
       offS();
       offD();
@@ -42,6 +54,8 @@ export function Home() {
 
   return (
     <section>
+      <MissedSurveyBanner missedDate={state.missedSurveyDate} />
+
       <h2>Today</h2>
       <p class="big-number">{formatDuration(effectiveMs(state, now))}</p>
       <p>
@@ -63,6 +77,15 @@ export function Home() {
           ) : null}
         </dd>
       </dl>
+
+      <h2>This month</h2>
+      <CalendarGrid
+        days={days}
+        selectedDate={dateKey(state.wakeDayStart || Date.now())}
+        onSelect={() => {
+          /* Home calendar is read-only; full drawer lives on Calendar tab. */
+        }}
+      />
     </section>
   );
 }

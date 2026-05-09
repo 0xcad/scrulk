@@ -40,6 +40,21 @@ export async function updateIconForTab(
   }
 }
 
+/**
+ * Toolbar badge dot signaling an unfilled survey from a previous wake-day.
+ * Global (not per-tab) since the prompt isn't tied to any one site.
+ */
+export async function setMissedBadge(missed: boolean): Promise<void> {
+  try {
+    await browser.action.setBadgeText({ text: missed ? "•" : "" });
+    if (missed) {
+      await browser.action.setBadgeBackgroundColor({ color: "#c0392b" });
+    }
+  } catch {
+    // No-op if the API is briefly unavailable (worker boot races).
+  }
+}
+
 export async function refreshAllTabIcons(tracked: string[]): Promise<void> {
   const tabs = await browser.tabs.query({});
   await Promise.all(

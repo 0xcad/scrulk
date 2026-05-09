@@ -1,7 +1,31 @@
 import browser from "webextension-polyfill";
 import { hostnameOf, isTracked } from "../shared/domain";
+import { dateKey } from "../shared/history";
 import { getDayState, getSettings, setDayState } from "../shared/storage";
 import { effectiveMs, type DayState, type Settings } from "../shared/types";
+import { currentWakeDayStart } from "../shared/wakeDay";
+
+const SURVEY_PAGE = "src/survey/index.html";
+
+export async function openSurveyTab(date: string): Promise<void> {
+  const url = browser.runtime.getURL(`${SURVEY_PAGE}?date=${encodeURIComponent(date)}`);
+  await browser.tabs.create({ url }).catch(() => null);
+}
+
+export async function closeTrackedTabs(): Promise<void> {
+  const settings = await getSettings();
+  const tabs = await browser.tabs.query({});
+  const ids = tabs
+    .filter((t) => {
+      const host = hostnameOf(t.url);
+      return host !== null && isTracked(host, settings.trackedSites);
+    })
+    .map((t) => t.id)
+    .filter((id): id is number => id !== undefined);
+  if (ids.length > 0) {
+    await browser.tabs.remove(ids).catch(() => null);
+  }
+}
 
 export const BREAKTIME_ALARM = "scrulk:breaktime";
 
@@ -49,23 +73,16 @@ export async function handleBreaktimeResume(): Promise<void> {
 }
 
 /**
- * Called when the user clicks "I'm done!". Closes every tracked-site tab
- * across all windows. Leaves `breaktimeOpen=true` deliberately: if the user
- * reopens any tracked site, the overlay mounts immediately so they have to
- * re-do the hold challenge to keep browsing. Only a successful hold
- * (`handleBreaktimeResume`) clears the flag.
+ * Called when the user clicks "I'm done!". Opens the survey page in a fresh
+ * tab and closes every tracked-site tab across all windows. Leaves
+ * `breaktimeOpen=true` deliberately: if the user reopens any tracked site
+ * before completing the hold challenge, the overlay mounts immediately. Only
+ * a successful hold (`handleBreaktimeResume`) clears the flag.
  */
 export async function handleBreaktimeDone(): Promise<void> {
   const settings = await getSettings();
-  const tabs = await browser.tabs.query({});
-  const ids = tabs
-    .filter((t) => {
-      const host = hostnameOf(t.url);
-      return host !== null && isTracked(host, settings.trackedSites);
-    })
-    .map((t) => t.id)
-    .filter((id): id is number => id !== undefined);
-  if (ids.length > 0) {
-    await browser.tabs.remove(ids).catch(() => null);
-  }
+  const date = dateKey(currentWakeDayStart(Date.now(), settings.wakeUpTime));
+  // Open survey first so closing the active tab doesn't race the create.
+  await openSurveyTab(date);
+  await closeTrackedTabs();
 }

@@ -1,11 +1,9 @@
-import { useEffect, useRef, useState } from "preact/hooks";
+import { useState } from "preact/hooks";
 import browser from "webextension-polyfill";
 import type { Message } from "../shared/messages";
+import { Challenge } from "./Challenge";
 
-const WAIT_MS = 30_000;
-const HOLD_MS = 30_000;
-
-type Phase = "alert" | "wait" | "hold";
+type Phase = "alert" | "challenge";
 
 function send(msg: Message): Promise<unknown> {
   return browser.runtime.sendMessage(msg);
@@ -13,69 +11,14 @@ function send(msg: Message): Promise<unknown> {
 
 export function BreaktimeOverlay() {
   const [phase, setPhase] = useState<Phase>("alert");
-  // ms remaining in the current sub-timer (wait or hold). -1 when inactive.
-  const [remaining, setRemaining] = useState(-1);
-
-  // Wait phase: 30s countdown to hold phase.
-  useEffect(() => {
-    if (phase !== "wait") return;
-    const startedAt = Date.now();
-    setRemaining(WAIT_MS);
-    const id = setInterval(() => {
-      const left = WAIT_MS - (Date.now() - startedAt);
-      if (left <= 0) {
-        clearInterval(id);
-        setPhase("hold");
-      } else {
-        setRemaining(left);
-      }
-    }, 100);
-    return () => clearInterval(id);
-  }, [phase]);
-
-  // Hold phase: 30s of accumulated press time. Releasing pauses; pressing
-  // again resumes from where it left off. Only the wait phase is one-shot.
-  const heldMs = useRef(0);
-  const heldSince = useRef<number | null>(null);
-  const holdTimer = useRef<number | null>(null);
-
-  const onHoldStart = (e: PointerEvent) => {
-    if (phase !== "hold") return;
-    if (heldSince.current !== null) return; // already pressing
-    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
-    heldSince.current = Date.now();
-    setRemaining(HOLD_MS - heldMs.current);
-    holdTimer.current = window.setInterval(() => {
-      const since = heldSince.current;
-      if (since === null) return;
-      const left = HOLD_MS - heldMs.current - (Date.now() - since);
-      if (left <= 0) {
-        if (holdTimer.current !== null) clearInterval(holdTimer.current);
-        holdTimer.current = null;
-        heldSince.current = null;
-        heldMs.current = 0;
-        void send({ type: "breaktime:resume" });
-      } else {
-        setRemaining(left);
-      }
-    }, 100);
-  };
-
-  const onHoldEnd = () => {
-    if (phase !== "hold") return;
-    const since = heldSince.current;
-    if (since === null) return;
-    heldMs.current = Math.min(HOLD_MS, heldMs.current + (Date.now() - since));
-    heldSince.current = null;
-    if (holdTimer.current !== null) clearInterval(holdTimer.current);
-    holdTimer.current = null;
-    setRemaining(HOLD_MS - heldMs.current);
-  };
 
   const onDone = () => {
     void send({ type: "breaktime:done" });
   };
-  const onContinue = () => setPhase("wait");
+  const onContinue = () => setPhase("challenge");
+  const onChallengeComplete = () => {
+    void send({ type: "breaktime:resume" });
+  };
 
   return (
     <>
@@ -97,34 +40,7 @@ export function BreaktimeOverlay() {
             </>
           )}
 
-          {phase === "wait" && (
-            <>
-              <h2 id="bt-title">Wait a moment</h2>
-              <p class="big">{Math.ceil(remaining / 1000)}s</p>
-              <p>
-                <small>Then you'll need to hold a button for 30 seconds.</small>
-              </p>
-            </>
-          )}
-
-          {phase === "hold" && (
-            <>
-              <h2 id="bt-title">Hold to continue</h2>
-              <button
-                type="button"
-                class="hold"
-                onPointerDown={onHoldStart}
-                onPointerUp={onHoldEnd}
-                onPointerCancel={onHoldEnd}
-                onPointerLeave={onHoldEnd}
-              >
-                Hold
-              </button>
-              <p>
-                <small>Release to pause; press again to keep going.</small>
-              </p>
-            </>
-          )}
+          {phase === "challenge" && <Challenge onComplete={onChallengeComplete} />}
         </div>
       </div>
     </>
@@ -186,8 +102,9 @@ const styles = `
     background: #c0392b;
     border-color: #c0392b;
     color: white;
-    font-size: 18px;
-    font-weight: 600;
+    font-size: 32px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
     margin: 12px 0;
     user-select: none;
     touch-action: none;

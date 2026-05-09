@@ -170,3 +170,171 @@ dl dd small {
   opacity: 0.6;
   margin-left: 4px;
 }
+
+.missed-survey {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  background: #fff4e5;
+  border: 1px solid #f0b97a;
+  color: #6b3d00;
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+.missed-survey .missed-actions {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.missed-survey button {
+  border: 1px solid currentColor;
+  background: transparent;
+  color: inherit;
+  border-radius: 6px;
+  padding: 4px 10px;
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+}
+
+.missed-survey button.dismiss {
+  padding: 0 8px;
+  line-height: 1.2;
+  font-size: 16px;
+}
+
+/* Calendar */
+.cal {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.cal-head .cal-title {
+  font-weight: 600;
+}
+
+.cal-head button {
+  padding: 2px 10px;
+}
+
+.cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+
+.cal-weekday {
+  text-align: center;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  opacity: 0.5;
+  padding: 2px 0;
+}
+
+.cal-cell {
+  aspect-ratio: 1 / 1;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  position: relative;
+  font: inherit;
+  padding: 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-end;
+}
+
+.cal-cell.empty {
+  visibility: hidden;
+}
+
+.cal-cell:disabled {
+  cursor: default;
+}
+
+.cal-day-num {
+  font-size: 12px;
+  padding: 4px 6px;
+  opacity: 0.75;
+}
+
+.cal-cell.today {
+  outline: 2px solid currentColor;
+  outline-offset: -2px;
+}
+
+.cal-cell.selected {
+  box-shadow: 0 0 0 2px #c0392b inset;
+}
+
+.cal-cell.heat-0 { background: transparent; }
+.cal-cell.heat-1 { background: #e7f3ec; }
+.cal-cell.heat-2 { background: #f6e7c8; }
+.cal-cell.heat-3 { background: #f5c08d; }
+.cal-cell.heat-4 { background: #d97a5a; color: white; }
+
+.cal-notes-dot {
+  position: absolute;
+  bottom: 6px;
+  left: 6px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.7;
+}
+
+/* Day drawer */
+.day-drawer {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.day-drawer.empty {
+  opacity: 0.6;
+  text-align: center;
+}
+
+.day-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.day-nav h3 {
+  margin: 0;
+  font-size: 15px;
+  flex: 1;
+  text-align: center;
+}
+
+.day-nav button {
+  padding: 2px 10px;
+}
+
+.day-drawer dd.notes {
+  white-space: pre-wrap;
+}
+
+.day-drawer .trend {
+  margin-left: 6px;
+  opacity: 0.6;
+}

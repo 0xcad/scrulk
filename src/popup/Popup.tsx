@@ -109,21 +109,20 @@ export function Popup() {
 
       {displayHost ? (
         <>
-          <p>
+          <p class="flex">
             <span class="host">{displayHost}</span>{" "}
             <span class={`status ${tracked ? "tracked" : "untracked"}`}>
               {tracked ? "tracked" : "not tracked"}
             </span>
+            <button 
+              type="button"
+              class="float-right"
+              onClick={tracked ? onRemove : onAdd}
+              title={tracked ? "remove from tracked sites" : "add to tracked sites"}
+            >
+            {tracked ? "x" : "+" }
+            </button>
           </p>
-          {tracked ? (
-            <button type="button" onClick={onRemove}>
-              Remove from tracked sites
-            </button>
-          ) : (
-            <button type="button" onClick={onAdd}>
-              Add to tracked sites
-            </button>
-          )}
         </>
       ) : (
         <p>This page can't be tracked.</p>
@@ -134,7 +133,7 @@ export function Popup() {
           type="button"
           onClick={() => browser.runtime.openOptionsPage()}
         >
-          Open dashboard
+          open dashboard ↗
         </button>
       </nav>
     </main>

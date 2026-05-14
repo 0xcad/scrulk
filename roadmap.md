@@ -185,3 +185,11 @@ Implementation notes:
   "average time on tracked sites" (running mean over recorded days).
 - Drawer trend arrow (uses the running average from above).
 - General visual cleanup once the feature set has settled.
+
+## TODO:
+
+* when the user opens up the extension popup, add a backdrop to the visited site to hide it
+* icon for up usage or down usage on home page
+* get time on break indicator "Time for a break" page
+    * idea: dithered curtains at the top of this page?
+* "Time for a break" page should have 30 second countdown before continue button is set active (otherwise, disabled with title beforehand)

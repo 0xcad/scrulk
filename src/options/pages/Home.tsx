@@ -60,12 +60,6 @@ export function Home() {
 
       <h2>Today</h2>
       <p class="big-number">{formatDuration(effectiveMs(state, now))}</p>
-      <p>
-        <small>
-          On tracked sites since {new Date(state.wakeDayStart).toLocaleString()}
-          {state.activeSince !== null ? " · tracking…" : ""}
-        </small>
-      </p>
 
       <h2>Summary</h2>
       <dl>

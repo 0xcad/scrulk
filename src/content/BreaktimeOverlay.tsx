@@ -3,6 +3,8 @@ import browser from "webextension-polyfill";
 import type { Message } from "../shared/messages";
 import { Challenge } from "./Challenge";
 
+import windowImg from "../../public/window.gif"
+
 type Phase = "alert" | "challenge";
 
 function send(msg: Message): Promise<unknown> {
@@ -27,14 +29,15 @@ export function BreaktimeOverlay() {
         <div class="card">
           {phase === "alert" && (
             <>
+              <img src={windowImg} class='window' />
               <h2 id="bt-title">Time for a break</h2>
-              <p>You've been on tracked websites for a while. Want to step away?</p>
-              <div class="row">
+              <p>You've been at this for a while. Want to step away?</p>
+              <div class="buttons">
                 <button type="button" class="primary" onClick={onDone}>
                   I'm done!
                 </button>
-                <button type="button" onClick={onContinue}>
-                  Continue
+                <button title="this action cannot be undone" type="button" class='secondary' onClick={onContinue}>
+                  Continue &gt;
                 </button>
               </div>
             </>
@@ -49,25 +52,28 @@ export function BreaktimeOverlay() {
 
 const styles = `
   :host { all: initial; }
+  .window {
+    max-width: 100%;
+  }
   .backdrop {
     position: fixed;
     inset: 0;
     pointer-events: auto;
-    background: rgba(0, 0, 0, 0.65);
+    background: Canvas;
     display: grid;
     place-items: center;
     font: 14px/1.4 system-ui, sans-serif;
     color: #111;
+    --primary: #FF5733;
   }
   .card {
-    background: white;
-    padding: 28px 32px;
-    border-radius: 12px;
     max-width: 380px;
+    width: 380px;
     text-align: center;
-    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+    border: 1px dashed;
+    padding: 32px 64px;
   }
-  .card h2 { margin: 0 0 8px; font-size: 18px; }
+  .card h2 { margin: 0 0 8px; font-size: 18px; font-family: monospace; text-transform: uppercase; }
   .card p { margin: 8px 0; }
   .big {
     font-size: 48px;
@@ -75,42 +81,46 @@ const styles = `
     font-variant-numeric: tabular-nums;
     margin: 12px 0;
   }
-  .row {
+  .buttons {
     display: flex;
-    gap: 8px;
+    flex-flow: column;
+    gap: 6px;
     justify-content: center;
     margin-top: 16px;
   }
   button {
+    text-transform: lowercase;
     font: inherit;
-    padding: 8px 14px;
-    border-radius: 6px;
+    padding: 6px 14px;
     border: 1px solid #999;
     background: white;
     color: inherit;
     cursor: pointer;
   }
   button.primary {
-    background: #c0392b;
-    border-color: #c0392b;
+    background: var(--primary);
+    border-color: var(--primary);
     color: white;
+    transition: 0.2s;
+  }
+  button.primary:hover {
+    opacity: 0.9;
+  }
+  button.secondary {
+    border: none;
+    opacity: 0.7;
+  }
+  button.secondary:hover {
+    text-decoration: underline;
   }
   button.hold {
-    width: 160px;
-    height: 160px;
-    border-radius: 50%;
-    background: #c0392b;
-    border-color: #c0392b;
-    color: white;
-    font-size: 32px;
-    font-weight: 700;
-    font-variant-numeric: tabular-nums;
-    margin: 12px 0;
     user-select: none;
     touch-action: none;
+    width: 100%;
+    margin: 10px 0;
   }
   button.hold:active {
-    background: #962d22;
+    background: color-mix(in srgb, currentColor 12%, transparent);
   }
   small { opacity: 0.65; }
 `;

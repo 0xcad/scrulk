@@ -8,18 +8,13 @@ export function Settings() {
     <>
       <section>
         <h2>Tracked websites</h2>
-        <p>
-          Adding a domain tracks it and all its subdomains. Subdomains under a
-          tracked domain count as the same site.
-        </p>
         <TrackedSitesList />
       </section>
 
       <section>
-        <h2>Day boundary</h2>
+        <h2>Wake up time</h2>
         <p>
-          The day runs from your wake-up time to the next day's wake-up time.
-          Usage and (later) the regret survey bucket against this.
+          What time do you usually have to wake up? Daily usage resets when you need to wake up, not midnight.
         </p>
         <WakeUpTimeField />
       </section>
@@ -28,7 +23,7 @@ export function Settings() {
         <h2>Breaktime</h2>
         <p>
           After this many minutes of accumulated tracked usage, you'll get an
-          alert and a hold-to-continue challenge. (Alerts ship in slice 4.)
+          alert prompting you to take a break.
         </p>
         <NumberField
           field="breaktimeMinutes"
@@ -42,8 +37,7 @@ export function Settings() {
       <section>
         <h2>Tab limit</h2>
         <p>
-          Maximum simultaneous tabs whose host is tracked. New tabs over this
-          limit are closed automatically. (Enforcement ships in slice 5.)
+          You can only open this many tabs of track websites at once.
         </p>
         <NumberField
           field="tabLimit"
@@ -77,7 +71,7 @@ function WakeUpTimeField() {
 
   return (
     <label class="row">
-      <span>Wake-up time</span>
+      <span>Wake up time</span>
       <input
         type="time"
         value={value}

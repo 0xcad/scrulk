@@ -79,10 +79,9 @@ export function Challenge({ onComplete, waitMs = DEFAULT_WAIT_MS, holdMs = DEFAU
   if (phase === "wait") {
     return (
       <>
-        <h2>Wait a moment</h2>
-        <p class="big">{Math.ceil(remaining / 1000)}s</p>
+        <h2>Wait a moment...</h2>
         <p>
-          <small>Then you'll need to hold a button for {Math.round(holdMs / 1000)} seconds.</small>
+          <small>Just stop and breathe for a second.</small>
         </p>
       </>
     );
@@ -99,10 +98,11 @@ export function Challenge({ onComplete, waitMs = DEFAULT_WAIT_MS, holdMs = DEFAU
         onPointerCancel={onHoldEnd}
         onPointerLeave={onHoldEnd}
       >
-        {Math.ceil(remaining / 1000)}s
+       hold to continue
       </button>
+      <p>This action cannot be undone.</p>
       <p>
-        <small>Release to pause; press again to keep going.</small>
+        <small>Press and hold to continue. Just stop and think some more.</small>
       </p>
     </>
   );

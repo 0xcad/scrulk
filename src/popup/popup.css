@@ -14,9 +14,11 @@ main {
   display: flex;
   flex-direction: column;
   gap: 10px;
+  border-bottom: 4px solid currentColor;
 }
 
 h1 {
+  font-family: monospace;
   font-size: 13px;
   font-weight: 600;
   margin: 0;
@@ -32,11 +34,16 @@ p {
 .host {
   font-weight: 600;
   word-break: break-all;
+  max-width: 9em;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
 }
 
 .status {
   display: inline-block;
   padding: 2px 8px;
+  margin-left: 4px;
   border-radius: 999px;
   font-size: 12px;
   font-weight: 600;
@@ -51,18 +58,28 @@ p {
   color: #27867a;
 }
 
+.flex { 
+  display: flex; 
+  align-items: center;
+}
+.float-right {
+  margin-left: auto;
+}
+
 button {
   font: inherit;
   cursor: pointer;
   padding: 6px 10px;
   border: 1px solid currentColor;
   background: transparent;
-  border-radius: 6px;
   color: inherit;
+  transition: 0.2s;
 }
 
 button:hover {
   background: color-mix(in srgb, currentColor 8%, transparent);
+  background: CanvasText;
+  color: Canvas;
 }
 
 nav {
@@ -76,16 +93,20 @@ nav button {
   flex: 1;
 }
 
+p {
+  margin: 8px 0;
+}
+
 .usage {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: 8px;
   padding: 8px 10px;
   border: 1px solid color-mix(in srgb, currentColor 15%, transparent);
-  border-radius: 8px;
 }
 
 .usage-label {
+  font-family: monospace;
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.04em;

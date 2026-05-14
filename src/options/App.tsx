@@ -11,7 +11,7 @@ export function App() {
     <div class="layout">
       <header>
         <h1>Scroll Unlock</h1>
-        <p>Touch grass.</p>
+        <p>What do you want to do with your time?</p>
       </header>
 
       <Nav page={page} onChange={setPage} />

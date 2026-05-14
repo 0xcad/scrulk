@@ -188,4 +188,5 @@ Implementation notes:
 
 ## TODO:
 
-* when the user opens up the extension popup, add a backdrop to the visited site to hide it
+* i think there's a bug with the survey -> re-entry flow
+* need to change icons ofc

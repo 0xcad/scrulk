@@ -1,5 +1,6 @@
 import { useMemo, useState } from "preact/hooks";
-import { type DayRecord, heatBucket } from "../../shared/history";
+import { type DayRecord } from "../../shared/history";
+import { formatDuration } from "../../shared/wakeDay";
 
 interface Props {
   days: DayRecord[];
@@ -27,8 +28,8 @@ function monthLabel(year: number, month: number): string {
 const WEEKDAYS = ["S", "M", "T", "W", "T", "F", "S"];
 
 /**
- * Hand-rolled month grid. Days with records are colored by heat bucket;
- * days with notes get a small dot. Click → onSelect(date).
+ * Hand-rolled month grid. Days with records show usage time; days with
+ * notes get a small dot. Click → onSelect(date).
  */
 export function CalendarGrid({ days, selectedDate, onSelect, initialMonth }: Props) {
   const today = new Date();
@@ -84,11 +85,10 @@ export function CalendarGrid({ days, selectedDate, onSelect, initialMonth }: Pro
         {cells.map((c) => {
           if (c === null) return <div class="cal-cell empty" />;
           const rec = recordByDate.get(c.date);
-          const bucket = rec ? heatBucket(rec.totalMs) : 0;
+          const hasNotes = rec?.notes !== null && rec?.notes !== undefined;
           const classes = [
             "cal-cell",
             rec ? "has-data" : "no-data",
-            `heat-${bucket}`,
             c.date === todayKey ? "today" : "",
             c.date === selectedDate ? "selected" : "",
           ].filter(Boolean).join(" ");
@@ -101,7 +101,10 @@ export function CalendarGrid({ days, selectedDate, onSelect, initialMonth }: Pro
               aria-label={c.date}
             >
               <span class="cal-day-num">{c.day}</span>
-              {rec?.notes !== null && rec?.notes !== undefined && (
+              {rec && (
+                <span class="cal-day-usage">{formatDuration(rec.totalMs)}</span>
+              )}
+              {hasNotes && (
                 <span class="cal-notes-dot" aria-hidden="true" />
               )}
             </button>

@@ -3,6 +3,7 @@
   font-family: system-ui, sans-serif;
   --border: color-mix(in srgb, currentColor 15%, transparent);
   --light: color-mix(in srgb, currentColor 85%, transparent);
+  --primary: #FF5733;
 }
 
 body {
@@ -297,30 +298,32 @@ dl dd small {
   opacity: 0.75;
 }
 
-.cal-cell.today {
-  outline: 2px solid currentColor;
-  outline-offset: -2px;
+.cal-cell.today .cal-day-num {
+  font-weight: bold;
 }
 
 .cal-cell.selected {
-  box-shadow: 0 0 0 2px #c0392b inset;
+  box-shadow: 0 0 0 2px currentColor inset;
 }
 
-.cal-cell.heat-0 { background: transparent; }
-.cal-cell.heat-1 { background: #e7f3ec; }
-.cal-cell.heat-2 { background: #f6e7c8; }
-.cal-cell.heat-3 { background: #f5c08d; }
-.cal-cell.heat-4 { background: #d97a5a; color: white; }
+.cal-day-usage {
+  position: absolute;
+  bottom: 4px;
+  right: 6px;
+  font-size: 11px;
+  opacity: 0.8;
+  font-variant-numeric: tabular-nums;
+}
 
 .cal-notes-dot {
   position: absolute;
   bottom: 6px;
   left: 6px;
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
-  background: currentColor;
-  opacity: 0.7;
+  border: 1.5px solid currentColor;
+  opacity: 0.8;
 }
 
 /* Day drawer */

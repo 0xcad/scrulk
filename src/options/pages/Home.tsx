@@ -54,12 +54,43 @@ export function Home() {
     ? new Date(settings.installedAt).toLocaleDateString()
     : "—";
 
+  const todayMs = effectiveMs(state, now);
+  const avgMs =
+    days.length > 0
+      ? days.reduce((acc, d) => acc + d.totalMs, 0) / days.length
+      : null;
+  const avgDirection: "up" | "down" | null =
+    avgMs === null || todayMs === avgMs
+      ? null
+      : todayMs > avgMs
+        ? "up"
+        : "down";
+
   return (
     <section>
       <MissedSurveyBanner missedDate={state.missedSurveyDate} />
 
       <h2>Today</h2>
-      <p class="big-number">{formatDuration(effectiveMs(state, now))}</p>
+      <p class="big-number">
+        {formatDuration(todayMs)}
+        {avgDirection && (
+          <span
+            class={`avg-arrow ${avgDirection}`}
+            title={
+              avgDirection === "up"
+                ? "Above your average — raising it"
+                : "Below your average — lowering it"
+            }
+            aria-label={
+              avgDirection === "up"
+                ? "above average"
+                : "below average"
+            }
+          >
+            {avgDirection === "up" ? "↗" : "↘"}
+          </span>
+        )}
+      </p>
 
       <h2>Summary</h2>
       <dl>

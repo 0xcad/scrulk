@@ -98,7 +98,7 @@ export function Survey() {
     <main>
       <header>
         <h1>How was {formatDateLong(date)}?</h1>
-        <p class="subtitle">A quick reflection on time spent on tracked sites.</p>
+        <p class="subtitle">A quick reflection on time spent.</p>
       </header>
 
       {usageMs !== null && (
@@ -109,7 +109,7 @@ export function Survey() {
       )}
 
       <form onSubmit={onSubmit}>
-        <label>Regret level</label>
+        <label>Regret?</label>
         <div class="regret" role="radiogroup" aria-label="Regret level">
           {REGRETS.map((r) => (
             <button
@@ -133,7 +133,7 @@ export function Survey() {
           id="notes"
           value={notes}
           onInput={(e) => setNotes((e.target as HTMLTextAreaElement).value)}
-          placeholder="What were you doing? What pulled you in?"
+          placeholder="Thoughts?"
         />
 
         <div class="actions">
@@ -142,7 +142,7 @@ export function Survey() {
             class="primary"
             disabled={regret === null || submitting}
           >
-            Save
+            save
           </button>
         </div>
       </form>

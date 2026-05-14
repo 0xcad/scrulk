@@ -164,6 +164,18 @@ label.row small {
   margin: 4px 0 0;
 }
 
+.avg-arrow {
+  display: inline-block;
+  margin-left: 10px;
+  font-size: 0.7em;
+  font-weight: 600;
+  opacity: 0.65;
+  vertical-align: middle;
+}
+
+.avg-arrow.up { color: #c0392b; }
+.avg-arrow.down { color: #27867a; }
+
 dl {
   display: grid;
   grid-template-columns: max-content 1fr;
@@ -314,7 +326,6 @@ dl dd small {
 /* Day drawer */
 .day-drawer {
   border: 1px solid var(--border);
-  border-radius: 8px;
   padding: 16px;
 }
 
@@ -328,7 +339,7 @@ dl dd small {
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  margin-bottom: 8px;
+  margin-bottom: 16px;
 }
 
 .day-nav h3 {

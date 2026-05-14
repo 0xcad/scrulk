@@ -189,7 +189,3 @@ Implementation notes:
 ## TODO:
 
 * when the user opens up the extension popup, add a backdrop to the visited site to hide it
-* icon for up usage or down usage on home page
-* get time on break indicator "Time for a break" page
-    * idea: dithered curtains at the top of this page?
-* "Time for a break" page should have 30 second countdown before continue button is set active (otherwise, disabled with title beforehand)

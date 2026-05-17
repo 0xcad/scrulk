@@ -4,8 +4,11 @@ import type { Message } from "../shared/messages";
 import { getDayState, onDayStateChange } from "../shared/storage";
 import { DEFAULT_DAY_STATE, type DayState } from "../shared/types";
 import { BreaktimeOverlay } from "./BreaktimeOverlay";
+import { GatewayOverlay, gatewayAlreadyDismissedInTab } from "./GatewayOverlay";
 import { SleepClock } from "./SleepClock";
 import { UsageClock } from "./UsageClock";
+import { hostnameOf, isTracked } from "../shared/domain";
+import { getSettings } from "../shared/storage";
 
 interface Props {
   matchedDomain: string | null;
@@ -27,12 +30,33 @@ interface Props {
  */
 export function Root({ matchedDomain }: Props) {
   const [state, setState] = useState<DayState>(DEFAULT_DAY_STATE);
+  const [showGateway, setShowGateway] = useState(false);
   const redirectSent = useRef(false);
 
   useEffect(() => {
     void getDayState().then(setState);
     return onDayStateChange(setState);
   }, []);
+
+  // Decide once on mount whether to show the gateway. A tracked-site load
+  // whose document.referrer isn't also a tracked site (or is empty) triggers
+  // it, unless this tab already dismissed it in this session.
+  useEffect(() => {
+    if (matchedDomain === null) return;
+    if (gatewayAlreadyDismissedInTab()) return;
+    let cancelled = false;
+    void (async () => {
+      const { trackedSites } = await getSettings();
+      const refHost = hostnameOf(document.referrer || undefined);
+      const cameFromTracked = refHost
+        ? isTracked(refHost, trackedSites)
+        : false;
+      if (!cancelled && !cameFromTracked) setShowGateway(true);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [matchedDomain]);
 
   useEffect(() => {
     if (
@@ -62,6 +86,9 @@ export function Root({ matchedDomain }: Props) {
       {matchedDomain !== null && <UsageClock matchedDomain={matchedDomain} />}
       <SleepClock />
       {matchedDomain !== null && state.breaktimeOpen && <BreaktimeOverlay />}
+      {matchedDomain !== null && showGateway && !state.breaktimeOpen && (
+        <GatewayOverlay onDismiss={() => setShowGateway(false)} />
+      )}
     </>
   );
 }

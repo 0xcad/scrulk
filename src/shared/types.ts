@@ -52,6 +52,8 @@ export interface DayState {
   lastBreaktimeAt: number;
   /** True while a breaktime alert is currently outstanding. */
   breaktimeOpen: boolean;
+  /** True while a gateway (first-visit-from-non-tracked) overlay is open. Pauses tracking like breaktime. */
+  gatewayOpen: boolean;
   /** Set true when the tab limit blocked a new tracked tab; popup clears on view. */
   tabLimitWarning: boolean;
   /** 'YYYY-MM-DD' wake-day key the survey was submitted for, else null. */
@@ -79,6 +81,7 @@ export const DEFAULT_DAY_STATE: DayState = {
   activeSince: null,
   lastBreaktimeAt: 0,
   breaktimeOpen: false,
+  gatewayOpen: false,
   tabLimitWarning: false,
   surveyFilledFor: null,
   breaktimeShownToday: false,

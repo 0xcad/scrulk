@@ -81,7 +81,8 @@ export async function recompute(): Promise<void> {
   // Tracking pauses while a break alert is open: the user shouldn't accrue
   // time on the modal itself, and re-entry after "I'm done" should land on
   // a paused clock.
-  const wantActive = !state.breaktimeOpen && shouldBeActive(inputs);
+  const wantActive =
+    !state.breaktimeOpen && !state.gatewayOpen && shouldBeActive(inputs);
   let next = applyTransition(state, wantActive, now);
 
   // If we've crossed the breaktime threshold while active and no alert is
@@ -130,6 +131,7 @@ function stateEqual(a: DayState, b: DayState): boolean {
     a.activeSince === b.activeSince &&
     a.lastBreaktimeAt === b.lastBreaktimeAt &&
     a.breaktimeOpen === b.breaktimeOpen &&
+    a.gatewayOpen === b.gatewayOpen &&
     a.tabLimitWarning === b.tabLimitWarning &&
     a.surveyFilledFor === b.surveyFilledFor &&
     a.breaktimeShownToday === b.breaktimeShownToday &&
@@ -165,6 +167,7 @@ export async function rolloverDay(
     activeSince: outgoing.activeSince !== null ? now : null,
     lastBreaktimeAt: 0,
     breaktimeOpen: false,
+    gatewayOpen: false,
     tabLimitWarning: false,
     surveyFilledFor: null,
     breaktimeShownToday: false,

@@ -117,8 +117,30 @@ browser.runtime.onMessage.addListener((message: unknown, sender: browser.Runtime
   if (msg.type === "missed:dismiss") {
     return handleMissedDismiss();
   }
+  if (msg.type === "gateway:open") {
+    return handleGatewaySet(true);
+  }
+  if (msg.type === "gateway:close") {
+    return handleGatewaySet(false);
+  }
+  if (msg.type === "gateway:closeTab") {
+    const tabId = sender?.tab?.id;
+    if (tabId !== undefined) {
+      return browser.tabs.remove(tabId).catch(() => undefined);
+    }
+    return undefined;
+  }
   return undefined;
 });
+
+async function handleGatewaySet(open: boolean): Promise<void> {
+  const state = await getDayState();
+  if (state.gatewayOpen === open) return;
+  // Close the open active segment now (if any) so the clock pauses the
+  // instant the gateway appears — mirrors breaktimeOpen handling.
+  await setDayState({ ...state, gatewayOpen: open });
+  await recompute();
+}
 
 async function handleSurveySubmit(
   msg: Extract<Message, { type: "survey:submit" }>,

@@ -26,6 +26,9 @@ export type Message =
       date: string; // 'YYYY-MM-DD'; close sender tab + open survey for date
     }
   | { type: "survey:continue" } // survey page → background; allow tracked tabs again
-  | { type: "missed:dismiss" };
+  | { type: "missed:dismiss" }
+  | { type: "gateway:open" } // content script → background: pause tracking while overlay shown
+  | { type: "gateway:close" } // content script → background: resume tracking
+  | { type: "gateway:closeTab" }; // content script → background: close sender tab (fallback for no back-history)
 
 export type MessageType = Message["type"];

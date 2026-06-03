@@ -40,6 +40,7 @@ export default defineConfig({
     rollupOptions: {
       input: {
         survey: resolve(__dirname, "src/survey/index.html"),
+        gateway: resolve(__dirname, "src/gateway/index.html"),
       },
     },
   },

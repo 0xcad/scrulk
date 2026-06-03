@@ -27,8 +27,30 @@ export type Message =
     }
   | { type: "survey:continue" } // survey page → background; allow tracked tabs again
   | { type: "missed:dismiss" }
-  | { type: "gateway:open" } // content script → background: pause tracking while overlay shown
-  | { type: "gateway:close" } // content script → background: resume tracking
-  | { type: "gateway:closeTab" }; // content script → background: close sender tab (fallback for no back-history)
+  | {
+      // gateway page → background: user picked an N-minute timer for `domain`.
+      // Background sets timer + alarm and navigates this tab to `destUrl`.
+      type: "gateway:startTimer";
+      domain: string;
+      minutes: number;
+      destUrl: string;
+    }
+  | {
+      // gateway page → background: user chose to go back; navigate this tab
+      // to its last-known untracked URL (or close / about:newtab fallback).
+      type: "gateway:goBack";
+    }
+  | {
+      // expired overlay → background: user picked "I'm done". Resets state
+      // for `domain` and back-navigates every tab on that domain.
+      type: "gateway:imDone";
+      domain: string;
+    }
+  | {
+      // expired overlay → background: user finished the journal. Sets the
+      // per-domain CONTINUE flag so subsequent loads bypass the gateway.
+      type: "gateway:setContinue";
+      domain: string;
+    };
 
 export type MessageType = Message["type"];

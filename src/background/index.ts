@@ -25,6 +25,18 @@ import { dateKey, upsertDay } from "../shared/history";
 import type { Message } from "../shared/messages";
 import { effectiveMs } from "../shared/types";
 import { currentWakeDayStart } from "../shared/wakeDay";
+import {
+  forgetTab,
+  handleBeforeNavigate,
+  handleCommitted,
+  handleImDone,
+  handleSetContinue,
+  maybeHandleAlarm as maybeHandleGatewayAlarm,
+  startTimer as startGatewayTimer,
+  navigateTabBack,
+  syncDomainTabPresence,
+} from "./gateway";
+import { onGatewayStateChange } from "../shared/storage";
 
 // MV3 service worker: ephemeral. No long-lived module-level state.
 // All listeners must be registered synchronously at top level so the worker
@@ -66,10 +78,27 @@ browser.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
     // A tab just navigated to a (possibly) tracked URL — only moment a fresh
     // tracked tab can push us over the limit.
     await enforceTabLimit(tabId, changeInfo.url);
+    // The set of tabs-on-each-tracked-domain may have changed; refresh
+    // gateway state so domains with zero remaining tabs get cleared.
+    await syncDomainTabPresence();
   }
   if (changeInfo.url || changeInfo.status === "complete") {
     await recompute();
   }
+});
+
+browser.tabs.onRemoved.addListener(async (tabId) => {
+  await forgetTab(tabId);
+  await syncDomainTabPresence();
+  await recompute();
+});
+
+browser.webNavigation.onBeforeNavigate.addListener((details) => {
+  void handleBeforeNavigate(details);
+});
+
+browser.webNavigation.onCommitted.addListener((details) => {
+  void handleCommitted(details);
 });
 
 browser.windows.onFocusChanged.addListener(async () => {
@@ -87,10 +116,17 @@ browser.alarms.onAlarm.addListener(async (alarm) => {
   if (alarm.name === ALARM_NAMES.DAY_RESET) {
     await handleDayResetAlarm();
     await recompute();
-  } else if (alarm.name === BREAKTIME_ALARM) {
+    return;
+  }
+  if (alarm.name === BREAKTIME_ALARM) {
     // recompute() will detect we've passed the threshold and flip
     // breaktimeOpen, which content scripts on tracked tabs pick up.
     await recompute();
+    return;
+  }
+  if (await maybeHandleGatewayAlarm(alarm.name)) {
+    await recompute();
+    return;
   }
 });
 
@@ -117,30 +153,27 @@ browser.runtime.onMessage.addListener((message: unknown, sender: browser.Runtime
   if (msg.type === "missed:dismiss") {
     return handleMissedDismiss();
   }
-  if (msg.type === "gateway:open") {
-    return handleGatewaySet(true);
+  if (msg.type === "gateway:startTimer") {
+    return startGatewayTimer(
+      msg.domain,
+      msg.minutes,
+      msg.destUrl,
+      sender?.tab?.id,
+    ).then(() => recompute());
   }
-  if (msg.type === "gateway:close") {
-    return handleGatewaySet(false);
-  }
-  if (msg.type === "gateway:closeTab") {
+  if (msg.type === "gateway:goBack") {
     const tabId = sender?.tab?.id;
-    if (tabId !== undefined) {
-      return browser.tabs.remove(tabId).catch(() => undefined);
-    }
+    if (tabId !== undefined) return navigateTabBack(tabId);
     return undefined;
+  }
+  if (msg.type === "gateway:imDone") {
+    return handleImDone(msg.domain).then(() => recompute());
+  }
+  if (msg.type === "gateway:setContinue") {
+    return handleSetContinue(msg.domain).then(() => recompute());
   }
   return undefined;
 });
-
-async function handleGatewaySet(open: boolean): Promise<void> {
-  const state = await getDayState();
-  if (state.gatewayOpen === open) return;
-  // Close the open active segment now (if any) so the clock pauses the
-  // instant the gateway appears — mirrors breaktimeOpen handling.
-  await setDayState({ ...state, gatewayOpen: open });
-  await recompute();
-}
 
 async function handleSurveySubmit(
   msg: Extract<Message, { type: "survey:submit" }>,
@@ -219,4 +252,10 @@ onSettingsChange(async (next) => {
 
 onDayStateChange((state) => {
   void setMissedBadge(state.missedSurveyDate !== null);
+});
+
+// Propagate gateway-state changes into the tracker so dayState.gatewayOpen
+// mirrors the "expired alert active" flag.
+onGatewayStateChange(() => {
+  void recompute();
 });

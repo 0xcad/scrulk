@@ -1,7 +1,13 @@
 import browser from "webextension-polyfill";
 import { hostnameOf, isTracked } from "../shared/domain";
 import { dateKey, upsertDay } from "../shared/history";
-import { getDayState, getSettings, setDayState } from "../shared/storage";
+import {
+  getDayState,
+  getGatewayState,
+  getSettings,
+  setDayState,
+} from "../shared/storage";
+import { anyExpiredAlertActive } from "./gateway";
 import {
   currentWakeDayStart,
   nextWakeUpAt,
@@ -78,6 +84,13 @@ export async function recompute(): Promise<void> {
   }
 
   const inputs = await readActivity();
+  // Mirror gateway state into dayState.gatewayOpen so the tracker pauses
+  // while any expired-alert overlay is mounted on a tracked tab.
+  const gatewayPaused = anyExpiredAlertActive(await getGatewayState());
+  if (state.gatewayOpen !== gatewayPaused) {
+    state = applyTransition(state, false, now);
+    state = { ...state, gatewayOpen: gatewayPaused };
+  }
   // Tracking pauses while a break alert is open: the user shouldn't accrue
   // time on the modal itself, and re-entry after "I'm done" should land on
   // a paused clock.

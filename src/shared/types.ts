@@ -91,6 +91,37 @@ export const DEFAULT_DAY_STATE: DayState = {
 
 export const DAY_STATE_KEY = "dayState" as const;
 
+/**
+ * Per-domain state for the gateway flow (initial gateway page → X-min timer →
+ * expired alert → CONTINUE). Keyed by the matched tracked domain (the value
+ * `findMatchingDomain` returns, not the raw hostname).
+ *
+ * - `timerExpiresAt`: epoch ms; while > now, visits to `domain` skip the gateway.
+ * - `expiredAlertActive`: true once the timer fired and at least one TRACKED
+ *   tab was still open. Content scripts on that domain render the "I'm done /
+ *   continue" overlay while this is set.
+ * - `continueFlag`: true after the user finishes the journal. Visits skip the
+ *   gateway until every tab on `domain` is closed.
+ *
+ * When no tabs on a domain remain open, the entry is deleted entirely (the
+ * tabs.onRemoved/onUpdated listener cleans up). An absent entry means
+ * "next visit shows the initial gateway".
+ */
+export interface GatewayDomainState {
+  timerExpiresAt?: number;
+  expiredAlertActive?: boolean;
+  continueFlag?: boolean;
+}
+
+export type GatewayState = Record<string, GatewayDomainState>;
+
+export const GATEWAY_STATE_KEY = "gatewayState" as const;
+
+/** Per-tab last committed URL whose host was NOT tracked. Used by
+ * `gateway:goBack` and `gateway:imDone` to know where to send the tab. */
+export type TabBackMap = Record<string /* tabId */, string /* url */>;
+export const TAB_BACK_MAP_KEY = "gatewayTabBack" as const;
+
 /** Computed live display = totalMs + (activeSince ? now - activeSince : 0). */
 export function effectiveMs(state: DayState, now: number): number {
   if (state.activeSince === null) return state.totalMs;

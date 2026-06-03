@@ -1,75 +1,45 @@
-import { useEffect, useState } from "preact/hooks";
+import { useState } from "preact/hooks";
 import browser from "webextension-polyfill";
 import type { Message } from "../shared/messages";
 import { overlayBaseStyles } from "./overlayStyles";
 
 const MIN_CHARS = 20;
-const DISMISSED_KEY = "scrulk:gateway-dismissed";
 
 interface Props {
-  /** Called when the user has chosen to continue (overlay should unmount). */
-  onDismiss: () => void;
+  /** The matched tracked domain this overlay is acting on. */
+  domain: string;
 }
 
 function send(msg: Message): Promise<unknown> {
   return browser.runtime.sendMessage(msg);
 }
 
+/** Stop key events from reaching the host page (e.g. spacebar pausing
+ * YouTube while typing in the journal). */
+function stopKey(e: Event) {
+  e.stopPropagation();
+}
+
 /**
- * Shown the first time a tab loads a tracked site whose document.referrer
- * is not also a tracked site (or is empty). Once dismissed, sets a
- * sessionStorage flag so the same tab won't see it again until a fresh
- * navigation moves it to a different origin.
- *
- * Pauses tracking while open via `gateway:open` / `gateway:close` messages
- * (mirrors the breaktime flag).
+ * Mounted on tracked tabs when the per-domain X-min timer has expired but
+ * tabs are still open. User picks:
+ *   - "I'm done"  → background back-navigates every tab on this domain.
+ *   - "Continue"  → expands into the 20-char journal; on submit sets the
+ *                   per-domain CONTINUE flag and unmounts.
  */
-export function GatewayOverlay({ onDismiss }: Props) {
+export function GatewayExpiredOverlay({ domain }: Props) {
   const [expanded, setExpanded] = useState(false);
   const [text, setText] = useState("");
 
-  useEffect(() => {
-    void send({ type: "gateway:open" });
-    const close = () => {
-      void send({ type: "gateway:close" }).catch(() => null);
-    };
-    window.addEventListener("pagehide", close);
-    return () => {
-      close();
-      window.removeEventListener("pagehide", close);
-    };
-  }, []);
-
-  const onGoBack = () => {
-    try {
-      sessionStorage.setItem(DISMISSED_KEY, "1");
-    } catch {
-      // ignore (storage blocked)
-    }
-    // Prefer history.back() whenever the tab has any prior entry — this
-    // covers the common "search-engine → tracked-site" case even when the
-    // referrer was stripped by a Referrer-Policy header. Fall back to
-    // closing the tab (via background, since window.close() is blocked for
-    // user-opened tabs) when this is the tab's only entry.
-    if (history.length > 1) {
-      history.back();
-    } else {
-      void send({ type: "gateway:closeTab" }).catch(() => null);
-    }
+  const onImDone = () => {
+    void send({ type: "gateway:imDone", domain }).catch(() => null);
   };
 
-  const onContinue = () => {
-    setExpanded(true);
-  };
+  const onContinue = () => setExpanded(true);
 
   const onConfirm = () => {
     if (text.length < MIN_CHARS) return;
-    try {
-      sessionStorage.setItem(DISMISSED_KEY, "1");
-    } catch {
-      // ignore
-    }
-    onDismiss();
+    void send({ type: "gateway:setContinue", domain }).catch(() => null);
   };
 
   const count = text.length;
@@ -83,17 +53,14 @@ export function GatewayOverlay({ onDismiss }: Props) {
         class="backdrop"
         role="dialog"
         aria-modal="true"
-        aria-labelledby="gw-title"
+        aria-labelledby="gw-expired-title"
       >
         <div class="card">
-          <h2 id="gw-title">Do you really want to proceed?</h2>
-          <p>
-            You're about to load a tracked website. Are you sure you wish to
-            continue?
-          </p>
+          <h2 id="gw-expired-title">Time's up.</h2>
+          <p>Your time on <strong>{domain}</strong> is up.</p>
           <div class="buttons">
-            <button type="button" class="primary" onClick={onGoBack}>
-              I'll go back
+            <button type="button" class="primary" onClick={onImDone}>
+              I'm done
             </button>
             <button
               type="button"
@@ -116,6 +83,9 @@ export function GatewayOverlay({ onDismiss }: Props) {
                 onInput={(e) =>
                   setText((e.currentTarget as HTMLTextAreaElement).value)
                 }
+                onKeyDown={stopKey}
+                onKeyUp={stopKey}
+                onKeyPress={stopKey}
                 rows={4}
                 autofocus
               />
@@ -140,14 +110,6 @@ export function GatewayOverlay({ onDismiss }: Props) {
       </div>
     </>
   );
-}
-
-export function gatewayAlreadyDismissedInTab(): boolean {
-  try {
-    return sessionStorage.getItem(DISMISSED_KEY) === "1";
-  } catch {
-    return false;
-  }
 }
 
 const extraStyles = `

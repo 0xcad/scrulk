@@ -1,14 +1,21 @@
 import { useEffect, useRef, useState } from "preact/hooks";
 import browser from "webextension-polyfill";
 import type { Message } from "../shared/messages";
-import { getDayState, onDayStateChange } from "../shared/storage";
-import { DEFAULT_DAY_STATE, type DayState } from "../shared/types";
+import {
+  getDayState,
+  getGatewayState,
+  onDayStateChange,
+  onGatewayStateChange,
+} from "../shared/storage";
+import {
+  DEFAULT_DAY_STATE,
+  type DayState,
+  type GatewayState,
+} from "../shared/types";
 import { BreaktimeOverlay } from "./BreaktimeOverlay";
-import { GatewayOverlay, gatewayAlreadyDismissedInTab } from "./GatewayOverlay";
+import { GatewayExpiredOverlay } from "./GatewayExpiredOverlay";
 import { SleepClock } from "./SleepClock";
 import { UsageClock } from "./UsageClock";
-import { hostnameOf, isTracked } from "../shared/domain";
-import { getSettings } from "../shared/storage";
 
 interface Props {
   matchedDomain: string | null;
@@ -22,6 +29,10 @@ interface Props {
  *   - `SleepClock`: every site, but only inside the 10h-before-wakeup window.
  *   - `BreaktimeOverlay`: only on tracked sites, only while the global
  *     `breaktimeOpen` flag is set.
+ *   - `GatewayExpiredOverlay`: only on tracked sites, only while
+ *     `gatewayState[domain].expiredAlertActive` is true. Rendered only when
+ *     the tab is visible (background tabs mount the state but defer paint
+ *     until focus).
  *
  * Post-survey redirect: when the survey has already been submitted for the
  * current wake-day and the user has not yet clicked "Continue" on the
@@ -30,7 +41,12 @@ interface Props {
  */
 export function Root({ matchedDomain }: Props) {
   const [state, setState] = useState<DayState>(DEFAULT_DAY_STATE);
-  const [showGateway, setShowGateway] = useState(false);
+  const [gateway, setGateway] = useState<GatewayState>({});
+  const [visible, setVisible] = useState(() =>
+    typeof document !== "undefined"
+      ? document.visibilityState === "visible"
+      : true,
+  );
   const redirectSent = useRef(false);
 
   useEffect(() => {
@@ -38,25 +54,16 @@ export function Root({ matchedDomain }: Props) {
     return onDayStateChange(setState);
   }, []);
 
-  // Decide once on mount whether to show the gateway. A tracked-site load
-  // whose document.referrer isn't also a tracked site (or is empty) triggers
-  // it, unless this tab already dismissed it in this session.
   useEffect(() => {
-    if (matchedDomain === null) return;
-    if (gatewayAlreadyDismissedInTab()) return;
-    let cancelled = false;
-    void (async () => {
-      const { trackedSites } = await getSettings();
-      const refHost = hostnameOf(document.referrer || undefined);
-      const cameFromTracked = refHost
-        ? isTracked(refHost, trackedSites)
-        : false;
-      if (!cancelled && !cameFromTracked) setShowGateway(true);
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [matchedDomain]);
+    void getGatewayState().then(setGateway);
+    return onGatewayStateChange(setGateway);
+  }, []);
+
+  useEffect(() => {
+    const onVis = () => setVisible(document.visibilityState === "visible");
+    document.addEventListener("visibilitychange", onVis);
+    return () => document.removeEventListener("visibilitychange", onVis);
+  }, []);
 
   useEffect(() => {
     if (
@@ -81,14 +88,19 @@ export function Root({ matchedDomain }: Props) {
     state.breaktimeOpen,
   ]);
 
+  const expiredAlertForDomain =
+    matchedDomain !== null &&
+    gateway[matchedDomain]?.expiredAlertActive === true;
+
   return (
     <>
       {matchedDomain !== null && <UsageClock matchedDomain={matchedDomain} />}
       <SleepClock />
       {matchedDomain !== null && state.breaktimeOpen && <BreaktimeOverlay />}
-      {matchedDomain !== null && showGateway && !state.breaktimeOpen && (
-        <GatewayOverlay onDismiss={() => setShowGateway(false)} />
-      )}
+      {matchedDomain !== null &&
+        expiredAlertForDomain &&
+        !state.breaktimeOpen &&
+        visible && <GatewayExpiredOverlay domain={matchedDomain} />}
     </>
   );
 }

@@ -196,6 +196,8 @@ Problem with first screen:
 
 ## TODO:
 
+* uptime should reset if extension gets unloaded...
+
 * i think there's a bug with the survey -> re-entry flow
 * need to change icons ofc
 * probably a bug with calendar day drawer *arrow to average* thing

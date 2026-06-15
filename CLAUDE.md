@@ -11,7 +11,7 @@ reduce time spent on websites they've flagged. The user maintains a list of
 - a usage clock that ticks while a tracked site is focused,
 - a 30-min breaktime alert with a hold-to-continue challenge,
 - a tab limit,
-- a regret survey + calendar history,
+- a reflection survey + calendar history,
 - a "sleep clock" countdown to wake-up time on every site.
 
 Slice 1 (current) only ships the foundation: tracked-site CRUD, popup, per-tab

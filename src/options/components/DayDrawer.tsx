@@ -28,7 +28,7 @@ function trendArrow(diff: number): string {
 }
 
 /**
- * Detail drawer for one day. Shows usage / regret / notes; trend arrow
+ * Detail drawer for one day. Shows usage / notes; trend arrow
  * compares against the running average across all *other* recorded days.
  * Prev/next buttons hop to the surrounding days that have data.
  */
@@ -92,8 +92,6 @@ export function DayDrawer({ days, selectedDate, onSelect }: Props) {
             </small>
           )}
         </dd>
-        <dt>Regret</dt>
-        <dd>{record.regret !== null ? `${record.regret} / 5` : "—"}</dd>
         <dt>Notes</dt>
         <dd class="notes">{record.notes ?? "—"}</dd>
       </dl>

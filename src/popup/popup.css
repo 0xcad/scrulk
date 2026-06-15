@@ -135,37 +135,51 @@ p {
   margin: 0;
 }
 
-.missed-survey {
+.settings-section {
+  border-top: 1px solid color-mix(in srgb, currentColor 15%, transparent);
+  padding-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.settings-heading {
+  font-family: monospace;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  opacity: 0.5;
+  margin: 0 0 2px;
+}
+
+.setting-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
-  background: #fff4e5;
-  border: 1px solid #f0b97a;
-  color: #6b3d00;
-  padding: 8px 10px;
-  border-radius: 6px;
+  margin: 0;
+}
+
+.setting-label {
   font-size: 12px;
+  opacity: 0.7;
 }
 
-.missed-survey .missed-actions {
-  display: flex;
-  gap: 4px;
-  align-items: center;
+.wake-time {
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-style: dotted;
+  text-underline-offset: 2px;
 }
 
-.missed-survey button {
-  border: 1px solid currentColor;
+.wake-time-input {
+  font: inherit;
+  font-size: 13px;
+  border: 1px solid color-mix(in srgb, currentColor 30%, transparent);
   background: transparent;
   color: inherit;
-  border-radius: 4px;
-  padding: 2px 8px;
-  cursor: pointer;
-  font: inherit;
-  font-size: 11px;
-}
-
-.missed-survey button.dismiss {
-  padding: 0 6px;
-  font-size: 14px;
+  padding: 1px 4px;
 }

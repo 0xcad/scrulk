@@ -12,7 +12,60 @@ import {
 import type { DayState, Settings } from "../shared/types";
 import { DEFAULT_DAY_STATE, effectiveMs } from "../shared/types";
 import { formatDuration } from "../shared/wakeDay";
-import { MissedSurveyBanner } from "../options/components/MissedSurveyBanner";
+
+function formatWakeTime(t: string): string {
+  const [h, m] = t.split(":").map(Number);
+  if (h === undefined || m === undefined || isNaN(h) || isNaN(m)) return t;
+  const ampm = h < 12 ? "AM" : "PM";
+  const h12 = h % 12 || 12;
+  return `${h12}:${String(m).padStart(2, "0")} ${ampm}`;
+}
+
+function WakeUpRow({ value }: { value: string }) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(value);
+
+  const save = (v: string) => {
+    if (/^\d{2}:\d{2}$/.test(v)) {
+      void setSettings({ wakeUpTime: v });
+    }
+    setEditing(false);
+  };
+
+  if (editing) {
+    return (
+      <p class="setting-row">
+        <span class="setting-label">Wake up</span>
+        <input
+          type="time"
+          class="wake-time-input"
+          value={draft}
+          autoFocus
+          onInput={(e) => setDraft((e.target as HTMLInputElement).value)}
+          onBlur={(e) => save((e.target as HTMLInputElement).value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") save((e.target as HTMLInputElement).value);
+            if (e.key === "Escape") setEditing(false);
+          }}
+        />
+      </p>
+    );
+  }
+
+  return (
+    <p class="setting-row">
+      <span class="setting-label">Wake up</span>
+      <time
+        class="wake-time"
+        dateTime={value}
+        title="Click to edit"
+        onClick={() => { setDraft(value); setEditing(true); }}
+      >
+        {formatWakeTime(value)}
+      </time>
+    </p>
+  );
+}
 
 async function getActiveTabHost(): Promise<string | null> {
   const [tab] = await browser.tabs.query({
@@ -98,9 +151,6 @@ export function Popup() {
         </p>
       )}
 
-      <MissedSurveyBanner missedDate={state.missedSurveyDate} />
-
-
       <section class="usage">
         <span class="usage-label">Today</span>
         <span class="usage-time">{display}</span>
@@ -127,6 +177,11 @@ export function Popup() {
       ) : (
         <p>This page can't be tracked.</p>
       )}
+
+      <section class="settings-section">
+        <h2 class="settings-heading">Settings</h2>
+        <WakeUpRow value={settings.wakeUpTime} />
+      </section>
 
       <nav>
         <button

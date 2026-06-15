@@ -67,12 +67,6 @@ export interface DayState {
    * and on a fresh `survey:submit`.
    */
   surveyContinueAllowed: boolean;
-  /**
-   * Most recent past wake-day where breaktime fired but the user never
-   * submitted the survey. Populated at day-reset; cleared on submit. Most-
-   * recent only — older missed days are silently dropped.
-   */
-  missedSurveyDate: string | null;
 }
 
 export const DEFAULT_DAY_STATE: DayState = {
@@ -86,7 +80,6 @@ export const DEFAULT_DAY_STATE: DayState = {
   surveyFilledFor: null,
   breaktimeShownToday: false,
   surveyContinueAllowed: false,
-  missedSurveyDate: null,
 };
 
 export const DAY_STATE_KEY = "dayState" as const;

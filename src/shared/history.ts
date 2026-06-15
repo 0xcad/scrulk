@@ -5,17 +5,14 @@ import { type DBSchema, type IDBPDatabase, openDB } from "idb";
  * 'YYYY-MM-DD' string derived from the wake-day start (local time).
  *
  * Two write moments:
- *   1. Survey submit — fills regret + notes (and totalMs at that moment).
- *   2. Day-reset alarm — persists outgoing day's totalMs (regret/notes stay
+ *   1. Survey submit — fills notes (and totalMs at that moment).
+ *   2. Day-reset alarm — persists outgoing day's totalMs (notes stays
  *      null if the user never filled the survey).
  */
-
-export type Regret = 1 | 2 | 3 | 4 | 5;
 
 export interface DayRecord {
   date: string;
   totalMs: number;
-  regret: Regret | null;
   notes: string | null;
   createdAt: number;
   updatedAt: number;
@@ -73,7 +70,6 @@ export async function upsertDay(
     : {
         date,
         totalMs: 0,
-        regret: null,
         notes: null,
         createdAt: now,
         updatedAt: now,

@@ -148,32 +148,24 @@ function stateEqual(a: DayState, b: DayState): boolean {
     a.tabLimitWarning === b.tabLimitWarning &&
     a.surveyFilledFor === b.surveyFilledFor &&
     a.breaktimeShownToday === b.breaktimeShownToday &&
-    a.surveyContinueAllowed === b.surveyContinueAllowed &&
-    a.missedSurveyDate === b.missedSurveyDate
+    a.surveyContinueAllowed === b.surveyContinueAllowed
   );
 }
 
 /**
  * Compute the next-day state from an outgoing day. Persists the outgoing
- * day's totalMs to IndexedDB and, if breaktime fired without a survey
- * submission, records `missedSurveyDate` (most-recent only — overwrites any
- * earlier missed date, never queues).
+ * day's totalMs to IndexedDB.
  */
 export async function rolloverDay(
   outgoing: DayState,
   newWakeDayStart: number,
 ): Promise<DayState> {
   const now = Date.now();
-  // Close any open segment to compute the outgoing day's final totalMs.
   const finalTotalMs = effectiveMs(outgoing, now);
   const outgoingDate = dateKey(outgoing.wakeDayStart);
   if (outgoing.wakeDayStart > 0) {
     await upsertDay(outgoingDate, { totalMs: finalTotalMs }).catch(() => null);
   }
-  const missed =
-    outgoing.breaktimeShownToday && outgoing.surveyFilledFor !== outgoingDate
-      ? outgoingDate
-      : outgoing.missedSurveyDate;
   return {
     wakeDayStart: newWakeDayStart,
     totalMs: 0,
@@ -185,7 +177,6 @@ export async function rolloverDay(
     surveyFilledFor: null,
     breaktimeShownToday: false,
     surveyContinueAllowed: false,
-    missedSurveyDate: missed,
   };
 }
 

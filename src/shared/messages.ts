@@ -6,15 +6,12 @@
  * the breaktime cycle, persisting a survey).
  */
 
-import type { Regret } from "./history";
-
 export type Message =
   | { type: "breaktime:done" } // user clicked "I'm done!" — close all tracked tabs + open survey
   | { type: "breaktime:resume" } // user completed the hold challenge
   | {
       type: "survey:submit";
       date: string; // 'YYYY-MM-DD'
-      regret: Regret;
       notes: string;
     }
   | {
@@ -26,7 +23,6 @@ export type Message =
       date: string; // 'YYYY-MM-DD'; close sender tab + open survey for date
     }
   | { type: "survey:continue" } // survey page → background; allow tracked tabs again
-  | { type: "missed:dismiss" }
   | {
       // gateway page → background: user picked an N-minute timer for `domain`.
       // Background sets timer + alarm and navigates this tab to `destUrl`.

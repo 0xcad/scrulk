@@ -11,8 +11,6 @@ import type { DayState, Settings } from "../../shared/types";
 import { formatDuration, formatUptime } from "../../shared/wakeDay";
 import { CalendarGrid } from "../components/CalendarGrid";
 import { DayDrawer } from "../components/DayDrawer";
-import { MissedSurveyBanner } from "../components/MissedSurveyBanner";
-
 export function Home() {
   const [settings, setSettings] = useState<Settings | null>(null);
   const [state, setState] = useState<DayState>(DEFAULT_DAY_STATE);
@@ -68,8 +66,6 @@ export function Home() {
 
   return (
     <section>
-      <MissedSurveyBanner missedDate={state.missedSurveyDate} />
-
       <h2>Today</h2>
       <p class="big-number">
         {formatDuration(todayMs)}

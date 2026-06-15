@@ -45,36 +45,6 @@ label {
   margin-bottom: 4px;
 }
 
-.regret {
-  display: flex;
-  gap: 8px;
-}
-
-.regret button {
-  flex: 1;
-  padding: 6px 0;
-  font-size: 16px;
-  font-weight: 600;
-  border: 1px solid var(--border);
-  background: transparent;
-  cursor: pointer;
-  color: inherit;
-}
-
-.regret button.selected {
-  background: var(--primary);
-  border-color: var(--primary);
-  color: white;
-}
-
-.regret-hint {
-  display: flex;
-  justify-content: space-between;
-  font-size: 11px;
-  opacity: 0.6;
-  margin-top: 4px;
-}
-
 textarea {
   width: 100%;
   box-sizing: border-box;

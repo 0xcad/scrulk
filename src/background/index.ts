@@ -2,12 +2,11 @@ import browser from "webextension-polyfill";
 import {
   getDayState,
   getSettings,
-  onDayStateChange,
   onSettingsChange,
   setDayState,
   setSettings,
 } from "../shared/storage";
-import { refreshAllTabIcons, setMissedBadge, updateIconForTab } from "./icon";
+import { refreshAllTabIcons, updateIconForTab } from "./icon";
 import {
   ALARM_NAMES,
   ensureDayResetAlarm,
@@ -49,7 +48,6 @@ browser.runtime.onInstalled.addListener(async () => {
   }
   await refreshAllTabIcons(current.trackedSites);
   await ensureDayResetAlarm(current.wakeUpTime);
-  await syncMissedBadge();
   await recompute();
 });
 
@@ -57,7 +55,6 @@ browser.runtime.onStartup.addListener(async () => {
   const settings = await getSettings();
   await refreshAllTabIcons(settings.trackedSites);
   await ensureDayResetAlarm(settings.wakeUpTime);
-  await syncMissedBadge();
   await recompute();
 });
 
@@ -150,9 +147,6 @@ browser.runtime.onMessage.addListener((message: unknown, sender: browser.Runtime
   if (msg.type === "survey:continue") {
     return handleSurveyContinue(sender?.tab?.id);
   }
-  if (msg.type === "missed:dismiss") {
-    return handleMissedDismiss();
-  }
   if (msg.type === "gateway:startTimer") {
     return startGatewayTimer(
       msg.domain,
@@ -185,7 +179,6 @@ async function handleSurveySubmit(
   const totalMs =
     msg.date === currentDate ? effectiveMs(state, Date.now()) : undefined;
   await upsertDay(msg.date, {
-    regret: msg.regret,
     notes: msg.notes,
     ...(totalMs !== undefined ? { totalMs } : {}),
   });
@@ -196,7 +189,6 @@ async function handleSurveySubmit(
     // user explicitly clicks "Continue" on the survey page.
     patch.surveyContinueAllowed = false;
   }
-  if (state.missedSurveyDate === msg.date) patch.missedSurveyDate = null;
   if (Object.keys(patch).length > 0) {
     await setDayState({ ...state, ...patch });
   }
@@ -233,25 +225,10 @@ async function handleSurveyContinue(
   }
 }
 
-async function syncMissedBadge(): Promise<void> {
-  const state = await getDayState();
-  await setMissedBadge(state.missedSurveyDate !== null);
-}
-
-async function handleMissedDismiss(): Promise<void> {
-  const state = await getDayState();
-  if (state.missedSurveyDate === null) return;
-  await setDayState({ ...state, missedSurveyDate: null });
-}
-
 onSettingsChange(async (next) => {
   await refreshAllTabIcons(next.trackedSites);
   await ensureDayResetAlarm(next.wakeUpTime);
   await recompute();
-});
-
-onDayStateChange((state) => {
-  void setMissedBadge(state.missedSurveyDate !== null);
 });
 
 // Propagate gateway-state changes into the tracker so dayState.gatewayOpen

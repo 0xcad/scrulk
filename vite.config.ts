@@ -6,21 +6,38 @@ import { resolve } from "node:path";
 import manifest from "./manifest.config";
 
 /**
- * crxjs targets Chrome and only emits `background.service_worker`. Firefox
- * MV3 requires `background.scripts` (event page). This plugin amends the
- * built manifest to include both keys; each browser ignores the one it
- * doesn't recognize.
+ * Post-build manifest fixups for Firefox compatibility:
+ *
+ *  1. crxjs only emits `background.service_worker` (Chrome). Firefox MV3
+ *     requires `background.scripts` (event page). Add both; each browser
+ *     ignores the one it doesn't recognize.
+ *  2. crxjs injects `use_dynamic_url` into every `web_accessible_resources`
+ *     entry. That key is Chrome-only; Firefox logs an "unexpected property"
+ *     warning per entry. Strip it — Chrome treats its absence as `false`,
+ *     matching prior behavior.
  */
-function firefoxBackgroundScripts(): Plugin {
+function firefoxManifestFixups(): Plugin {
   return {
-    name: "scrulk:firefox-background-scripts",
+    name: "scrulk:firefox-manifest-fixups",
     apply: "build",
     closeBundle() {
       const manifestPath = resolve("dist", "manifest.json");
       const m = JSON.parse(readFileSync(manifestPath, "utf8"));
+      let changed = false;
       const sw = m.background?.service_worker;
       if (sw && !m.background.scripts) {
         m.background.scripts = [sw];
+        changed = true;
+      }
+      if (Array.isArray(m.web_accessible_resources)) {
+        for (const entry of m.web_accessible_resources) {
+          if (entry && typeof entry === "object" && "use_dynamic_url" in entry) {
+            delete entry.use_dynamic_url;
+            changed = true;
+          }
+        }
+      }
+      if (changed) {
         writeFileSync(manifestPath, JSON.stringify(m, null, 2));
       }
     },
@@ -28,7 +45,7 @@ function firefoxBackgroundScripts(): Plugin {
 }
 
 export default defineConfig({
-  plugins: [preact(), crx({ manifest }), firefoxBackgroundScripts()],
+  plugins: [preact(), crx({ manifest }), firefoxManifestFixups()],
   build: {
     target: "es2022",
     sourcemap: true,

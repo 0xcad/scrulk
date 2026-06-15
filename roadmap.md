@@ -186,16 +186,19 @@ Implementation notes:
 - Drawer trend arrow (uses the running average from above).
 - General visual cleanup once the feature set has settled.
 
+
+## DONE:
+
+Problem with first screen:
+* the text box promotes alert fatigue -- I've noticed that if i have to type shit out to, "what do you want out of this?" after just using a site once to look something up quickly, I don't write anything meaningful and instead write how i'll spend that time instead ("just a minute to find X"). A better pattern would be, first screen is a "heads up", you're about to enter a tracked site. then perhaps automatically after, say, 5 minutes, you get hit with the second one
+    * idea: first screen is heads up. you get three options, "continue for 2 minutes" "continue for 5 minutes", "continue for 10 minutes" (I'm thinking pills you can select). then, after that time is up, you get the alert with the textbox
+
+
 ## TODO:
 
 * i think there's a bug with the survey -> re-entry flow
 * need to change icons ofc
 * probably a bug with calendar day drawer *arrow to average* thing
-* bug: the first screen you see on the page, where you type -- your chars trigger the other page so for smtg like youtube this breaks the site
-
-Problem with first screen:
-* the text box promotes alert fatigue -- I've noticed that if i have to type shit out to, "what do you want out of this?" after just using a site once to look something up quickly, I don't write anything meaningful and instead write how i'll spend that time instead ("just a minute to find X"). A better pattern would be, first screen is a "heads up", you're about to enter a tracked site. then perhaps automatically after, say, 5 minutes, you get hit with the second one
-    * idea: first screen is heads up. you get three options, "continue for 2 minutes" "continue for 5 minutes", "continue for 10 minutes" (I'm thinking pills you can select). then, after that time is up, you get the alert with the textbox
 
 another idea:
 * limit clicks in addition to time. or, as the user approaches a breaktime limit, you should also bottleneck how many clicks they get to slow them down

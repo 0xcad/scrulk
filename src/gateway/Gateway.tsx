@@ -1,7 +1,7 @@
 import browser from "webextension-polyfill";
 import type { Message } from "../shared/messages";
 
-const TIMER_OPTIONS = [2, 5, 10] as const;
+const TIMER_OPTIONS = [1, 2, 5] as const;
 
 function send(msg: Message): Promise<unknown> {
   return browser.runtime.sendMessage(msg);

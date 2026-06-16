@@ -10,7 +10,7 @@ import {
   setSettings,
 } from "../shared/storage";
 import type { DayState, Settings } from "../shared/types";
-import { DEFAULT_DAY_STATE, effectiveMs } from "../shared/types";
+import { DEFAULT_DAY_STATE, effectiveMs, STREAK_THRESHOLD_MS } from "../shared/types";
 import { formatDuration } from "../shared/wakeDay";
 
 function formatWakeTime(t: string): string {
@@ -122,7 +122,9 @@ export function Popup() {
 
   const tracked = host ? isTracked(host, settings.trackedSites) : false;
   const displayHost = host ? host.replace(/^www\./, "") : null;
-  const display = formatDuration(effectiveMs(state, now));
+  const todayMs = effectiveMs(state, now);
+  const display = formatDuration(todayMs);
+  const liveStreak = settings.currentStreak + (todayMs < STREAK_THRESHOLD_MS ? 1 : 0);
 
   const onAdd = async () => {
     if (!displayHost) return;
@@ -154,7 +156,13 @@ export function Popup() {
       <section class="usage">
         <span class="usage-label">Today</span>
         <span class="usage-time">{display}</span>
-        <small>{state.activeSince !== null ? "tracking…" : "paused"}</small>
+        <small>
+          {state.activeSince !== null
+            ? "tracking…"
+            : liveStreak > 0 && todayMs < STREAK_THRESHOLD_MS
+              ? `${liveStreak} 🔥`
+              : "paused"}
+        </small>
       </section>
 
       {displayHost ? (

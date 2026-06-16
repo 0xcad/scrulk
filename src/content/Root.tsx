@@ -4,15 +4,20 @@ import type { Message } from "../shared/messages";
 import {
   getDayState,
   getGatewayState,
+  getSettings,
   onDayStateChange,
   onGatewayStateChange,
+  onSettingsChange,
 } from "../shared/storage";
 import {
   DEFAULT_DAY_STATE,
+  DEFAULT_SETTINGS,
   type DayState,
   type GatewayState,
+  type Settings,
 } from "../shared/types";
 import { BreaktimeOverlay } from "./BreaktimeOverlay";
+import { DimOverlay } from "./DimOverlay";
 import { GatewayExpiredOverlay } from "./GatewayExpiredOverlay";
 import { SleepClock } from "./SleepClock";
 import { UsageClock } from "./UsageClock";
@@ -41,6 +46,7 @@ interface Props {
  */
 export function Root({ matchedDomain }: Props) {
   const [state, setState] = useState<DayState>(DEFAULT_DAY_STATE);
+  const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS);
   const [gateway, setGateway] = useState<GatewayState>({});
   const [visible, setVisible] = useState(() =>
     typeof document !== "undefined"
@@ -52,6 +58,11 @@ export function Root({ matchedDomain }: Props) {
   useEffect(() => {
     void getDayState().then(setState);
     return onDayStateChange(setState);
+  }, []);
+
+  useEffect(() => {
+    void getSettings().then(setSettings);
+    return onSettingsChange(setSettings);
   }, []);
 
   useEffect(() => {
@@ -96,6 +107,7 @@ export function Root({ matchedDomain }: Props) {
     <>
       {matchedDomain !== null && <UsageClock matchedDomain={matchedDomain} />}
       <SleepClock />
+      <DimOverlay state={state} settings={settings} gateway={gateway} matchedDomain={matchedDomain} />
       {matchedDomain !== null && state.breaktimeOpen && <BreaktimeOverlay />}
       {matchedDomain !== null &&
         expiredAlertForDomain &&

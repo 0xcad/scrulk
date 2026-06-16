@@ -177,6 +177,12 @@ label.row small {
 .avg-arrow.up { color: #c0392b; }
 .avg-arrow.down { color: #27867a; }
 
+.streak-today {
+  font-size: 14px;
+  opacity: 0.75;
+  margin: 2px 0 12px;
+}
+
 dl {
   display: grid;
   grid-template-columns: max-content 1fr;

@@ -44,7 +44,7 @@ src/
     pages/         one file per top-level page
     components/    shared widgets
   shared/
-    types.ts       Settings, DayState, effectiveMs, defaults, keys
+    types.ts       Settings, DayState, effectiveMs, defaults, keys, STREAK_THRESHOLD_MS
     storage.ts     getSettings / getDayState / on*Change subscriptions
     domain.ts      hostnameOf / normalizeDomain / isTracked / findMatchingDomain
     wakeDay.ts     currentWakeDayStart / nextWakeUpAt / formatDuration
@@ -120,7 +120,23 @@ manifest.config.ts ts-typed manifest, consumed by @crxjs at build time
    to `DEFAULT_SETTINGS`.
 2. Surface a control on `src/options/pages/Settings.tsx`. Group related
    settings under their own `<section>` with an `<h2>`.
+   (Exception: computed/internal settings like `currentStreak`/`bestStreak`
+   are written by the background and have no user-facing control.)
 3. Anything that reacts to the setting subscribes via `onSettingsChange`.
+
+## Streak counters
+
+`settings.currentStreak` and `settings.bestStreak` track consecutive days with
+near-zero tracked-site usage. They are **only ever written by `rolloverDay()`**
+in `src/background/tracker.ts` — do not update them anywhere else.
+
+- **Zero-usage threshold:** `STREAK_THRESHOLD_MS` (20 000 ms) in
+  `src/shared/types.ts`. Internal only — never show this number to the user.
+- **Live streak formula:** `settings.currentStreak + (effectiveMs(state, now) < STREAK_THRESHOLD_MS ? 1 : 0)`
+  — yesterday's completed count plus today if it's still under the threshold.
+- **Calendar:** `DayRecord.streak` is written by `rolloverDay()` when the
+  outgoing day was a streak day. The calendar reads it directly; no full
+  history scan is needed anywhere.
 
 ## How to add a content-script overlay (slice 2+)
 

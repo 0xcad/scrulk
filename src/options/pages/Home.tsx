@@ -6,7 +6,7 @@ import {
   onDayStateChange,
   onSettingsChange,
 } from "../../shared/storage";
-import { DEFAULT_DAY_STATE, effectiveMs } from "../../shared/types";
+import { DEFAULT_DAY_STATE, effectiveMs, STREAK_THRESHOLD_MS } from "../../shared/types";
 import type { DayState, Settings } from "../../shared/types";
 import { formatDuration, formatUptime } from "../../shared/wakeDay";
 import { CalendarGrid } from "../components/CalendarGrid";
@@ -53,6 +53,7 @@ export function Home() {
     : "—";
 
   const todayMs = effectiveMs(state, now);
+  const liveStreak = settings.currentStreak + (todayMs < STREAK_THRESHOLD_MS ? 1 : 0);
   const avgMs =
     days.length > 0
       ? days.reduce((acc, d) => acc + d.totalMs, 0) / days.length
@@ -87,6 +88,9 @@ export function Home() {
           </span>
         )}
       </p>
+      {liveStreak > 0 && (
+        <p class="streak-today">{liveStreak} day streak 🔥</p>
+      )}
 
       <h2>Summary</h2>
       <dl>
@@ -110,6 +114,12 @@ export function Home() {
             <small> (since {installedOn})</small>
           ) : null}
         </dd>
+        <dt>Best Streak</dt>
+        <dd>
+          {settings.bestStreak > 0
+            ? `${settings.bestStreak} day${settings.bestStreak !== 1 ? "s" : ""}`
+            : "—"}
+        </dd>
       </dl>
 
       <h2>This month</h2>
@@ -118,6 +128,7 @@ export function Home() {
         selectedDate={selectedDate ?? dateKey(state.wakeDayStart || Date.now())}
         onSelect={setSelectedDate}
       />
+
       <DayDrawer
         days={days}
         selectedDate={selectedDate}

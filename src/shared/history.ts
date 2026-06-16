@@ -16,6 +16,8 @@ export interface DayRecord {
   notes: string | null;
   createdAt: number;
   updatedAt: number;
+  /** Streak count at this day. Only set when totalMs is below the zero-usage threshold. */
+  streak?: number;
 }
 
 interface ScrUlkHistoryDB extends DBSchema {

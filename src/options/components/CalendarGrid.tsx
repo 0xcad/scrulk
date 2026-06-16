@@ -102,7 +102,11 @@ export function CalendarGrid({ days, selectedDate, onSelect, initialMonth }: Pro
             >
               <span class="cal-day-num">{c.day}</span>
               {rec && (
-                <span class="cal-day-usage">{formatDuration(rec.totalMs)}</span>
+                <span class="cal-day-usage">
+                  {rec.streak !== undefined && rec.streak > 0
+                    ? `${rec.streak} 🔥`
+                    : formatDuration(rec.totalMs)}
+                </span>
               )}
               {hasNotes && (
                 <span class="cal-notes-dot" aria-hidden="true" />

@@ -6,13 +6,14 @@ import {
   getGatewayState,
   getSettings,
   setDayState,
+  setSettings,
 } from "../shared/storage";
 import { anyExpiredAlertActive } from "./gateway";
 import {
   currentWakeDayStart,
   nextWakeUpAt,
 } from "../shared/wakeDay";
-import { effectiveMs, type DayState } from "../shared/types";
+import { effectiveMs, STREAK_THRESHOLD_MS, type DayState } from "../shared/types";
 import { scheduleBreaktimeAlarm } from "./breaktime";
 
 const DAY_RESET_ALARM = "scrulk:day-reset";
@@ -163,9 +164,17 @@ export async function rolloverDay(
   const now = Date.now();
   const finalTotalMs = effectiveMs(outgoing, now);
   const outgoingDate = dateKey(outgoing.wakeDayStart);
-  if (outgoing.wakeDayStart > 0) {
-    await upsertDay(outgoingDate, { totalMs: finalTotalMs }).catch(() => null);
+
+  const settings = await getSettings();
+  const newStreak = finalTotalMs < STREAK_THRESHOLD_MS ? settings.currentStreak + 1 : 0;
+  const newBest = Math.max(settings.bestStreak, newStreak);
+  await setSettings({ currentStreak: newStreak, bestStreak: newBest });
+
+  if (outgoing.wakeDayStart > 0 && finalTotalMs > 0) {
+    const streakPatch = newStreak > 0 ? { streak: newStreak } : {};
+    await upsertDay(outgoingDate, { totalMs: finalTotalMs, ...streakPatch }).catch(() => null);
   }
+
   return {
     wakeDayStart: newWakeDayStart,
     totalMs: 0,

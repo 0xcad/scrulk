@@ -4,6 +4,7 @@ import type { ClockPosition } from "../shared/types";
 import { formatDuration, nextWakeUpAt } from "../shared/wakeDay";
 
 const VISIBILITY_WINDOW_MS = 10 * 60 * 60 * 1000;
+const HIDE_BEFORE_MS = 2 * 60 * 60 * 1000;
 
 function defaultPos(): ClockPosition {
   return { x: Math.max(16, window.innerWidth - 220), y: 16 };
@@ -74,7 +75,7 @@ export function SleepClock() {
 
   if (wakeUpTime === null) return null;
   const remaining = nextWakeUpAt(now, wakeUpTime) - now;
-  if (remaining <= 0 || remaining > VISIBILITY_WINDOW_MS) return null;
+  if (remaining <= HIDE_BEFORE_MS || remaining > VISIBILITY_WINDOW_MS) return null;
 
   return (
     <>

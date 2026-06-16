@@ -197,6 +197,11 @@ Problem with first screen:
 
 * uptime should reset if extension gets unloaded...
 
+look into dimming the screen slowly for the last 30-60 seconds before you pull a person out of the app
+* https://news.ycombinator.com/item?id=35888644 (csmeder)
+
+if you're up 2 hrs before your wake up time, just don't show that clock
+
 ## TODO:
 
 
@@ -209,9 +214,4 @@ another idea:
 
 definitely need streaks for no usage on calendar view, and to display that in popup
 
-look into dimming the screen slowly for the last 30-60 seconds before you pull a person out of the app
-* https://news.ycombinator.com/item?id=35888644 (csmeder)
-
 I need some button to press on the extension itself to end a session and bring me to the survey
-
-if you're up 2 hrs before your wake up time, just don't show that clock

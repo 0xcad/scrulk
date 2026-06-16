@@ -41,9 +41,9 @@ import { onGatewayStateChange } from "../shared/storage";
 // All listeners must be registered synchronously at top level so the worker
 // can be revived to handle events.
 
-browser.runtime.onInstalled.addListener(async () => {
+browser.runtime.onInstalled.addListener(async ({ reason }) => {
   const current = await getSettings();
-  if (!current.installedAt) {
+  if (reason === "install") {
     await setSettings({ installedAt: Date.now() });
   }
   await refreshAllTabIcons(current.trackedSites);

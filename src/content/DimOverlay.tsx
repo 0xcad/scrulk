@@ -2,7 +2,7 @@ import { useEffect, useRef } from "preact/hooks";
 import { effectiveMs, type DayState, type GatewayState, type Settings } from "../shared/types";
 
 const DIM_WINDOW_MS = 15_000;
-const MAX_OPACITY = 0.8;
+const MAX_OPACITY = 0.7;
 
 interface Props {
   state: DayState;

@@ -202,6 +202,8 @@ look into dimming the screen slowly for the last 30-60 seconds before you pull a
 
 if you're up 2 hrs before your wake up time, just don't show that clock
 
+definitely need streaks for no usage on calendar view, and to display that in popup
+
 ## TODO:
 
 
@@ -212,6 +214,7 @@ if you're up 2 hrs before your wake up time, just don't show that clock
 another idea:
 * limit clicks in addition to time. or, as the user approaches a breaktime limit, you should also bottleneck how many clicks they get to slow them down
 
-definitely need streaks for no usage on calendar view, and to display that in popup
-
 I need some button to press on the extension itself to end a session and bring me to the survey
+* consider: button to block access for next 24 hrs?
+
+Calendar probably needs more horizontal screen real estate, current look should only be on narrower screens...

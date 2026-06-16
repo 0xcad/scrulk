@@ -1,4 +1,4 @@
-export type Page = "home" | "calendar" | "settings";
+export type Page = "home" | "settings";
 
 interface Props {
   page: Page;
@@ -7,7 +7,6 @@ interface Props {
 
 const PAGES: { id: Page; label: string }[] = [
   { id: "home", label: "Home" },
-  { id: "calendar", label: "Calendar" },
   { id: "settings", label: "Settings" },
 ];
 

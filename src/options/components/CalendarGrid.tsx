@@ -1,4 +1,4 @@
-import { useMemo, useState } from "preact/hooks";
+import { useMemo } from "preact/hooks";
 import { type DayRecord } from "../../shared/history";
 import { formatDuration } from "../../shared/wakeDay";
 
@@ -6,8 +6,10 @@ interface Props {
   days: DayRecord[];
   selectedDate?: string | null;
   onSelect: (date: string) => void;
-  /** Which month to focus initially. Defaults to today's month. */
-  initialMonth?: { year: number; month: number };
+  viewMonth: { year: number; month: number };
+  onViewMonthChange: (m: { year: number; month: number }) => void;
+  /** Epoch ms of first install. 0 = not set (no bounds enforced). */
+  installedAt: number;
 }
 
 function pad(n: number): string {
@@ -25,17 +27,35 @@ function monthLabel(year: number, month: number): string {
   });
 }
 
+function monthKey(year: number, month: number): string {
+  return `${year}-${pad(month + 1)}`;
+}
+
 const WEEKDAYS = ["S", "M", "T", "W", "T", "F", "S"];
 
-/**
- * Hand-rolled month grid. Days with records show usage time; days with
- * notes get a small dot. Click → onSelect(date).
- */
-export function CalendarGrid({ days, selectedDate, onSelect, initialMonth }: Props) {
+export function CalendarGrid({
+  days,
+  selectedDate,
+  onSelect,
+  viewMonth,
+  onViewMonthChange,
+  installedAt,
+}: Props) {
   const today = new Date();
-  const [view, setView] = useState(
-    initialMonth ?? { year: today.getFullYear(), month: today.getMonth() },
-  );
+  const todayKey = ymd(today.getFullYear(), today.getMonth(), today.getDate());
+  const currentMonthKey = monthKey(today.getFullYear(), today.getMonth());
+  const viewKey = monthKey(viewMonth.year, viewMonth.month);
+
+  const installDate = installedAt > 0 ? new Date(installedAt) : null;
+  const installMonthKey = installDate
+    ? monthKey(installDate.getFullYear(), installDate.getMonth())
+    : null;
+  const installDateKey = installDate
+    ? ymd(installDate.getFullYear(), installDate.getMonth(), installDate.getDate())
+    : null;
+
+  const atInstallMonth = installMonthKey !== null && viewKey <= installMonthKey;
+  const atCurrentMonth = viewKey >= currentMonthKey;
 
   const recordByDate = useMemo(() => {
     const map = new Map<string, DayRecord>();
@@ -44,39 +64,74 @@ export function CalendarGrid({ days, selectedDate, onSelect, initialMonth }: Pro
   }, [days]);
 
   const cells = useMemo(() => {
-    const first = new Date(view.year, view.month, 1);
-    const startOffset = first.getDay(); // 0 = Sunday
-    const daysInMonth = new Date(view.year, view.month + 1, 0).getDate();
+    const first = new Date(viewMonth.year, viewMonth.month, 1);
+    const startOffset = first.getDay();
+    const daysInMonth = new Date(viewMonth.year, viewMonth.month + 1, 0).getDate();
     const out: ({ day: number; date: string } | null)[] = [];
     for (let i = 0; i < startOffset; i++) out.push(null);
     for (let d = 1; d <= daysInMonth; d++) {
-      out.push({ day: d, date: ymd(view.year, view.month, d) });
+      out.push({ day: d, date: ymd(viewMonth.year, viewMonth.month, d) });
     }
     while (out.length % 7 !== 0) out.push(null);
     return out;
-  }, [view]);
-
-  const todayKey = ymd(today.getFullYear(), today.getMonth(), today.getDate());
+  }, [viewMonth]);
 
   const prev = () =>
-    setView((v) =>
-      v.month === 0
-        ? { year: v.year - 1, month: 11 }
-        : { ...v, month: v.month - 1 },
+    onViewMonthChange(
+      viewMonth.month === 0
+        ? { year: viewMonth.year - 1, month: 11 }
+        : { ...viewMonth, month: viewMonth.month - 1 },
     );
   const next = () =>
-    setView((v) =>
-      v.month === 11
-        ? { year: v.year + 1, month: 0 }
-        : { ...v, month: v.month + 1 },
+    onViewMonthChange(
+      viewMonth.month === 11
+        ? { year: viewMonth.year + 1, month: 0 }
+        : { ...viewMonth, month: viewMonth.month + 1 },
     );
+  const goToInstall = () => {
+    if (installDate) {
+      onViewMonthChange({ year: installDate.getFullYear(), month: installDate.getMonth() });
+    }
+  };
+  const goToNow = () =>
+    onViewMonthChange({ year: today.getFullYear(), month: today.getMonth() });
 
   return (
     <div class="cal">
       <div class="cal-head">
-        <button type="button" onClick={prev} aria-label="Previous month">‹</button>
-        <span class="cal-title">{monthLabel(view.year, view.month)}</span>
-        <button type="button" onClick={next} aria-label="Next month">›</button>
+        <button
+          type="button"
+          onClick={goToInstall}
+          disabled={atInstallMonth || installMonthKey === null}
+          aria-label="First month"
+        >
+          «
+        </button>
+        <button
+          type="button"
+          onClick={prev}
+          disabled={atInstallMonth}
+          aria-label="Previous month"
+        >
+          ‹
+        </button>
+        <span class="cal-title">{monthLabel(viewMonth.year, viewMonth.month)}</span>
+        <button
+          type="button"
+          onClick={next}
+          disabled={atCurrentMonth}
+          aria-label="Next month"
+        >
+          ›
+        </button>
+        <button
+          type="button"
+          onClick={goToNow}
+          disabled={atCurrentMonth}
+          aria-label="Current month"
+        >
+          »
+        </button>
       </div>
       <div class="cal-grid">
         {WEEKDAYS.map((d) => (
@@ -86,9 +141,15 @@ export function CalendarGrid({ days, selectedDate, onSelect, initialMonth }: Pro
           if (c === null) return <div class="cal-cell empty" />;
           const rec = recordByDate.get(c.date);
           const hasNotes = rec?.notes !== null && rec?.notes !== undefined;
+          const isPreInstall =
+            installDateKey !== null &&
+            installMonthKey !== null &&
+            viewKey === installMonthKey &&
+            c.date < installDateKey;
           const classes = [
             "cal-cell",
             rec ? "has-data" : "no-data",
+            isPreInstall ? "pre-install" : "",
             c.date === todayKey ? "today" : "",
             c.date === selectedDate ? "selected" : "",
           ].filter(Boolean).join(" ");
@@ -96,19 +157,19 @@ export function CalendarGrid({ days, selectedDate, onSelect, initialMonth }: Pro
             <button
               type="button"
               class={classes}
-              disabled={!rec}
+              disabled={!rec || isPreInstall}
               onClick={() => onSelect(c.date)}
               aria-label={c.date}
             >
               <span class="cal-day-num">{c.day}</span>
-              {rec && (
+              {rec && !isPreInstall && (
                 <span class="cal-day-usage">
                   {rec.streak !== undefined && rec.streak > 0
                     ? `${rec.streak} 🔥`
                     : formatDuration(rec.totalMs)}
                 </span>
               )}
-              {hasNotes && (
+              {hasNotes && !isPreInstall && (
                 <span class="cal-notes-dot" aria-hidden="true" />
               )}
             </button>

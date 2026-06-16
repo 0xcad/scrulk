@@ -1,7 +1,6 @@
 import { useState } from "preact/hooks";
 import { Nav, type Page } from "./components/Nav";
 import { Home } from "./pages/Home";
-import { Calendar } from "./pages/Calendar";
 import { Settings } from "./pages/Settings";
 
 export function App() {
@@ -18,7 +17,6 @@ export function App() {
 
       <main>
         {page === "home" && <Home />}
-        {page === "calendar" && <Calendar />}
         {page === "settings" && <Settings />}
       </main>
     </div>

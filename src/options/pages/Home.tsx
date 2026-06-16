@@ -9,8 +9,7 @@ import {
 import { DEFAULT_DAY_STATE, effectiveMs, STREAK_THRESHOLD_MS } from "../../shared/types";
 import type { DayState, Settings } from "../../shared/types";
 import { formatDuration, formatUptime } from "../../shared/wakeDay";
-import { CalendarGrid } from "../components/CalendarGrid";
-import { DayDrawer } from "../components/DayDrawer";
+import { CalendarPanel } from "../components/CalendarPanel";
 export function Home() {
   const [settings, setSettings] = useState<Settings | null>(null);
   const [state, setState] = useState<DayState>(DEFAULT_DAY_STATE);
@@ -122,17 +121,12 @@ export function Home() {
         </dd>
       </dl>
 
-      <h2>This month</h2>
-      <CalendarGrid
+      <h2>Calendar</h2>
+      <CalendarPanel
         days={days}
         selectedDate={selectedDate ?? dateKey(state.wakeDayStart || Date.now())}
         onSelect={setSelectedDate}
-      />
-
-      <DayDrawer
-        days={days}
-        selectedDate={selectedDate}
-        onSelect={setSelectedDate}
+        installedAt={settings.installedAt}
       />
     </section>
   );

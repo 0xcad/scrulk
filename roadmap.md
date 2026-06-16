@@ -218,3 +218,7 @@ I need some button to press on the extension itself to end a session and bring m
 * consider: button to block access for next 24 hrs?
 
 Calendar probably needs more horizontal screen real estate, current look should only be on narrower screens...
+
+Problem in chrome: 'background.scripts' requires manifest version of 2 or lower
+
+Remove comments referencing slices and whatnot

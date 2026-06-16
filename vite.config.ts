@@ -6,28 +6,33 @@ import { resolve } from "node:path";
 import manifest from "./manifest.config";
 
 /**
- * Post-build manifest fixups for Firefox compatibility:
+ * Post-build manifest fixups:
  *
- *  1. crxjs only emits `background.service_worker` (Chrome). Firefox MV3
- *     requires `background.scripts` (event page). Add both; each browser
- *     ignores the one it doesn't recognize.
- *  2. crxjs injects `use_dynamic_url` into every `web_accessible_resources`
- *     entry. That key is Chrome-only; Firefox logs an "unexpected property"
- *     warning per entry. Strip it — Chrome treats its absence as `false`,
- *     matching prior behavior.
+ * Firefox: crxjs only emits `background.service_worker`; Firefox requires
+ * `background.scripts` instead (service workers are behind a flag). Add it
+ * when BROWSER=firefox.
+ *
+ * Firefox: crxjs injects `use_dynamic_url` into every
+ * `web_accessible_resources` entry. That key is Chrome-only; Firefox logs
+ * an "unexpected property" warning per entry. Strip it — Chrome treats its
+ * absence as `false`, matching prior behavior.
  */
-function firefoxManifestFixups(): Plugin {
+function manifestFixups(): Plugin {
+  const isFirefox = process.env["BROWSER"] === "firefox";
   return {
-    name: "scrulk:firefox-manifest-fixups",
+    name: "scrulk:manifest-fixups",
     apply: "build",
     closeBundle() {
       const manifestPath = resolve("dist", "manifest.json");
       const m = JSON.parse(readFileSync(manifestPath, "utf8"));
       let changed = false;
-      const sw = m.background?.service_worker;
-      if (sw && !m.background.scripts) {
-        m.background.scripts = [sw];
-        changed = true;
+      if (isFirefox) {
+        const sw = m.background?.service_worker;
+        if (sw && !m.background.scripts) {
+          m.background.scripts = [sw];
+          delete m.background.service_worker;
+          changed = true;
+        }
       }
       if (Array.isArray(m.web_accessible_resources)) {
         for (const entry of m.web_accessible_resources) {
@@ -45,7 +50,7 @@ function firefoxManifestFixups(): Plugin {
 }
 
 export default defineConfig({
-  plugins: [preact(), crx({ manifest }), firefoxManifestFixups()],
+  plugins: [preact(), crx({ manifest }), manifestFixups()],
   build: {
     target: "es2022",
     sourcemap: true,

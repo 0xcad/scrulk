@@ -82,6 +82,7 @@ export async function recompute(): Promise<void> {
   // boundary), do it lazily here.
   if (state.wakeDayStart !== expectedStart) {
     state = await rolloverDay(state, expectedStart);
+    await setDayState(state);
   }
 
   const inputs = await readActivity();

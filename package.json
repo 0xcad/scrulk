@@ -6,7 +6,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:firefox": "BROWSER=firefox vite",
     "build": "tsc --noEmit && vite build",
+    "build:firefox": "tsc --noEmit && BROWSER=firefox vite build",
     "test": "vitest run",
     "test:watch": "vitest"
   },

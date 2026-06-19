@@ -148,7 +148,7 @@ browser.runtime.onMessage.addListener((message: unknown, sender: browser.Runtime
     return handleSurveyRedirect(msg, sender?.tab?.id);
   }
   if (msg.type === "survey:continue") {
-    return handleSurveyContinue(sender?.tab?.id);
+    return handleSurveyContinue(sender?.tab?.id).then(() => recompute());
   }
   if (msg.type === "gateway:startTimer") {
     return startGatewayTimer(
@@ -220,8 +220,17 @@ async function handleSurveyContinue(
   senderTabId: number | undefined,
 ): Promise<void> {
   const state = await getDayState();
-  if (!state.surveyContinueAllowed) {
-    await setDayState({ ...state, surveyContinueAllowed: true });
+  if (
+    !state.surveyContinueAllowed ||
+    !state.breaktimeOpen ||
+    !state.breaktimeShownToday
+  ) {
+    await setDayState({
+      ...state,
+      surveyContinueAllowed: true,
+      breaktimeOpen: true,
+      breaktimeShownToday: true,
+    });
   }
   if (senderTabId !== undefined) {
     await browser.tabs.remove(senderTabId).catch(() => null);

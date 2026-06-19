@@ -5,7 +5,7 @@ import { getDayState, getSettings } from "../shared/storage";
 import type { DayState, Settings } from "../shared/types";
 import { DEFAULT_DAY_STATE, effectiveMs, STREAK_THRESHOLD_MS } from "../shared/types";
 
-const TIMER_OPTIONS = [1, 2, 5] as const;
+const TIMER_OPTIONS = [2, 5, 10] as const;
 
 function send(msg: Message): Promise<unknown> {
   return browser.runtime.sendMessage(msg);
@@ -63,9 +63,8 @@ export function Gateway() {
       </p>
       {liveStreak > 0 && (
         <p>
-          <i>Hey! By proceeding, you will end your{" "}
-          <b>{liveStreak} day streak 🔥</b>{" "}
-          of no usage of tracked sites</i>
+          <i>Hey! By proceeding, you will break your{" "}
+          <b>{liveStreak} day streak 🔥</b></i>
         </p>
       )}
       <div class="buttons">

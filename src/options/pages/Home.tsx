@@ -126,7 +126,7 @@ export function Home() {
         days={days}
         selectedDate={selectedDate ?? dateKey(state.wakeDayStart || Date.now())}
         onSelect={setSelectedDate}
-        installedAt={settings.installedAt}
+        installedAt={settings.firstInstalledAt || settings.installedAt}
       />
     </section>
   );

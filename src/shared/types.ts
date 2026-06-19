@@ -8,6 +8,7 @@ export const STREAK_THRESHOLD_MS = 20_000;
 export interface Settings {
   trackedSites: string[];
   installedAt: number;
+  firstInstalledAt: number;
   /** Local time-of-day "HH:MM" (24h) at which the day boundary rolls over. Default "07:00". */
   wakeUpTime: string;
   /** Minutes of accumulated tracked usage between breaktime alerts. Default 30. */
@@ -32,6 +33,7 @@ export interface ClockPosition {
 export const DEFAULT_SETTINGS: Settings = {
   trackedSites: [],
   installedAt: 0,
+  firstInstalledAt: 0,
   wakeUpTime: "07:00",
   breaktimeMinutes: 30,
   tabLimit: 3,

@@ -46,6 +46,7 @@ export function Settings() {
           max={20}
         />
       </section>
+
     </>
   );
 }

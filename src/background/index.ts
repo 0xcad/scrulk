@@ -46,6 +46,9 @@ browser.runtime.onInstalled.addListener(async ({ reason }) => {
   if (reason === "install") {
     await setSettings({ installedAt: Date.now() });
   }
+  if (current.firstInstalledAt === 0) {
+    await setSettings({ firstInstalledAt: Date.now() });
+  }
   await refreshAllTabIcons(current.trackedSites);
   await ensureDayResetAlarm(current.wakeUpTime);
   await recompute();

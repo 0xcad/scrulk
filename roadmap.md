@@ -219,6 +219,21 @@ I need some button to press on the extension itself to end a session and bring m
 
 Calendar probably needs more horizontal screen real estate, current look should only be on narrower screens...
 
-Problem in chrome: 'background.scripts' requires manifest version of 2 or lower
-
 Remove comments referencing slices and whatnot
+
+===
+
+Idea: before pause gateway, just let the user view *one page*, no clicks, without interruption. So search engine -> reddit post, that's fine, google -> one yt video, that's fine.
+rules: 
+* must have referer (not from new tab)
+    * otherwise, show gateway
+* must be on a path? so can't be on youtube.com, reddit.com
+
+If they click anywhere else on the page, show the pause gateway
+This should not affect streak counts
+
+===
+
+ai generated code cleanup:
+* after removing a website from a tracked page, remove its clockPositions from settings
+* computation of the running average ms could be more efficient / "online", but whatever this is fine

@@ -143,6 +143,10 @@ export function Popup() {
     });
   };
 
+  const onDone = async () => {
+    await browser.runtime.sendMessage({ type: "breaktime:done" });
+  };
+
   return (
     <main>
       <h1>Scroll Unlock</h1>
@@ -198,6 +202,11 @@ export function Popup() {
         >
           open dashboard ↗
         </button>
+        {tracked && todayMs > 0 && (
+          <button type="button" onClick={onDone}>
+            i'm done with tracked sites 🔓
+          </button>
+        )}
       </nav>
     </main>
   );

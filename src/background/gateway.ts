@@ -1,6 +1,7 @@
 import browser from "webextension-polyfill";
 import { findMatchingDomain, hostnameOf } from "../shared/domain";
 import {
+  getDayState,
   getGatewayState,
   getSettings,
   getTabBackMap,
@@ -8,8 +9,11 @@ import {
   setTabBackMap,
 } from "../shared/storage";
 import type { GatewayDomainState, GatewayState, TabBackMap } from "../shared/types";
+import { dateKey } from "../shared/history";
+import { currentWakeDayStart } from "../shared/wakeDay";
 
 const GATEWAY_PAGE = "src/gateway/index.html";
+const SURVEY_PAGE = "src/survey/index.html";
 const EXPIRE_ALARM_PREFIX = "scrulk:gateway-expire:";
 
 /** Build the moz-extension://… gateway URL with the params the page needs. */
@@ -22,6 +26,10 @@ export function gatewayUrl(
   const params = new URLSearchParams({ domain, dest: destUrl });
   if (backUrl) params.set("back", backUrl);
   return `${base}?${params.toString()}`;
+}
+
+function surveyUrl(date: string): string {
+  return browser.runtime.getURL(`${SURVEY_PAGE}?date=${encodeURIComponent(date)}`);
 }
 
 function isPlainHttp(url: string | undefined): boolean {
@@ -67,6 +75,18 @@ export async function handleBeforeNavigate(
   const settings = await getSettings();
   const matched = findMatchingDomain(host, settings.trackedSites);
   if (matched === null) return;
+
+  const dayState = await getDayState();
+  const today = dateKey(currentWakeDayStart(Date.now(), settings.wakeUpTime));
+  if (
+    dayState.surveyFilledFor === today &&
+    !dayState.surveyContinueAllowed &&
+    !dayState.breaktimeOpen
+  ) {
+    await browser.tabs.update(details.tabId, { url: surveyUrl(today) }).catch(() => null);
+    return;
+  }
+  if (dayState.breaktimeOpen) return;
 
   const state = await getGatewayState();
   if (isUnlocked(state[matched], Date.now())) return;

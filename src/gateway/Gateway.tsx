@@ -3,7 +3,7 @@ import browser from "webextension-polyfill";
 import type { Message } from "../shared/messages";
 import { getDayState, getSettings } from "../shared/storage";
 import type { DayState, Settings } from "../shared/types";
-import { DEFAULT_DAY_STATE, effectiveMs, STREAK_THRESHOLD_MS } from "../shared/types";
+import { DEFAULT_DAY_STATE, liveStreakCount } from "../shared/types";
 
 const TIMER_OPTIONS = [2, 5, 10] as const;
 
@@ -51,7 +51,7 @@ export function Gateway() {
   };
 
   const liveStreak = settings !== null
-    ? settings.currentStreak + (effectiveMs(dayState, Date.now()) < STREAK_THRESHOLD_MS ? 1 : 0)
+    ? liveStreakCount(settings.currentStreak, dayState, Date.now())
     : 0;
 
   return (

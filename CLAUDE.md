@@ -132,8 +132,10 @@ in `src/background/tracker.ts` — do not update them anywhere else.
 
 - **Zero-usage threshold:** `STREAK_THRESHOLD_MS` (20 000 ms) in
   `src/shared/types.ts`. Internal only — never show this number to the user.
-- **Live streak formula:** `settings.currentStreak + (effectiveMs(state, now) < STREAK_THRESHOLD_MS ? 1 : 0)`
-  — yesterday's completed count plus today if it's still under the threshold.
+- **Live streak formula:** `liveStreakCount(settings.currentStreak, state, now)`
+  — yesterday's completed count plus today while the current day is still
+  eligible; once today is broken, live streak displays drop to zero until the
+  next wake-day.
 - **Calendar:** `DayRecord.streak` is written by `rolloverDay()` when the
   outgoing day was a streak day. The calendar reads it directly; no full
   history scan is needed anywhere.

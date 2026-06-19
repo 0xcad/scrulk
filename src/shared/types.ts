@@ -70,6 +70,8 @@ export interface DayState {
   surveyFilledFor: string | null;
   /** True once the breaktime alert has been shown at least once this wake-day. */
   breaktimeShownToday: boolean;
+  /** True once the user has intentionally proceeded to a tracked site this wake-day. */
+  streakBrokenToday: boolean;
   /**
    * True once the user has clicked "Continue" on the post-survey page for
    * the current wake-day. While false (and `surveyFilledFor` is set), any
@@ -89,6 +91,7 @@ export const DEFAULT_DAY_STATE: DayState = {
   tabLimitWarning: false,
   surveyFilledFor: null,
   breaktimeShownToday: false,
+  streakBrokenToday: false,
   surveyContinueAllowed: false,
 };
 
@@ -129,4 +132,16 @@ export const TAB_BACK_MAP_KEY = "gatewayTabBack" as const;
 export function effectiveMs(state: DayState, now: number): number {
   if (state.activeSince === null) return state.totalMs;
   return state.totalMs + Math.max(0, now - state.activeSince);
+}
+
+export function isLiveStreakDay(state: DayState, now: number): boolean {
+  return !state.streakBrokenToday && effectiveMs(state, now) < STREAK_THRESHOLD_MS;
+}
+
+export function liveStreakCount(
+  completedStreak: number,
+  state: DayState,
+  now: number,
+): number {
+  return isLiveStreakDay(state, now) ? completedStreak + 1 : 0;
 }

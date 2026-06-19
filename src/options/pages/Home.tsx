@@ -6,7 +6,7 @@ import {
   onDayStateChange,
   onSettingsChange,
 } from "../../shared/storage";
-import { DEFAULT_DAY_STATE, effectiveMs, STREAK_THRESHOLD_MS } from "../../shared/types";
+import { DEFAULT_DAY_STATE, effectiveMs, liveStreakCount } from "../../shared/types";
 import type { DayState, Settings } from "../../shared/types";
 import { formatDuration, formatUptime } from "../../shared/wakeDay";
 import { CalendarPanel } from "../components/CalendarPanel";
@@ -52,7 +52,7 @@ export function Home() {
     : "—";
 
   const todayMs = effectiveMs(state, now);
-  const liveStreak = settings.currentStreak + (todayMs < STREAK_THRESHOLD_MS ? 1 : 0);
+  const liveStreak = liveStreakCount(settings.currentStreak, state, now);
   const avgMs =
     days.length > 0
       ? days.reduce((acc, d) => acc + d.totalMs, 0) / days.length

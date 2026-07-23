@@ -237,3 +237,52 @@ This should not affect streak counts
 ai generated code cleanup:
 * after removing a website from a tracked page, remove its clockPositions from settings
 * computation of the running average ms could be more efficient / "online", but whatever this is fine
+
+==
+
+pretty sure streak is broken? I break the streak, go to a website, then it says it's still broken
+
+idea: instead of a positive streak, show a negative streak, and prompt user to break that.
+
+"I'm done with tracked sites" button has to be visible even not on a tracked site
+    * idea: dropdown caret on right of this button to stop for 24 / 36 hrs?
+    * idea: put a stop for 24 / 36 hrs button on the survey?
+
+how can I rate limit clicks, essentially?
+
+==
+
+idea: collect bullet points from user about what they want to be doing online *instead* of using tracked sites. show those in an accordion in the modal popup. occasionally, when user is scrolling, show these at random intervals to user one at a time
+* if you let an app collect scope creep for long enough, eventually everything turns to a todo application
+
+similar idea: a list of alternatives user has to click past? go for a short walk, call someone, tonic water, cigarette, drink. often i scroll when i'm feeling overworked and lack energy. what should i do instead?
+
+metrics idea: capture moving average of "outlier scrolling". my average right now is 11 mins per day, that seems suspiciously good, but I'm also trying to measure binge scrolling, which is less frequent. so maybe that's measuring a moving average of my top 5% outlier scroll sessions? another idea could also just be plotting a normal distribution of scrolling...
+* how long was this binge scroll session compared to your last one? what about the ones before? what do your trendlines look like?
+
+idea: optional setting you can enable. dims your screen on *all* websites, turns on grayscale, adds warm light filter
+* also, turn on sleep timer at 12 hrs, not 10
+
+idea: on pause gateway, give me a button to press, or some input, to enforce a cutoff time. "15 mins of tracked sites, no more". No ability to go through breaktime, you're just cut off. I would use this if I'm feeling tired and don't trust myself to not get sucked in, but do want some brainrot to take the edge off.
+
+idea: optional setting (default off) -- show usage timer on *all* websites, and just have total daily usage. that's always visible. separate from time spent on tracked sites...
+
+idea: on breaktime alert, gives you a +2 min extension. prevents you from opening new tracked tabs (idea is to let you get to a stopping point in whatever you're currently looking at). change the color of the timer
+
+## Ideas I doubt I could personally implement, or perhaps could use
+
+idea: not really for me but for clearspace, really -- an iphone widget on the home screen. put it next to your social media apps. user can see their friend + partner's scrolling next to their own. idea: for people who don't have a partner to go to bed next to, essentially 
+
+wouldn't it be crazy if I could someone detect, through pattern usage, when I would be more likely to start binge scrolling? it's a pretty regular pattern -- on days I work more, i am more likely to scroll longer. what would it look like for a system to:
+* 1. Recognize when in my life I may be stressed, or prone to stress
+    * Data input: journal entries. or some like a work trip scheduled on my calendar. google calendar to see if i'm taking late meetings? Something on my work computer that could tell how long I was working for? An integration with tsheets, where I clock out after finishing work? Historical usage? Maybe Thursdays I just see an uptick in time?
+* 2. Literally just block access to my personal computer in those moments. I would not get the choice to re-enable that...
+    * Could be configurable, instead of all access. Just tracked sites. All sites, but only allow 30 minutes total, of web surfing.
+
+idea: what would it look like for a system to:
+* recognize when my attention dwindled, even if not on a tracked site
+    * data input: time spent on a page? rate of scrolling/scanning? rate of clicking through different material?
+* alert me that this is potentially problematic usage?
+one problem is that sometimes, "research" is scrolling/scanning. You gotta look around a lot to figure out if something is worth reading or not...
+Could perhaps turn or turn off this setting? "Deep focus" mode or something, which I turn on only when I have a task I want to start (e.g, writing), and resources pulled up of something i want to do...
+^For this, and predictive pre-commitment, I think to what a misinformation researcher told me at CMU. I really wondered how they could track the spread of misinformation so broadly across the internet. What does that look like at a technical level? This researcher said that misinfo has a "signature", essentially, unique properties in its virality, and they don't track when sources are wrong but *how sources spread* to determine if something is misinfo or not. Could be the same thing here...

@@ -8,6 +8,7 @@ interface Props {
   /** Currently-selected date ('YYYY-MM-DD'); pass null to render placeholder. */
   selectedDate: string | null;
   onSelect: (date: string) => void;
+  showAllSitesTime: boolean;
 }
 
 function formatLong(date: string): string {
@@ -32,7 +33,7 @@ function trendArrow(diff: number): string {
  * compares against the running average across all *other* recorded days.
  * Prev/next buttons hop to the surrounding days that have data.
  */
-export function DayDrawer({ days, selectedDate, onSelect }: Props) {
+export function DayDrawer({ days, selectedDate, onSelect, showAllSitesTime }: Props) {
   const [avgExcluding, setAvgExcluding] = useState<number | null>(null);
   const record = selectedDate
     ? days.find((d) => d.date === selectedDate) ?? null
@@ -83,6 +84,12 @@ export function DayDrawer({ days, selectedDate, onSelect }: Props) {
         </button>
       </div>
       <dl>
+        {showAllSitesTime && (
+          <>
+            <dt>Time on all sites</dt>
+            <dd>{record.allSitesMs === undefined ? "—" : formatDuration(record.allSitesMs)}</dd>
+          </>
+        )}
         <dt>Time on tracked sites</dt>
         <dd>
           {formatDuration(record.totalMs)}

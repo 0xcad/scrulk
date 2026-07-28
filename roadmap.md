@@ -204,6 +204,8 @@ if you're up 2 hrs before your wake up time, just don't show that clock
 
 definitely need streaks for no usage on calendar view, and to display that in popup
 
+idea: optional setting (default off) -- show usage timer on *all* websites, and just have total daily usage. that's always visible. separate from time spent on tracked sites...
+
 ## TODO:
 
 
@@ -213,9 +215,6 @@ definitely need streaks for no usage on calendar view, and to display that in po
 
 another idea:
 * limit clicks in addition to time. or, as the user approaches a breaktime limit, you should also bottleneck how many clicks they get to slow them down
-
-I need some button to press on the extension itself to end a session and bring me to the survey
-* consider: button to block access for next 24 hrs?
 
 Calendar probably needs more horizontal screen real estate, current look should only be on narrower screens...
 
@@ -264,8 +263,6 @@ idea: optional setting you can enable. dims your screen on *all* websites, turns
 * also, turn on sleep timer at 12 hrs, not 10
 
 idea: on pause gateway, give me a button to press, or some input, to enforce a cutoff time. "15 mins of tracked sites, no more". No ability to go through breaktime, you're just cut off. I would use this if I'm feeling tired and don't trust myself to not get sucked in, but do want some brainrot to take the edge off.
-
-idea: optional setting (default off) -- show usage timer on *all* websites, and just have total daily usage. that's always visible. separate from time spent on tracked sites...
 
 idea: on breaktime alert, gives you a +2 min extension. prevents you from opening new tracked tabs (idea is to let you get to a stopping point in whatever you're currently looking at). change the color of the timer
 

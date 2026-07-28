@@ -47,7 +47,42 @@ export function Settings() {
         />
       </section>
 
+      <section>
+        <h2>Always show timer</h2>
+        <p>
+          Show your total time on all websites, even when the current site is not tracked.
+        </p>
+        <AlwaysShowTimerField />
+      </section>
+
     </>
+  );
+}
+
+function AlwaysShowTimerField() {
+  const [enabled, setEnabled] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    void getSettings().then((s) => setEnabled(s.alwaysShowTimer));
+    return onSettingsChange((s) => setEnabled(s.alwaysShowTimer));
+  }, []);
+
+  if (enabled === null) return <p>Loading…</p>;
+
+  return (
+    <label class="row">
+      <span>Always show timer</span>
+      <input
+        type="checkbox"
+        checked={enabled}
+        onChange={(e) => {
+          const next = (e.target as HTMLInputElement).checked;
+          setEnabled(next);
+          void setSettings({ alwaysShowTimer: next });
+        }}
+      />
+      <small>Also records and displays total time on all websites.</small>
+    </label>
   );
 }
 

@@ -9,6 +9,7 @@ reduce time spent on websites they've flagged. The user maintains a list of
 "tracked sites." On those sites the extension applies friction:
 
 - a usage clock that ticks while a tracked site is focused,
+- optional all-websites time tracking and an always-visible timer,
 - a 30-min breaktime alert with a hold-to-continue challenge,
 - a tab limit,
 - a reflection survey + calendar history,
@@ -86,6 +87,11 @@ manifest.config.ts ts-typed manifest, consumed by @crxjs at build time
    means: register a listener that calls `recompute()`, and (if needed)
    plumb the input into `readActivity()`.
 
+   `dayState.allSitesMs` / `allSitesActiveSince` use the same model for
+   focused, non-idle HTTP(S) pages. They are always collected, but never
+   affect breaktime, gateway, tab-limit, or streak behavior. The
+   `alwaysShowTimer` setting controls whether this value is shown.
+
 7. **Content script is universal + reactive.** `src/content/index.tsx` runs
    on `<all_urls>`, bails fast when host isn't tracked, and (un)mounts on
    `storage.onChanged`. When you add a new content-script feature
@@ -108,7 +114,9 @@ manifest.config.ts ts-typed manifest, consumed by @crxjs at build time
    mount controller. The Shadow-DOM root is mounted on **every** page
    (universal) because `SleepClock` is universal; `Root.tsx` decides per-
    feature what to render via `matchedDomain: string | null`. Currently:
-   `UsageClock` (tracked only), `SleepClock` (universal, self-hides
+   `UsageClock` (tracked only unless `alwaysShowTimer` is enabled; tracked
+   pages use their per-domain position and untracked pages use the global
+   `allSitesClockPosition`), `SleepClock` (universal, self-hides
    outside the 10h window), `BreaktimeOverlay` (tracked + flag). Later
    additions: `ResumeAfterSurveyOverlay`. When you add a new content
    feature, add a component under `src/content/` and conditionally
@@ -123,6 +131,16 @@ manifest.config.ts ts-typed manifest, consumed by @crxjs at build time
    (Exception: computed/internal settings like `currentStreak`/`bestStreak`
    are written by the background and have no user-facing control.)
 3. Anything that reacts to the setting subscribes via `onSettingsChange`.
+
+## All-websites time
+
+When `alwaysShowTimer` is on, the timer initially shows an unlabeled
+all-websites total on every page. Clicking it toggles a two-line total/tracked
+view (including a zero/non-incrementing tracked value on untracked pages);
+dragging still repositions it. The popup, dashboard, calendar details, month
+stats, and survey expose all-sites time only while the setting is on.
+`DayRecord.allSitesMs` is optional so records created before this feature show
+no inferred total.
 
 ## Streak counters
 

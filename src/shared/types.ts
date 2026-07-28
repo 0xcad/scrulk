@@ -15,10 +15,14 @@ export interface Settings {
   breaktimeMinutes: number;
   /** Max simultaneous tabs whose host is tracked. Excess tabs auto-close. Default 3. */
   tabLimit: number;
+  /** Show the all-websites clock on every HTTP(S) page. Default false. */
+  alwaysShowTimer: boolean;
   /** Per tracked-domain saved overlay position. */
   clockPositions: Record<string, ClockPosition>;
   /** Single global position for the universal sleep clock. */
   sleepClockPosition: ClockPosition | null;
+  /** Global position for the all-websites clock on untracked pages. */
+  allSitesClockPosition: ClockPosition | null;
   /** Consecutive zero-usage days ending with the last completed day. */
   currentStreak: number;
   /** All-time longest zero-usage streak. */
@@ -37,8 +41,10 @@ export const DEFAULT_SETTINGS: Settings = {
   wakeUpTime: "07:00",
   breaktimeMinutes: 30,
   tabLimit: 3,
+  alwaysShowTimer: false,
   clockPositions: {},
   sleepClockPosition: null,
+  allSitesClockPosition: null,
   currentStreak: 0,
   bestStreak: 0,
 };
@@ -53,11 +59,15 @@ export const SETTINGS_KEY = "settings" as const;
  * - `totalMs`: accumulated active+tracked time, NOT including the open
  *   segment if `activeSince` is set.
  * - `activeSince`: epoch ms when the user became active+tracked, or null.
+ * - `allSitesMs` / `allSitesActiveSince`: the equivalent tally for any
+ *   focused, non-idle HTTP(S) page. This never drives friction behavior.
  */
 export interface DayState {
   wakeDayStart: number;
   totalMs: number;
   activeSince: number | null;
+  allSitesMs: number;
+  allSitesActiveSince: number | null;
   /** effectiveMs at which the most recent breaktime alert was resolved. */
   lastBreaktimeAt: number;
   /** True while a breaktime alert is currently outstanding. */
@@ -85,6 +95,8 @@ export const DEFAULT_DAY_STATE: DayState = {
   wakeDayStart: 0,
   totalMs: 0,
   activeSince: null,
+  allSitesMs: 0,
+  allSitesActiveSince: null,
   lastBreaktimeAt: 0,
   breaktimeOpen: false,
   gatewayOpen: false,
@@ -132,6 +144,12 @@ export const TAB_BACK_MAP_KEY = "gatewayTabBack" as const;
 export function effectiveMs(state: DayState, now: number): number {
   if (state.activeSince === null) return state.totalMs;
   return state.totalMs + Math.max(0, now - state.activeSince);
+}
+
+/** Computed live display for active time on all HTTP(S) websites. */
+export function effectiveAllSitesMs(state: DayState, now: number): number {
+  if (state.allSitesActiveSince === null) return state.allSitesMs;
+  return state.allSitesMs + Math.max(0, now - state.allSitesActiveSince);
 }
 
 export function isLiveStreakDay(state: DayState, now: number): boolean {

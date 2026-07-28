@@ -13,6 +13,8 @@ import { type DBSchema, type IDBPDatabase, openDB } from "idb";
 export interface DayRecord {
   date: string;
   totalMs: number;
+  /** Active time on all HTTP(S) sites; absent for records from before this feature. */
+  allSitesMs?: number;
   notes: string | null;
   createdAt: number;
   updatedAt: number;

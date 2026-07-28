@@ -2,8 +2,8 @@ import { useEffect, useState } from "preact/hooks";
 import browser from "webextension-polyfill";
 import { dateKey, getDay } from "../shared/history";
 import type { Message } from "../shared/messages";
-import { getDayState, getSettings, onDayStateChange } from "../shared/storage";
-import { DEFAULT_DAY_STATE, type DayState, effectiveMs } from "../shared/types";
+import { getDayState, getSettings, onDayStateChange, onSettingsChange } from "../shared/storage";
+import { DEFAULT_DAY_STATE, type DayState, effectiveAllSitesMs, effectiveMs } from "../shared/types";
 import { currentWakeDayStart, formatDuration } from "../shared/wakeDay";
 
 function readDateFromUrl(): string | null {
@@ -34,6 +34,8 @@ export function Survey() {
   const [alreadyFilled, setAlreadyFilled] = useState(false);
   /** Recorded totalMs from history (used when viewing a past day). */
   const [recordTotalMs, setRecordTotalMs] = useState<number | null>(null);
+  const [recordAllSitesMs, setRecordAllSitesMs] = useState<number | null>(null);
+  const [alwaysShowTimer, setAlwaysShowTimer] = useState(false);
   const [dayState, setDayState] = useState<DayState>(DEFAULT_DAY_STATE);
   const [now, setNow] = useState(Date.now());
 
@@ -41,6 +43,7 @@ export function Survey() {
     void (async () => {
       const fromUrl = readDateFromUrl();
       const settings = await getSettings();
+      setAlwaysShowTimer(settings.alwaysShowTimer);
       const today = dateKey(currentWakeDayStart(Date.now(), settings.wakeUpTime));
       const resolved = fromUrl ?? today;
       setDate(resolved);
@@ -52,20 +55,26 @@ export function Survey() {
           setAlreadyFilled(true);
         }
         setRecordTotalMs(existing.totalMs);
+        setRecordAllSitesMs(existing.allSitesMs ?? null);
       }
       setDayState(await getDayState());
     })();
-    return onDayStateChange(setDayState);
+    const offDayState = onDayStateChange(setDayState);
+    const offSettings = onSettingsChange((s) => setAlwaysShowTimer(s.alwaysShowTimer));
+    return () => {
+      offDayState();
+      offSettings();
+    };
   }, []);
 
   // Tick once per second so the live usage clock advances when this date is
   // the current wake-day and a tracking segment is open.
   useEffect(() => {
     if (date === null || date !== currentDate) return;
-    if (dayState.activeSince === null) return;
+    if (dayState.activeSince === null && dayState.allSitesActiveSince === null) return;
     const id = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(id);
-  }, [date, currentDate, dayState.activeSince]);
+  }, [date, currentDate, dayState.activeSince, dayState.allSitesActiveSince]);
 
   const onSubmit = async (e: Event) => {
     e.preventDefault();
@@ -89,6 +98,9 @@ export function Survey() {
   const usageMs = isToday
     ? effectiveMs(dayState, now)
     : recordTotalMs;
+  const allSitesUsageMs = isToday
+    ? effectiveAllSitesMs(dayState, now)
+    : recordAllSitesMs;
 
   return (
     <main>
@@ -96,6 +108,13 @@ export function Survey() {
         <h1>How was {formatDateLong(date)}?</h1>
         <p class="subtitle">A quick reflection on time spent.</p>
       </header>
+
+      {alwaysShowTimer && allSitesUsageMs !== null && (
+        <div class="usage">
+          <span class="usage-label">Time on all sites</span>
+          <span class="usage-value">{formatDuration(allSitesUsageMs)}</span>
+        </div>
+      )}
 
       {usageMs !== null && (
         <div class="usage">

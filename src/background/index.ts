@@ -22,7 +22,7 @@ import {
 import { enforceTabLimit } from "./tabLimit";
 import { dateKey, upsertDay } from "../shared/history";
 import type { Message } from "../shared/messages";
-import { effectiveMs } from "../shared/types";
+import { effectiveAllSitesMs, effectiveMs } from "../shared/types";
 import { currentWakeDayStart } from "../shared/wakeDay";
 import {
   forgetTab,
@@ -181,9 +181,12 @@ async function handleSurveySubmit(
   const currentDate = dateKey(currentWakeDayStart(Date.now(), settings.wakeUpTime));
   const totalMs =
     msg.date === currentDate ? effectiveMs(state, Date.now()) : undefined;
+  const allSitesMs =
+    msg.date === currentDate ? effectiveAllSitesMs(state, Date.now()) : undefined;
   await upsertDay(msg.date, {
     notes: msg.notes,
     ...(totalMs !== undefined ? { totalMs } : {}),
+    ...(allSitesMs !== undefined ? { allSitesMs } : {}),
   });
   const patch: Partial<typeof state> = {};
   if (msg.date === currentDate) {

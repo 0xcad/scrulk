@@ -7,68 +7,106 @@ import {
   setSettings,
 } from "../shared/storage";
 import type { ClockPosition, DayState } from "../shared/types";
-import { DEFAULT_DAY_STATE, effectiveMs } from "../shared/types";
+import { DEFAULT_DAY_STATE, effectiveAllSitesMs, effectiveMs } from "../shared/types";
 import { formatDuration } from "../shared/wakeDay";
 
 interface Props {
-  matchedDomain: string;
+  matchedDomain: string | null;
+  alwaysShowTimer: boolean;
 }
 
 const DEFAULT_POS: ClockPosition = { x: 16, y: 16 };
 
-export function UsageClock({ matchedDomain }: Props) {
+export function UsageClock({ matchedDomain, alwaysShowTimer }: Props) {
   const [state, setState] = useState<DayState>(DEFAULT_DAY_STATE);
   const [pos, setPos] = useState<ClockPosition>(DEFAULT_POS);
   const [now, setNow] = useState(Date.now());
+  const [expanded, setExpanded] = useState(false);
 
   // Initial loads + subscriptions.
   useEffect(() => {
     void getDayState().then(setState);
-    void getSettings().then((s) =>
-      setPos(s.clockPositions[matchedDomain] ?? DEFAULT_POS),
-    );
+    const positionFor = (s: Awaited<ReturnType<typeof getSettings>>) =>
+      matchedDomain === null
+        ? s.allSitesClockPosition ?? DEFAULT_POS
+        : s.clockPositions[matchedDomain] ?? DEFAULT_POS;
+    void getSettings().then((s) => setPos(positionFor(s)));
     const offState = onDayStateChange(setState);
-    const offSettings = onSettingsChange((s) =>
-      setPos(s.clockPositions[matchedDomain] ?? DEFAULT_POS),
-    );
+    const offSettings = onSettingsChange((s) => setPos(positionFor(s)));
     return () => {
       offState();
       offSettings();
     };
   }, [matchedDomain]);
 
+  useEffect(() => {
+    if (!alwaysShowTimer) setExpanded(false);
+  }, [alwaysShowTimer]);
+
   // Tick once per second while page is visible AND a segment is open.
   // (When `activeSince` is null the displayed value is static.)
   useEffect(() => {
-    if (state.activeSince === null) return;
+    if (state.activeSince === null && state.allSitesActiveSince === null) return;
     if (document.visibilityState !== "visible") return;
     const id = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(id);
-  }, [state.activeSince, state.totalMs]);
+  }, [state.activeSince, state.totalMs, state.allSitesActiveSince, state.allSitesMs]);
 
   // Drag handling.
-  const dragRef = useRef<{ dx: number; dy: number } | null>(null);
+  const dragRef = useRef<{
+    dx: number;
+    dy: number;
+    w: number;
+    h: number;
+    startX: number;
+    startY: number;
+    moved: boolean;
+  } | null>(null);
   const onPointerDown = (e: PointerEvent) => {
     const target = e.currentTarget as HTMLElement;
     target.setPointerCapture(e.pointerId);
-    dragRef.current = { dx: e.clientX - pos.x, dy: e.clientY - pos.y };
+    dragRef.current = {
+      dx: e.clientX - pos.x,
+      dy: e.clientY - pos.y,
+      w: target.offsetWidth,
+      h: target.offsetHeight,
+      startX: e.clientX,
+      startY: e.clientY,
+      moved: false,
+    };
   };
   const onPointerMove = (e: PointerEvent) => {
     if (!dragRef.current) return;
-    const x = clamp(e.clientX - dragRef.current.dx, 0, window.innerWidth - 80);
-    const y = clamp(e.clientY - dragRef.current.dy, 0, window.innerHeight - 30);
+    const drag = dragRef.current;
+    if (Math.hypot(e.clientX - drag.startX, e.clientY - drag.startY) > 3) {
+      drag.moved = true;
+    }
+    const x = clamp(e.clientX - drag.dx, 0, window.innerWidth - drag.w);
+    const y = clamp(e.clientY - drag.dy, 0, window.innerHeight - drag.h);
     setPos({ x, y });
   };
   const onPointerUp = async () => {
-    if (!dragRef.current) return;
+    const drag = dragRef.current;
+    if (!drag) return;
     dragRef.current = null;
+    if (!drag.moved) {
+      if (alwaysShowTimer) setExpanded((value) => !value);
+      return;
+    }
     const settings = await getSettings();
+    if (matchedDomain === null) {
+      await setSettings({ allSitesClockPosition: pos });
+      return;
+    }
     await setSettings({
       clockPositions: { ...settings.clockPositions, [matchedDomain]: pos },
     });
   };
 
-  const display = formatDuration(effectiveMs(state, now));
+  const trackedDisplay = formatDuration(effectiveMs(state, now));
+  const allSitesDisplay = formatDuration(effectiveAllSitesMs(state, now));
+  const showBoth = alwaysShowTimer && expanded;
+  const display = alwaysShowTimer ? allSitesDisplay : trackedDisplay;
 
   return (
     <>
@@ -79,11 +117,22 @@ export function UsageClock({ matchedDomain }: Props) {
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
-        onPointerCancel={onPointerUp}
+        onPointerCancel={() => { dragRef.current = null; }}
         title="Scroll Unlock — usage today (drag to move)"
       >
         <span class="dot" aria-hidden="true" />
-        <span class="time">{display}</span>
+        {showBoth ? (
+          <span class="times">
+            <span class="timer-row">
+              <span class="time">{allSitesDisplay}</span>
+              <span class="label">total</span>
+            </span>
+            <span class="timer-row">
+              <span class="time">{trackedDisplay}</span>
+              <span class="label">tracked</span>
+            </span>
+          </span>
+        ) : <span class="time">{display}</span>}
       </div>
     </>
   );
@@ -99,7 +148,7 @@ const styles = `
     position: fixed;
     pointer-events: auto;
     display: inline-flex;
-    align-items: center;
+    align-items: flex-start;
     gap: 6px;
     padding: 4px 10px;
     background: rgba(20, 20, 24, 0.85);
@@ -116,6 +165,14 @@ const styles = `
     height: 8px;
     border-radius: 50%;
     background: #c0392b;
+    margin-top: 2px;
   }
-  .time { font-variant-numeric: tabular-nums; }
+  .time { font-variant-numeric: tabular-nums; text-align: left; }
+  .times { display: grid; gap: 2px; min-width: 92px; }
+  .timer-row {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    column-gap: 8px;
+  }
+  .label { text-align: right; opacity: 0.72; font-weight: 500; }
 `;

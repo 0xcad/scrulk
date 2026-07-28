@@ -1,10 +1,29 @@
 import { describe, expect, it } from "vitest";
 import {
   DEFAULT_DAY_STATE,
+  effectiveAllSitesMs,
   isLiveStreakDay,
   liveStreakCount,
   STREAK_THRESHOLD_MS,
 } from "./types";
+
+describe("effectiveAllSitesMs", () => {
+  it("adds an open all-sites segment to the accumulated duration", () => {
+    const now = 10_000;
+    expect(effectiveAllSitesMs({
+      ...DEFAULT_DAY_STATE,
+      allSitesMs: 2_000,
+      allSitesActiveSince: 7_000,
+    }, now)).toBe(5_000);
+  });
+
+  it("returns only the accumulated duration while paused", () => {
+    expect(effectiveAllSitesMs({
+      ...DEFAULT_DAY_STATE,
+      allSitesMs: 2_000,
+    }, 10_000)).toBe(2_000);
+  });
+});
 
 describe("isLiveStreakDay", () => {
   it("counts today while usage is below the streak threshold", () => {

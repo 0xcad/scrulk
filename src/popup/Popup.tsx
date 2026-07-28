@@ -10,7 +10,7 @@ import {
   setSettings,
 } from "../shared/storage";
 import type { DayState, Settings } from "../shared/types";
-import { DEFAULT_DAY_STATE, effectiveMs, isLiveStreakDay, liveStreakCount } from "../shared/types";
+import { DEFAULT_DAY_STATE, effectiveAllSitesMs, effectiveMs, isLiveStreakDay, liveStreakCount } from "../shared/types";
 import { formatDuration } from "../shared/wakeDay";
 
 function formatWakeTime(t: string): string {
@@ -106,10 +106,10 @@ export function Popup() {
   }, [state.tabLimitWarning]);
 
   useEffect(() => {
-    if (state.activeSince === null) return;
+    if (state.activeSince === null && state.allSitesActiveSince === null) return;
     const id = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(id);
-  }, [state.activeSince, state.totalMs]);
+  }, [state.activeSince, state.totalMs, state.allSitesActiveSince, state.allSitesMs]);
 
   if (!settings) {
     return (
@@ -122,7 +122,9 @@ export function Popup() {
 
   const tracked = host ? isTracked(host, settings.trackedSites) : false;
   const displayHost = host ? host.replace(/^www\./, "") : null;
-  const todayMs = effectiveMs(state, now);
+  const trackedMs = effectiveMs(state, now);
+  const allSitesMs = effectiveAllSitesMs(state, now);
+  const todayMs = settings.alwaysShowTimer ? allSitesMs : trackedMs;
   const display = formatDuration(todayMs);
   const liveStreak = liveStreakCount(settings.currentStreak, state, now);
 
@@ -158,10 +160,13 @@ export function Popup() {
       )}
 
       <section class="usage">
-        <span class="usage-label">Today</span>
+        <span class="usage-label">{settings.alwaysShowTimer ? "Today — all sites" : "Today"}</span>
         <span class="usage-time">{display}</span>
+        {settings.alwaysShowTimer && (
+          <small>Tracked sites: {formatDuration(trackedMs)}</small>
+        )}
         <small>
-          {state.activeSince !== null
+          {(settings.alwaysShowTimer ? state.allSitesActiveSince : state.activeSince) !== null
             ? "tracking…"
             : liveStreak > 0 && isLiveStreakDay(state, now)
               ? `${liveStreak} 🔥`
@@ -202,7 +207,7 @@ export function Popup() {
         >
           open dashboard ↗
         </button>
-        {tracked && todayMs > 0 && !state.surveyContinueAllowed && (
+        {tracked && trackedMs > 0 && !state.surveyContinueAllowed && (
           <button type="button" onClick={onDone}>
             i'm done with tracked sites 🔓
           </button>

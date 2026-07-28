@@ -13,7 +13,7 @@ import {
   currentWakeDayStart,
   nextWakeUpAt,
 } from "../shared/wakeDay";
-import { effectiveMs, isLiveStreakDay, type DayState } from "../shared/types";
+import { effectiveAllSitesMs, effectiveMs, isLiveStreakDay, type DayState } from "../shared/types";
 import { scheduleBreaktimeAlarm } from "./breaktime";
 
 const DAY_RESET_ALARM = "scrulk:day-reset";
@@ -72,6 +72,11 @@ function shouldBeActive(inputs: ActivityInputs): boolean {
   return isTracked(host, inputs.trackedSites);
 }
 
+function shouldTrackAllSites(inputs: ActivityInputs): boolean {
+  if (!inputs.windowFocused || inputs.idleState !== "active") return false;
+  return hostnameOf(inputs.activeTabUrl) !== null;
+}
+
 export async function recompute(): Promise<void> {
   const settings = await getSettings();
   const now = Date.now();
@@ -86,6 +91,7 @@ export async function recompute(): Promise<void> {
   }
 
   const inputs = await readActivity();
+  const wantAllSitesActive = shouldTrackAllSites(inputs);
   // Mirror gateway state into dayState.gatewayOpen so the tracker pauses
   // while any expired-alert overlay is mounted on a tracked tab.
   const gatewayPaused = anyExpiredAlertActive(await getGatewayState());
@@ -99,6 +105,7 @@ export async function recompute(): Promise<void> {
   const wantActive =
     !state.breaktimeOpen && !state.gatewayOpen && shouldBeActive(inputs);
   let next = applyTransition(state, wantActive, now);
+  next = applyAllSitesTransition(next, wantAllSitesActive, now);
 
   // If we've crossed the breaktime threshold while active and no alert is
   // currently open, raise it. Content scripts on tracked tabs pick this up
@@ -123,6 +130,22 @@ export async function recompute(): Promise<void> {
   await scheduleBreaktimeAlarm(next, settings);
 }
 
+function applyAllSitesTransition(
+  state: DayState,
+  wantActive: boolean,
+  now: number,
+): DayState {
+  const isActive = state.allSitesActiveSince !== null;
+  if (wantActive && !isActive) {
+    return { ...state, allSitesActiveSince: now };
+  }
+  if (!wantActive && isActive) {
+    const elapsed = Math.max(0, now - (state.allSitesActiveSince ?? now));
+    return { ...state, allSitesMs: state.allSitesMs + elapsed, allSitesActiveSince: null };
+  }
+  return state;
+}
+
 function applyTransition(
   state: DayState,
   wantActive: boolean,
@@ -144,6 +167,8 @@ function stateEqual(a: DayState, b: DayState): boolean {
     a.wakeDayStart === b.wakeDayStart &&
     a.totalMs === b.totalMs &&
     a.activeSince === b.activeSince &&
+    a.allSitesMs === b.allSitesMs &&
+    a.allSitesActiveSince === b.allSitesActiveSince &&
     a.lastBreaktimeAt === b.lastBreaktimeAt &&
     a.breaktimeOpen === b.breaktimeOpen &&
     a.gatewayOpen === b.gatewayOpen &&
@@ -165,6 +190,7 @@ export async function rolloverDay(
 ): Promise<DayState> {
   const now = Date.now();
   const finalTotalMs = effectiveMs(outgoing, now);
+  const finalAllSitesMs = effectiveAllSitesMs(outgoing, now);
   const outgoingDate = dateKey(outgoing.wakeDayStart);
 
   const settings = await getSettings();
@@ -172,15 +198,21 @@ export async function rolloverDay(
   const newBest = Math.max(settings.bestStreak, newStreak);
   await setSettings({ currentStreak: newStreak, bestStreak: newBest });
 
-  if (outgoing.wakeDayStart > 0 && finalTotalMs > 0) {
+  if (outgoing.wakeDayStart > 0 && (finalTotalMs > 0 || finalAllSitesMs > 0)) {
     const streakPatch = newStreak > 0 ? { streak: newStreak } : {};
-    await upsertDay(outgoingDate, { totalMs: finalTotalMs, ...streakPatch }).catch(() => null);
+    await upsertDay(outgoingDate, {
+      totalMs: finalTotalMs,
+      allSitesMs: finalAllSitesMs,
+      ...streakPatch,
+    }).catch(() => null);
   }
 
   return {
     wakeDayStart: newWakeDayStart,
     totalMs: 0,
     activeSince: outgoing.activeSince !== null ? now : null,
+    allSitesMs: 0,
+    allSitesActiveSince: outgoing.allSitesActiveSince !== null ? now : null,
     lastBreaktimeAt: 0,
     breaktimeOpen: false,
     gatewayOpen: false,

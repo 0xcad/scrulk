@@ -105,7 +105,9 @@ export function Root({ matchedDomain }: Props) {
 
   return (
     <>
-      {matchedDomain !== null && <UsageClock matchedDomain={matchedDomain} />}
+      {(matchedDomain !== null || settings.alwaysShowTimer) && (
+        <UsageClock matchedDomain={matchedDomain} alwaysShowTimer={settings.alwaysShowTimer} />
+      )}
       <SleepClock />
       <DimOverlay state={state} settings={settings} gateway={gateway} matchedDomain={matchedDomain} />
       {matchedDomain !== null && state.breaktimeOpen && <BreaktimeOverlay />}

@@ -165,6 +165,35 @@ label.row small {
   margin: 4px 0 0;
 }
 
+.today-times {
+  display: grid;
+  gap: 2px;
+  min-width: 220px;
+  width: fit-content;
+}
+
+.today-time-row {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  align-items: baseline;
+  column-gap: 12px;
+}
+
+.today-time-row small {
+  text-align: right;
+  opacity: 0.6;
+}
+
+.today-time-row.primary .big-number {
+  margin: 0;
+}
+
+.today-time-row.secondary span {
+  font-size: 24px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
 .avg-arrow {
   display: inline-block;
   margin-left: 10px;

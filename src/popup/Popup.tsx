@@ -159,20 +159,26 @@ export function Popup() {
         </p>
       )}
 
-      <section class="usage">
-        <span class="usage-label">{settings.alwaysShowTimer ? "Today — all sites" : "Today"}</span>
-        <span class="usage-time">{display}</span>
-        {settings.alwaysShowTimer && (
-          <small>Tracked sites: {formatDuration(trackedMs)}</small>
-        )}
-        <small>
-          {(settings.alwaysShowTimer ? state.allSitesActiveSince : state.activeSince) !== null
-            ? "tracking…"
-            : liveStreak > 0 && isLiveStreakDay(state, now)
-              ? `${liveStreak} 🔥`
-              : "paused"}
-        </small>
-      </section>
+      {settings.alwaysShowTimer ? (
+        <>
+          <section class="usage usage-total">
+            <span class="usage-time">{display}</span>
+          </section>
+          <p class="tracked-usage">Tracked sites: {formatDuration(trackedMs)}</p>
+        </>
+      ) : (
+        <section class="usage">
+          <span class="usage-label">Today</span>
+          <span class="usage-time">{display}</span>
+          <small>
+            {state.activeSince !== null
+              ? "tracking…"
+              : liveStreak > 0 && isLiveStreakDay(state, now)
+                ? `${liveStreak} 🔥`
+                : "paused"}
+          </small>
+        </section>
+      )}
 
       {displayHost ? (
         <>

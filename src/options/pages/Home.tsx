@@ -73,27 +73,26 @@ export function Home() {
   return (
     <section>
       <h2>Today</h2>
-      {settings.alwaysShowTimer && <p><small>Time on all sites</small></p>}
-      <p class="big-number">
-        {formatDuration(todayMs)}
-        {avgDirection && (
-          <span
-            class={`avg-arrow ${avgDirection}`}
-            title={
-              avgDirection === "up"
-                ? "Above your average — raising it"
-                : "Below your average — lowering it"
-            }
-            aria-label={
-              avgDirection === "up"
-                ? "above average"
-                : "below average"
-            }
-          >
-            {avgDirection === "up" ? "↗" : "↘"}
-          </span>
-        )}
-      </p>
+      {settings.alwaysShowTimer ? (
+        <div class="today-times">
+          <div class="today-time-row primary">
+            <span class="big-number">
+              {formatDuration(todayMs)}
+              {avgDirection && <AverageArrow direction={avgDirection} />}
+            </span>
+            <small>total</small>
+          </div>
+          <div class="today-time-row secondary">
+            <span>{formatDuration(trackedMs)}</span>
+            <small>tracked</small>
+          </div>
+        </div>
+      ) : (
+        <p class="big-number">
+          {formatDuration(todayMs)}
+          {avgDirection && <AverageArrow direction={avgDirection} />}
+        </p>
+      )}
       {liveStreak > 0 && (
         <p class="streak-today">{liveStreak} day streak 🔥</p>
       )}
@@ -148,5 +147,17 @@ export function Home() {
         showAllSitesTime={settings.alwaysShowTimer}
       />
     </section>
+  );
+}
+
+function AverageArrow({ direction }: { direction: "up" | "down" }) {
+  return (
+    <span
+      class={`avg-arrow ${direction}`}
+      title={direction === "up" ? "Above your average — raising it" : "Below your average — lowering it"}
+      aria-label={direction === "up" ? "above average" : "below average"}
+    >
+      {direction === "up" ? "↗" : "↘"}
+    </span>
   );
 }

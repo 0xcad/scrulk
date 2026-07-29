@@ -17,6 +17,8 @@ export interface Settings {
   tabLimit: number;
   /** Show the all-websites clock on every HTTP(S) page. Default false. */
   alwaysShowTimer: boolean;
+  /** Whether the shared all-websites timer is showing its detail rows. */
+  alwaysShowTimerExpanded: boolean;
   /** Per tracked-domain saved overlay position. */
   clockPositions: Record<string, ClockPosition>;
   /** Single global position for the universal sleep clock. */
@@ -42,6 +44,7 @@ export const DEFAULT_SETTINGS: Settings = {
   breaktimeMinutes: 30,
   tabLimit: 3,
   alwaysShowTimer: false,
+  alwaysShowTimerExpanded: false,
   clockPositions: {},
   sleepClockPosition: null,
   allSitesClockPosition: null,

@@ -78,7 +78,10 @@ function AlwaysShowTimerField() {
         onChange={(e) => {
           const next = (e.target as HTMLInputElement).checked;
           setEnabled(next);
-          void setSettings({ alwaysShowTimer: next });
+          void setSettings({
+            alwaysShowTimer: next,
+            ...(next ? {} : { alwaysShowTimerExpanded: false }),
+          });
         }}
       />
       <small>Also records and displays total time on all websites.</small>

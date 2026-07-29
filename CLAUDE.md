@@ -92,6 +92,10 @@ manifest.config.ts ts-typed manifest, consumed by @crxjs at build time
    affect breaktime, gateway, tab-limit, or streak behavior. The
    `alwaysShowTimer` setting controls whether this value is shown.
 
+   Day rollover finalizes open segments at the wake-day boundary, never at a
+   delayed alarm or resume time. New-day segments begin only after the next
+   activity recomputation confirms the user is active.
+
 7. **Content script is universal + reactive.** `src/content/index.tsx` runs
    on `<all_urls>`, bails fast when host isn't tracked, and (un)mounts on
    `storage.onChanged`. When you add a new content-script feature
@@ -137,8 +141,10 @@ manifest.config.ts ts-typed manifest, consumed by @crxjs at build time
 When `alwaysShowTimer` is on, the timer initially shows an unlabeled
 all-websites total on every page. Clicking it toggles a two-line total/tracked
 view (including a zero/non-incrementing tracked value on untracked pages);
-dragging still repositions it. The popup, dashboard, calendar details, month
-stats, and survey expose all-sites time only while the setting is on.
+the shared `alwaysShowTimerExpanded` setting keeps that choice synchronized
+across page refreshes and tabs. Dragging still repositions it. The popup,
+dashboard, calendar details, month stats, and survey expose all-sites time
+only while the setting is on.
 `DayRecord.allSitesMs` is optional so records created before this feature show
 no inferred total.
 

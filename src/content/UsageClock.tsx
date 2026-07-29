@@ -30,9 +30,15 @@ export function UsageClock({ matchedDomain, alwaysShowTimer }: Props) {
       matchedDomain === null
         ? s.allSitesClockPosition ?? DEFAULT_POS
         : s.clockPositions[matchedDomain] ?? DEFAULT_POS;
-    void getSettings().then((s) => setPos(positionFor(s)));
+    void getSettings().then((s) => {
+      setPos(positionFor(s));
+      setExpanded(s.alwaysShowTimerExpanded);
+    });
     const offState = onDayStateChange(setState);
-    const offSettings = onSettingsChange((s) => setPos(positionFor(s)));
+    const offSettings = onSettingsChange((s) => {
+      setPos(positionFor(s));
+      setExpanded(s.alwaysShowTimerExpanded);
+    });
     return () => {
       offState();
       offSettings();
@@ -90,7 +96,10 @@ export function UsageClock({ matchedDomain, alwaysShowTimer }: Props) {
     if (!drag) return;
     dragRef.current = null;
     if (!drag.moved) {
-      if (alwaysShowTimer) setExpanded((value) => !value);
+      if (alwaysShowTimer) {
+        const settings = await getSettings();
+        await setSettings({ alwaysShowTimerExpanded: !settings.alwaysShowTimerExpanded });
+      }
       return;
     }
     const settings = await getSettings();

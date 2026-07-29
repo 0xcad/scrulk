@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   DEFAULT_DAY_STATE,
+  DEFAULT_SETTINGS,
   effectiveAllSitesMs,
   isLiveStreakDay,
   liveStreakCount,
@@ -22,6 +23,12 @@ describe("effectiveAllSitesMs", () => {
       ...DEFAULT_DAY_STATE,
       allSitesMs: 2_000,
     }, 10_000)).toBe(2_000);
+  });
+});
+
+describe("all-sites timer defaults", () => {
+  it("starts collapsed", () => {
+    expect(DEFAULT_SETTINGS.alwaysShowTimerExpanded).toBe(false);
   });
 });
 

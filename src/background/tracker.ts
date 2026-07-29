@@ -181,20 +181,20 @@ function stateEqual(a: DayState, b: DayState): boolean {
 }
 
 /**
- * Compute the next-day state from an outgoing day. Persists the outgoing
- * day's totalMs to IndexedDB.
+ * Compute the next-day state from an outgoing day. Open segments are closed
+ * at the wake-day boundary, not at a delayed alarm/resume time, so suspended
+ * time cannot be counted as usage.
  */
 export async function rolloverDay(
   outgoing: DayState,
   newWakeDayStart: number,
 ): Promise<DayState> {
-  const now = Date.now();
-  const finalTotalMs = effectiveMs(outgoing, now);
-  const finalAllSitesMs = effectiveAllSitesMs(outgoing, now);
+  const finalTotalMs = effectiveMs(outgoing, newWakeDayStart);
+  const finalAllSitesMs = effectiveAllSitesMs(outgoing, newWakeDayStart);
   const outgoingDate = dateKey(outgoing.wakeDayStart);
 
   const settings = await getSettings();
-  const newStreak = isLiveStreakDay(outgoing, now) ? settings.currentStreak + 1 : 0;
+  const newStreak = isLiveStreakDay(outgoing, newWakeDayStart) ? settings.currentStreak + 1 : 0;
   const newBest = Math.max(settings.bestStreak, newStreak);
   await setSettings({ currentStreak: newStreak, bestStreak: newBest });
 
@@ -210,9 +210,9 @@ export async function rolloverDay(
   return {
     wakeDayStart: newWakeDayStart,
     totalMs: 0,
-    activeSince: outgoing.activeSince !== null ? now : null,
+    activeSince: null,
     allSitesMs: 0,
-    allSitesActiveSince: outgoing.allSitesActiveSince !== null ? now : null,
+    allSitesActiveSince: null,
     lastBreaktimeAt: 0,
     breaktimeOpen: false,
     gatewayOpen: false,

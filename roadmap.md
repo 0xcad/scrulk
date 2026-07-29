@@ -202,8 +202,6 @@ look into dimming the screen slowly for the last 30-60 seconds before you pull a
 
 if you're up 2 hrs before your wake up time, just don't show that clock
 
-definitely need streaks for no usage on calendar view, and to display that in popup
-
 idea: optional setting (default off) -- show usage timer on *all* websites, and just have total daily usage. that's always visible. separate from time spent on tracked sites...
 * something else must be broken about total time on all sites because it says I had 14 hrs yesterday (totally wrong)
 * Also, want the "click to open pill" thing to be saved to state (if it's open, keep it open on other pages...)
@@ -240,8 +238,6 @@ ai generated code cleanup:
 * computation of the running average ms could be more efficient / "online", but whatever this is fine
 
 ==
-
-idea: instead of a positive streak, show a negative streak, and prompt user to break that.
 
 "I'm done with tracked sites" button has to be visible even not on a tracked site
     * idea: dropdown caret on right of this button to stop for 24 / 36 hrs?

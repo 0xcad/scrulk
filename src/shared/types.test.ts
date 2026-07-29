@@ -3,8 +3,8 @@ import {
   DEFAULT_DAY_STATE,
   DEFAULT_SETTINGS,
   effectiveAllSitesMs,
-  isLiveStreakDay,
-  liveStreakCount,
+  isUsageStreakDay,
+  liveUsageStreakCount,
   STREAK_THRESHOLD_MS,
 } from "./types";
 
@@ -32,42 +32,42 @@ describe("all-sites timer defaults", () => {
   });
 });
 
-describe("isLiveStreakDay", () => {
-  it("counts today while usage is below the streak threshold", () => {
-    expect(isLiveStreakDay(DEFAULT_DAY_STATE, Date.now())).toBe(true);
+describe("isUsageStreakDay", () => {
+  it("does not count today before tracked usage reaches the streak threshold", () => {
+    expect(isUsageStreakDay(DEFAULT_DAY_STATE, Date.now())).toBe(false);
   });
 
-  it("does not count today after the gateway breaks the streak", () => {
+  it("counts today once tracked usage reaches the threshold", () => {
     expect(
-      isLiveStreakDay(
-        { ...DEFAULT_DAY_STATE, streakBrokenToday: true },
-        Date.now(),
-      ),
-    ).toBe(false);
-  });
-
-  it("does not count today once usage reaches the threshold", () => {
-    expect(
-      isLiveStreakDay(
+      isUsageStreakDay(
         { ...DEFAULT_DAY_STATE, totalMs: STREAK_THRESHOLD_MS },
         Date.now(),
       ),
-    ).toBe(false);
+    ).toBe(true);
+  });
+
+  it("includes an open tracked segment when checking the threshold", () => {
+    expect(
+      isUsageStreakDay(
+        { ...DEFAULT_DAY_STATE, activeSince: 5_000 },
+        5_000 + STREAK_THRESHOLD_MS,
+      ),
+    ).toBe(true);
   });
 });
 
-describe("liveStreakCount", () => {
-  it("adds today to the completed streak while today is eligible", () => {
-    expect(liveStreakCount(2, DEFAULT_DAY_STATE, Date.now())).toBe(3);
+describe("liveUsageStreakCount", () => {
+  it("keeps a completed streak visible before today qualifies", () => {
+    expect(liveUsageStreakCount(2, DEFAULT_DAY_STATE, Date.now())).toBe(2);
   });
 
-  it("returns no live streak after the gateway breaks today", () => {
+  it("adds today after tracked usage reaches the threshold", () => {
     expect(
-      liveStreakCount(
+      liveUsageStreakCount(
         2,
-        { ...DEFAULT_DAY_STATE, streakBrokenToday: true },
+        { ...DEFAULT_DAY_STATE, totalMs: STREAK_THRESHOLD_MS },
         Date.now(),
       ),
-    ).toBe(0);
+    ).toBe(3);
   });
 });

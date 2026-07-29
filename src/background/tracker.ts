@@ -13,7 +13,7 @@ import {
   currentWakeDayStart,
   nextWakeUpAt,
 } from "../shared/wakeDay";
-import { effectiveAllSitesMs, effectiveMs, isLiveStreakDay, type DayState } from "../shared/types";
+import { effectiveAllSitesMs, effectiveMs, isUsageStreakDay, type DayState } from "../shared/types";
 import { scheduleBreaktimeAlarm } from "./breaktime";
 
 const DAY_RESET_ALARM = "scrulk:day-reset";
@@ -175,7 +175,6 @@ function stateEqual(a: DayState, b: DayState): boolean {
     a.tabLimitWarning === b.tabLimitWarning &&
     a.surveyFilledFor === b.surveyFilledFor &&
     a.breaktimeShownToday === b.breaktimeShownToday &&
-    a.streakBrokenToday === b.streakBrokenToday &&
     a.surveyContinueAllowed === b.surveyContinueAllowed
   );
 }
@@ -194,16 +193,15 @@ export async function rolloverDay(
   const outgoingDate = dateKey(outgoing.wakeDayStart);
 
   const settings = await getSettings();
-  const newStreak = isLiveStreakDay(outgoing, newWakeDayStart) ? settings.currentStreak + 1 : 0;
-  const newBest = Math.max(settings.bestStreak, newStreak);
-  await setSettings({ currentStreak: newStreak, bestStreak: newBest });
+  const usageStreak = isUsageStreakDay(outgoing, newWakeDayStart)
+    ? settings.usageStreak + 1
+    : 0;
+  await setSettings({ usageStreak });
 
   if (outgoing.wakeDayStart > 0 && (finalTotalMs > 0 || finalAllSitesMs > 0)) {
-    const streakPatch = newStreak > 0 ? { streak: newStreak } : {};
     await upsertDay(outgoingDate, {
       totalMs: finalTotalMs,
       allSitesMs: finalAllSitesMs,
-      ...streakPatch,
     }).catch(() => null);
   }
 
@@ -219,7 +217,6 @@ export async function rolloverDay(
     tabLimitWarning: false,
     surveyFilledFor: null,
     breaktimeShownToday: false,
-    streakBrokenToday: false,
     surveyContinueAllowed: false,
   };
 }

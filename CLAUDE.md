@@ -132,7 +132,7 @@ manifest.config.ts ts-typed manifest, consumed by @crxjs at build time
    to `DEFAULT_SETTINGS`.
 2. Surface a control on `src/options/pages/Settings.tsx`. Group related
    settings under their own `<section>` with an `<h2>`.
-   (Exception: computed/internal settings like `currentStreak`/`bestStreak`
+   (Exception: computed/internal settings like `usageStreak`
    are written by the background and have no user-facing control.)
 3. Anything that reacts to the setting subscribes via `onSettingsChange`.
 
@@ -150,19 +150,17 @@ no inferred total.
 
 ## Streak counters
 
-`settings.currentStreak` and `settings.bestStreak` track consecutive days with
-near-zero tracked-site usage. They are **only ever written by `rolloverDay()`**
+`settings.usageStreak` tracks consecutive days with at least 20 seconds of
+tracked-site usage. It is **only ever written by `rolloverDay()`**
 in `src/background/tracker.ts` — do not update them anywhere else.
 
-- **Zero-usage threshold:** `STREAK_THRESHOLD_MS` (20 000 ms) in
+- **Usage threshold:** `STREAK_THRESHOLD_MS` (20 000 ms) in
   `src/shared/types.ts`. Internal only — never show this number to the user.
-- **Live streak formula:** `liveStreakCount(settings.currentStreak, state, now)`
-  — yesterday's completed count plus today while the current day is still
-  eligible; once today is broken, live streak displays drop to zero until the
-  next wake-day.
-- **Calendar:** `DayRecord.streak` is written by `rolloverDay()` when the
-  outgoing day was a streak day. The calendar reads it directly; no full
-  history scan is needed anywhere.
+- **Live streak formula:** `liveUsageStreakCount(settings.usageStreak, state, now)`
+  — yesterday's completed count remains current until the day ends without
+  qualifying use; it increments once today's tracked time reaches the threshold.
+- **Calendar:** streaks are not persisted in `DayRecord` or displayed in the
+  calendar.
 
 ## How to add a content-script overlay (slice 2+)
 

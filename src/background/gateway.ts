@@ -5,7 +5,6 @@ import {
   getGatewayState,
   getSettings,
   getTabBackMap,
-  setDayState,
   setGatewayState,
   setTabBackMap,
 } from "../shared/storage";
@@ -219,10 +218,6 @@ export async function startTimer(
     expiredAlertActive: false,
   };
   await setGatewayState(state);
-  const dayState = await getDayState();
-  if (!dayState.streakBrokenToday) {
-    await setDayState({ ...dayState, streakBrokenToday: true });
-  }
   await browser.alarms.create(expireAlarmName(domain), { when: expiresAt });
   if (senderTabId !== undefined) {
     await browser.tabs.update(senderTabId, { url: destUrl }).catch(() => null);

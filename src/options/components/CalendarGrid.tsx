@@ -164,9 +164,7 @@ export function CalendarGrid({
               <span class="cal-day-num">{c.day}</span>
               {rec && !isPreInstall && (
                 <span class="cal-day-usage">
-                  {rec.streak !== undefined && rec.streak > 0
-                    ? `${rec.streak} 🔥`
-                    : formatDuration(rec.totalMs)}
+                  {formatDuration(rec.totalMs)}
                 </span>
               )}
               {hasNotes && !isPreInstall && (

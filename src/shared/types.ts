@@ -25,10 +25,8 @@ export interface Settings {
   sleepClockPosition: ClockPosition | null;
   /** Global position for the all-websites clock on untracked pages. */
   allSitesClockPosition: ClockPosition | null;
-  /** Consecutive zero-usage days ending with the last completed day. */
-  currentStreak: number;
-  /** All-time longest zero-usage streak. */
-  bestStreak: number;
+  /** Consecutive tracked-site usage days ending with the last completed day. */
+  usageStreak: number;
 }
 
 export interface ClockPosition {
@@ -48,8 +46,7 @@ export const DEFAULT_SETTINGS: Settings = {
   clockPositions: {},
   sleepClockPosition: null,
   allSitesClockPosition: null,
-  currentStreak: 0,
-  bestStreak: 0,
+  usageStreak: 0,
 };
 
 export const SETTINGS_KEY = "settings" as const;
@@ -83,8 +80,6 @@ export interface DayState {
   surveyFilledFor: string | null;
   /** True once the breaktime alert has been shown at least once this wake-day. */
   breaktimeShownToday: boolean;
-  /** True once the user has intentionally proceeded to a tracked site this wake-day. */
-  streakBrokenToday: boolean;
   /**
    * True once the user has clicked "Continue" on the post-survey page for
    * the current wake-day. While false (and `surveyFilledFor` is set), any
@@ -106,7 +101,6 @@ export const DEFAULT_DAY_STATE: DayState = {
   tabLimitWarning: false,
   surveyFilledFor: null,
   breaktimeShownToday: false,
-  streakBrokenToday: false,
   surveyContinueAllowed: false,
 };
 
@@ -155,14 +149,19 @@ export function effectiveAllSitesMs(state: DayState, now: number): number {
   return state.allSitesMs + Math.max(0, now - state.allSitesActiveSince);
 }
 
-export function isLiveStreakDay(state: DayState, now: number): boolean {
-  return !state.streakBrokenToday && effectiveMs(state, now) < STREAK_THRESHOLD_MS;
+/** Whether the current wake-day has enough tracked usage to extend a streak. */
+export function isUsageStreakDay(state: DayState, now: number): boolean {
+  return effectiveMs(state, now) >= STREAK_THRESHOLD_MS;
 }
 
-export function liveStreakCount(
+/**
+ * Current consecutive-use run. A completed prior-day run remains current
+ * until today's wake-day completes without qualifying tracked usage.
+ */
+export function liveUsageStreakCount(
   completedStreak: number,
   state: DayState,
   now: number,
 ): number {
-  return isLiveStreakDay(state, now) ? completedStreak + 1 : 0;
+  return completedStreak + (isUsageStreakDay(state, now) ? 1 : 0);
 }

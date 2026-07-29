@@ -3,7 +3,7 @@ import browser from "webextension-polyfill";
 import type { Message } from "../shared/messages";
 import { getDayState, getSettings } from "../shared/storage";
 import type { DayState, Settings } from "../shared/types";
-import { DEFAULT_DAY_STATE, liveStreakCount } from "../shared/types";
+import { DEFAULT_DAY_STATE, liveUsageStreakCount } from "../shared/types";
 
 const TIMER_OPTIONS = [2, 5, 10] as const;
 
@@ -50,8 +50,8 @@ export function Gateway() {
     }).catch(() => null);
   };
 
-  const liveStreak = settings !== null
-    ? liveStreakCount(settings.currentStreak, dayState, Date.now())
+  const usageStreak = settings !== null
+    ? liveUsageStreakCount(settings.usageStreak, dayState, Date.now())
     : 0;
 
   return (
@@ -61,10 +61,9 @@ export function Gateway() {
         You're about to load <span class="domain">{domain || "a tracked site"}</span>.
         How long do you want to give yourself?
       </p>
-      {liveStreak > 0 && (
+      {usageStreak > 1 && (
         <p>
-          <i>Hey! By proceeding, you will break your{" "}
-          <b>{liveStreak} day streak 🔥</b></i>
+          You've used tracked sites <b>{usageStreak} days in a row.</b>
         </p>
       )}
       <div class="buttons">

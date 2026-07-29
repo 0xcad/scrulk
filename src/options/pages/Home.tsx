@@ -6,7 +6,7 @@ import {
   onDayStateChange,
   onSettingsChange,
 } from "../../shared/storage";
-import { DEFAULT_DAY_STATE, effectiveAllSitesMs, effectiveMs, liveStreakCount } from "../../shared/types";
+import { DEFAULT_DAY_STATE, effectiveAllSitesMs, effectiveMs, liveUsageStreakCount } from "../../shared/types";
 import type { DayState, Settings } from "../../shared/types";
 import { formatDuration, formatUptime } from "../../shared/wakeDay";
 import { CalendarPanel } from "../components/CalendarPanel";
@@ -54,7 +54,7 @@ export function Home() {
   const trackedMs = effectiveMs(state, now);
   const allSitesMs = effectiveAllSitesMs(state, now);
   const todayMs = settings.alwaysShowTimer ? allSitesMs : trackedMs;
-  const liveStreak = liveStreakCount(settings.currentStreak, state, now);
+  const usageStreak = liveUsageStreakCount(settings.usageStreak, state, now);
   const trackedAvgMs = days.length > 0
     ? days.reduce((acc, d) => acc + d.totalMs, 0) / days.length
     : null;
@@ -93,8 +93,8 @@ export function Home() {
           {avgDirection && <AverageArrow direction={avgDirection} />}
         </p>
       )}
-      {liveStreak > 0 && (
-        <p class="streak-today">{liveStreak} day streak 🔥</p>
+      {usageStreak > 1 && (
+        <p class="streak-today">{usageStreak}-day tracked-site usage streak</p>
       )}
 
       <h2>Summary</h2>
@@ -129,12 +129,6 @@ export function Home() {
           {settings.installedAt ? (
             <small> (since {installedOn})</small>
           ) : null}
-        </dd>
-        <dt>Best Streak</dt>
-        <dd>
-          {settings.bestStreak > 0
-            ? `${settings.bestStreak} day${settings.bestStreak !== 1 ? "s" : ""}`
-            : "—"}
         </dd>
       </dl>
 

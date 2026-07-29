@@ -10,7 +10,7 @@ import {
   setSettings,
 } from "../shared/storage";
 import type { DayState, Settings } from "../shared/types";
-import { DEFAULT_DAY_STATE, effectiveAllSitesMs, effectiveMs, isLiveStreakDay, liveStreakCount } from "../shared/types";
+import { DEFAULT_DAY_STATE, effectiveAllSitesMs, effectiveMs, liveUsageStreakCount } from "../shared/types";
 import { formatDuration } from "../shared/wakeDay";
 
 function formatWakeTime(t: string): string {
@@ -126,7 +126,7 @@ export function Popup() {
   const allSitesMs = effectiveAllSitesMs(state, now);
   const todayMs = settings.alwaysShowTimer ? allSitesMs : trackedMs;
   const display = formatDuration(todayMs);
-  const liveStreak = liveStreakCount(settings.currentStreak, state, now);
+  const usageStreak = liveUsageStreakCount(settings.usageStreak, state, now);
 
   const onAdd = async () => {
     if (!displayHost) return;
@@ -163,6 +163,7 @@ export function Popup() {
         <>
           <section class="usage usage-total">
             <span class="usage-time">{display}</span>
+            {usageStreak > 1 && <small>{usageStreak} 🔒</small>}
           </section>
           <p class="tracked-usage">Tracked sites: {formatDuration(trackedMs)}</p>
         </>
@@ -171,10 +172,10 @@ export function Popup() {
           <span class="usage-label">Today</span>
           <span class="usage-time">{display}</span>
           <small>
-            {state.activeSince !== null
-              ? "tracking…"
-              : liveStreak > 0 && isLiveStreakDay(state, now)
-                ? `${liveStreak} 🔥`
+            {usageStreak > 1
+              ? `${usageStreak} 🔒`
+              : state.activeSince !== null
+                ? "tracking…"
                 : "paused"}
           </small>
         </section>

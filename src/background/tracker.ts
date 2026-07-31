@@ -91,9 +91,9 @@ export async function recompute(): Promise<void> {
   }
 
   const inputs = await readActivity();
-  const wantAllSitesActive = shouldTrackAllSites(inputs);
   // Mirror gateway state into dayState.gatewayOpen so the tracker pauses
-  // while any expired-alert overlay is mounted on a tracked tab.
+  // while either friction prompt is visible. This applies to both the
+  // tracked-site and always-visible all-sites clocks.
   const gatewayPaused = anyExpiredAlertActive(await getGatewayState());
   if (state.gatewayOpen !== gatewayPaused) {
     state = applyTransition(state, false, now);
@@ -104,6 +104,8 @@ export async function recompute(): Promise<void> {
   // a paused clock.
   const wantActive =
     !state.breaktimeOpen && !state.gatewayOpen && shouldBeActive(inputs);
+  const wantAllSitesActive =
+    !state.breaktimeOpen && !state.gatewayOpen && shouldTrackAllSites(inputs);
   let next = applyTransition(state, wantActive, now);
   next = applyAllSitesTransition(next, wantAllSitesActive, now);
 

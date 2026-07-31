@@ -1,8 +1,10 @@
 import { useEffect, useState } from "preact/hooks";
+import browser from "webextension-polyfill";
 import { TrackedSitesList } from "../components/TrackedSitesList";
 import { NumberField } from "../components/NumberField";
 import { getSettings, onSettingsChange, setSettings } from "../../shared/storage";
 import type { CameraOverlayPermission } from "../../shared/types";
+import type { Message } from "../../shared/messages";
 
 export function Settings() {
   return (
@@ -61,7 +63,8 @@ export function Settings() {
         <p>
           Show a small mirrored view of yourself on tracked websites. Scroll
           Unlock requests video-only access; the website never receives your
-          camera stream.
+          camera stream. Firefox keeps a Scroll Unlock helper tab open while
+          the camera is in use.
         </p>
         <CameraOverlayField />
       </section>
@@ -86,19 +89,11 @@ function CameraOverlayField() {
     });
   }, []);
 
-  const requestCamera = async () => {
+  const openCameraHub = async () => {
     setBusy(true);
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: true,
-        audio: false,
-      });
-      stream.getTracks().forEach((track) => track.stop());
-      setPermission("granted");
-      await setSettings({ cameraOverlayPermission: "granted" });
-    } catch {
-      setPermission("denied");
-      await setSettings({ cameraOverlayPermission: "denied" });
+      const message: Message = { type: "camera:enable" };
+      await browser.runtime.sendMessage(message);
     } finally {
       setBusy(false);
     }
@@ -123,15 +118,23 @@ function CameraOverlayField() {
           onChange={(e) => {
             const next = (e.target as HTMLInputElement).checked;
             setEnabled(next);
-            void setSettings({ cameraOverlayEnabled: next });
-            if (next) void requestCamera();
+            void (async () => {
+              await setSettings({
+                cameraOverlayEnabled: next,
+                ...(next ? {} : { cameraOverlayPermission: "unknown" }),
+              });
+              const message: Message = {
+                type: next ? "camera:enable" : "camera:disable",
+              };
+              await browser.runtime.sendMessage(message);
+            })();
           }}
         />
       </label>
       <small class={permission === "denied" ? "error" : undefined}>{status}</small>
       {enabled && permission === "denied" && (
-        <button type="button" disabled={busy} onClick={() => void requestCamera()}>
-          {busy ? "requesting…" : "retry camera access"}
+        <button type="button" disabled={busy} onClick={() => void openCameraHub()}>
+          {busy ? "opening…" : "retry camera access"}
         </button>
       )}
     </div>

@@ -41,6 +41,7 @@ import {
   syncDomainTabPresence,
 } from "./gateway";
 import { onGatewayStateChange } from "../shared/storage";
+import { closeCameraHub, ensureCameraHub } from "./camera";
 
 // MV3 service worker: ephemeral. No long-lived module-level state.
 // All listeners must be registered synchronously at top level so the worker
@@ -188,6 +189,21 @@ browser.runtime.onMessage.addListener((message: unknown, sender: browser.Runtime
   if (msg.type === "gateway:setContinue") {
     return handleSetContinue(msg.domain).then(() => recompute());
   }
+  if (msg.type === "camera:enable") {
+    return ensureCameraHub(true, sender.tab);
+  }
+  if (msg.type === "camera:ensure") {
+    return getSettings().then((settings) => {
+      if (!settings.cameraOverlayEnabled) return undefined;
+      return ensureCameraHub(
+        settings.cameraOverlayPermission !== "granted",
+        sender.tab,
+      );
+    });
+  }
+  if (msg.type === "camera:disable") {
+    return closeCameraHub();
+  }
   return undefined;
 });
 
@@ -260,6 +276,9 @@ async function handleSurveyContinue(
 }
 
 onSettingsChange(async (next) => {
+  if (!next.cameraOverlayEnabled) {
+    await closeCameraHub();
+  }
   await refreshAllTabIcons(next.trackedSites);
   await ensureDayResetAlarm(next.wakeUpTime);
   await recompute();

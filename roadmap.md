@@ -252,6 +252,8 @@ ai generated code cleanup:
 
 ==
 
+is GateWay / "Pause" / "Time's up" wall clock time? I think it is, should it be?
+
 idea: collect bullet points from user about what they want to be doing online *instead* of using tracked sites. show those in an accordion in the modal popup. occasionally, when user is scrolling, show these at random intervals to user one at a time
 * if you let an app collect scope creep for long enough, eventually everything turns to a todo application
 

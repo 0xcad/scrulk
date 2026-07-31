@@ -210,8 +210,11 @@ if "time for a break" is shown, or "pause" (gateway.tsx)  do not increment total
 
 idea: on breaktime alert, gives you a +2 min extension. prevents you from opening new tracked tabs (idea is to let you get to a stopping point in whatever you're currently looking at). change the color of the timer
 
-## TODO:
 
+idea: glance-back esque, look at yourself while you hold
+> Seeing herself through the eyes of the hidden video cameras that recorded her despair, she became acutely aware of herself as a subject in the world.
+
+## TODO:
 
 * i think there's a bug with the survey -> re-entry flow
 * need to change icons ofc
@@ -257,12 +260,13 @@ similar idea: a list of alternatives user has to click past? go for a short walk
 metrics idea: capture moving average of "outlier scrolling". my average right now is 11 mins per day, that seems suspiciously good, but I'm also trying to measure binge scrolling, which is less frequent. so maybe that's measuring a moving average of my top 5% outlier scroll sessions? another idea could also just be plotting a normal distribution of scrolling...
 * how long was this binge scroll session compared to your last one? what about the ones before? what do your trendlines look like?
 
-idea: glance-back esque, look at yourself while you hold
-> Seeing herself through the eyes of the hidden video cameras that recorded her despair, she became acutely aware of herself as a subject in the world.
-
 idea: after ending a day (survey flow), make screen dim/grayscale if returning to tracked content / any site
 
 idea: just make all tracked pages load 100ms slower or smtg?
+
+If I like camera on pause menu, keep it, but make the styling look nicer
+If I dislike it, get rid of it (commit 149aaf61becbf377cb89f73879f0045f6165819b)
+* codex resume 019fb5d7-5d24-7c22-9803-be04b224db47
 
 *wonderful* idea: A DNS, MITM proxy (with trusted root certificate) that just loads scroll unlock whenever you use it. must run a server then to store data in the backend. instead of browser extension pages, something like `scroll-unlock.local` could be used? or, best user-experience, the extension communicates with the locally running server. extension settings modify the server settings. if we get connection to the server (heartbeat), hide all shadow DOM and just let DNS injection handle everything.
 * Value: If I want to get around this, i can just open a different browser, open a private browsing window, and I'm stopped. i never fuck with my DNS settings. Editing my hosts file is super inconvenient. Also, you can get it on multiple devices in sync for cheap

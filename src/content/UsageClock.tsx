@@ -45,18 +45,32 @@ export function UsageClock({ matchedDomain, alwaysShowTimer }: Props) {
     };
   }, [matchedDomain]);
 
+  // Without the all-sites timer, the detail view is only meaningful while an
+  // extension is active (it exposes the countdown alongside tracked time).
   useEffect(() => {
-    if (!alwaysShowTimer) setExpanded(false);
-  }, [alwaysShowTimer]);
+    if (!alwaysShowTimer && state.breaktimeExtensionExpiresAt === null) {
+      setExpanded(false);
+    }
+  }, [alwaysShowTimer, state.breaktimeExtensionExpiresAt]);
 
   // Tick once per second while page is visible AND a segment is open.
   // (When `activeSince` is null the displayed value is static.)
   useEffect(() => {
-    if (state.activeSince === null && state.allSitesActiveSince === null) return;
+    if (
+      state.activeSince === null &&
+      state.allSitesActiveSince === null &&
+      state.breaktimeExtensionExpiresAt === null
+    ) return;
     if (document.visibilityState !== "visible") return;
     const id = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(id);
-  }, [state.activeSince, state.totalMs, state.allSitesActiveSince, state.allSitesMs]);
+  }, [
+    state.activeSince,
+    state.totalMs,
+    state.allSitesActiveSince,
+    state.allSitesMs,
+    state.breaktimeExtensionExpiresAt,
+  ]);
 
   // Drag handling.
   const dragRef = useRef<{
@@ -96,7 +110,7 @@ export function UsageClock({ matchedDomain, alwaysShowTimer }: Props) {
     if (!drag) return;
     dragRef.current = null;
     if (!drag.moved) {
-      if (alwaysShowTimer) {
+      if (alwaysShowTimer || state.breaktimeExtensionExpiresAt !== null) {
         const settings = await getSettings();
         await setSettings({ alwaysShowTimerExpanded: !settings.alwaysShowTimerExpanded });
       }
@@ -114,7 +128,11 @@ export function UsageClock({ matchedDomain, alwaysShowTimer }: Props) {
 
   const trackedDisplay = formatDuration(effectiveMs(state, now));
   const allSitesDisplay = formatDuration(effectiveAllSitesMs(state, now));
-  const showBoth = alwaysShowTimer && expanded;
+  const extensionRemaining = state.breaktimeExtensionExpiresAt === null
+    ? null
+    : Math.max(0, state.breaktimeExtensionExpiresAt - now);
+  const showExtension = expanded && extensionRemaining !== null;
+  const showRows = (alwaysShowTimer && expanded) || showExtension;
   const display = alwaysShowTimer ? allSitesDisplay : trackedDisplay;
 
   return (
@@ -130,16 +148,24 @@ export function UsageClock({ matchedDomain, alwaysShowTimer }: Props) {
         title="Scroll Unlock — usage today (drag to move)"
       >
         <span class="dot" aria-hidden="true" />
-        {showBoth ? (
+        {showRows ? (
           <span class="times">
-            <span class="timer-row">
-              <span class="time">{allSitesDisplay}</span>
-              <span class="label">total</span>
-            </span>
+            {alwaysShowTimer && (
+              <span class="timer-row">
+                <span class="time">{allSitesDisplay}</span>
+                <span class="label">total</span>
+              </span>
+            )}
             <span class="timer-row">
               <span class="time">{trackedDisplay}</span>
               <span class="label">tracked</span>
             </span>
+            {showExtension && (
+              <span class="timer-row">
+                <span class="time">{formatDuration(extensionRemaining)}</span>
+                <span class="label">extension</span>
+              </span>
+            )}
           </span>
         ) : <span class="time">{display}</span>}
       </div>

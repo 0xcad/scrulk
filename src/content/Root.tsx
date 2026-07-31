@@ -18,6 +18,7 @@ import {
 } from "../shared/types";
 import { BreaktimeOverlay } from "./BreaktimeOverlay";
 import { DimOverlay } from "./DimOverlay";
+import { ExtensionLinkLock } from "./ExtensionLinkLock";
 import { GatewayExpiredOverlay } from "./GatewayExpiredOverlay";
 import { SleepClock } from "./SleepClock";
 import { UsageClock } from "./UsageClock";
@@ -110,6 +111,9 @@ export function Root({ matchedDomain }: Props) {
       )}
       <SleepClock />
       <DimOverlay state={state} settings={settings} gateway={gateway} matchedDomain={matchedDomain} />
+      {matchedDomain !== null && state.breaktimeExtensionExpiresAt !== null && (
+        <ExtensionLinkLock />
+      )}
       {matchedDomain !== null && state.breaktimeOpen && <BreaktimeOverlay />}
       {matchedDomain !== null &&
         expiredAlertForDomain &&

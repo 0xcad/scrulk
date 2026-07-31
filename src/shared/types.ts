@@ -72,6 +72,12 @@ export interface DayState {
   lastBreaktimeAt: number;
   /** True while a breaktime alert is currently outstanding. */
   breaktimeOpen: boolean;
+  /** Wall-clock expiry for a one-time breaktime extension, else null. */
+  breaktimeExtensionExpiresAt: number | null;
+  /** Prevents another extension until this breaktime cycle is resolved. */
+  breaktimeExtensionUsed: boolean;
+  /** Original tracked page URL for each tab allowed during an extension. */
+  breaktimeExtensionTabs: Record<string, string>;
   /** True while a gateway (first-visit-from-non-tracked) overlay is open. Pauses tracking like breaktime. */
   gatewayOpen: boolean;
   /** Set true when the tab limit blocked a new tracked tab; popup clears on view. */
@@ -97,6 +103,9 @@ export const DEFAULT_DAY_STATE: DayState = {
   allSitesActiveSince: null,
   lastBreaktimeAt: 0,
   breaktimeOpen: false,
+  breaktimeExtensionExpiresAt: null,
+  breaktimeExtensionUsed: false,
+  breaktimeExtensionTabs: {},
   gatewayOpen: false,
   tabLimitWarning: false,
   surveyFilledFor: null,

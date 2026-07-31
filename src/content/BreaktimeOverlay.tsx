@@ -54,6 +54,9 @@ export function BreaktimeOverlay() {
     if (!continueReady) return;
     setPhase("challenge");
   };
+  const onExtend = () => {
+    void send({ type: "breaktime:extend" });
+  };
   const onChallengeComplete = () => {
     void send({ type: "breaktime:resume" });
   };
@@ -82,6 +85,11 @@ export function BreaktimeOverlay() {
                 >
                   Continue &gt;
                 </button>
+                {!state.breaktimeExtensionUsed && (
+                  <button type="button" class="secondary" onClick={onExtend}>
+                    extend for 2 minutes
+                  </button>
+                )}
               </div>
             </>
           )}
@@ -92,4 +100,3 @@ export function BreaktimeOverlay() {
     </>
   );
 }
-

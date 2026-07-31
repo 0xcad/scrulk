@@ -15,8 +15,13 @@ import {
 } from "./tracker";
 import {
   BREAKTIME_ALARM,
+  BREAKTIME_EXTENSION_ALARM,
+  endBreaktimeExtension,
+  enforceExtensionNavigation,
+  handleBreaktimeExtend,
   handleBreaktimeDone,
   handleBreaktimeResume,
+  handleExtensionTabRemoved,
   openSurveyTab,
 } from "./breaktime";
 import { enforceTabLimit } from "./tabLimit";
@@ -75,6 +80,11 @@ browser.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
   const { trackedSites } = await getSettings();
   await updateIconForTab(tabId, tab.url, trackedSites);
   if (changeInfo.url) {
+    if (await enforceExtensionNavigation(tabId, changeInfo.url)) {
+      await syncDomainTabPresence();
+      await recompute();
+      return;
+    }
     // A tab just navigated to a (possibly) tracked URL — only moment a fresh
     // tracked tab can push us over the limit.
     await enforceTabLimit(tabId, changeInfo.url);
@@ -88,6 +98,7 @@ browser.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
 });
 
 browser.tabs.onRemoved.addListener(async (tabId) => {
+  await handleExtensionTabRemoved(tabId);
   await forgetTab(tabId);
   await syncDomainTabPresence();
   await recompute();
@@ -124,6 +135,11 @@ browser.alarms.onAlarm.addListener(async (alarm) => {
     await recompute();
     return;
   }
+  if (alarm.name === BREAKTIME_EXTENSION_ALARM) {
+    await endBreaktimeExtension();
+    await recompute();
+    return;
+  }
   if (await maybeHandleGatewayAlarm(alarm.name)) {
     await recompute();
     return;
@@ -134,6 +150,9 @@ browser.runtime.onMessage.addListener((message: unknown, sender: browser.Runtime
   const msg = message as Message;
   if (msg.type === "breaktime:resume") {
     return handleBreaktimeResume().then(() => recompute());
+  }
+  if (msg.type === "breaktime:extend") {
+    return handleBreaktimeExtend().then(() => recompute());
   }
   if (msg.type === "breaktime:done") {
     return handleBreaktimeDone().then(() => recompute());

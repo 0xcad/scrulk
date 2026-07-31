@@ -28,6 +28,8 @@ export async function closeTrackedTabs(): Promise<void> {
 }
 
 export const BREAKTIME_ALARM = "scrulk:breaktime";
+export const BREAKTIME_EXTENSION_ALARM = "scrulk:breaktime-extension";
+const EXTENSION_MS = 2 * 60_000;
 
 /**
  * Schedule the next breaktime alarm based on remaining time until the
@@ -38,6 +40,19 @@ export async function scheduleBreaktimeAlarm(
   state: DayState,
   settings: Settings,
 ): Promise<void> {
+  if (state.breaktimeExtensionExpiresAt !== null) {
+    await browser.alarms.clear(BREAKTIME_ALARM).catch(() => null);
+    const existing = await browser.alarms.get(BREAKTIME_EXTENSION_ALARM).catch(() => null);
+    if (
+      existing &&
+      Math.abs(existing.scheduledTime - state.breaktimeExtensionExpiresAt) < 1000
+    ) return;
+    await browser.alarms.create(BREAKTIME_EXTENSION_ALARM, {
+      when: state.breaktimeExtensionExpiresAt,
+    });
+    return;
+  }
+  await browser.alarms.clear(BREAKTIME_EXTENSION_ALARM).catch(() => null);
   if (state.breaktimeOpen || state.activeSince === null) {
     await browser.alarms.clear(BREAKTIME_ALARM).catch(() => null);
     return;
@@ -69,7 +84,100 @@ export async function handleBreaktimeResume(): Promise<void> {
     ...state,
     breaktimeOpen: false,
     lastBreaktimeAt: effectiveMs(state, now),
+    breaktimeExtensionExpiresAt: null,
+    breaktimeExtensionUsed: false,
+    breaktimeExtensionTabs: {},
   });
+}
+
+/** Start the single two-minute extension available for an open alert. */
+export async function handleBreaktimeExtend(): Promise<void> {
+  const [state, settings, tabs] = await Promise.all([
+    getDayState(),
+    getSettings(),
+    browser.tabs.query({}),
+  ]);
+  if (!state.breaktimeOpen || state.breaktimeExtensionUsed) return;
+
+  const extensionTabs: Record<string, string> = {};
+  for (const tab of tabs) {
+    const host = hostnameOf(tab.url);
+    if (tab.id !== undefined && tab.url && host && isTracked(host, settings.trackedSites)) {
+      extensionTabs[String(tab.id)] = tab.url;
+    }
+  }
+
+  const expiresAt = Date.now() + EXTENSION_MS;
+  await setDayState({
+    ...state,
+    breaktimeOpen: false,
+    breaktimeExtensionExpiresAt: expiresAt,
+    breaktimeExtensionUsed: true,
+    breaktimeExtensionTabs: extensionTabs,
+  });
+  await browser.alarms.create(BREAKTIME_EXTENSION_ALARM, { when: expiresAt });
+}
+
+/** Restore the alert once an extension expires, or no eligible tabs remain. */
+export async function endBreaktimeExtension(): Promise<void> {
+  const state = await getDayState();
+  if (state.breaktimeExtensionExpiresAt === null) return;
+  await browser.alarms.clear(BREAKTIME_EXTENSION_ALARM).catch(() => null);
+  await setDayState({
+    ...state,
+    breaktimeOpen: true,
+    breaktimeExtensionExpiresAt: null,
+    breaktimeExtensionTabs: {},
+  });
+}
+
+/** End early once none of the original tracked tabs still exists. */
+export async function handleExtensionTabRemoved(tabId: number): Promise<void> {
+  const state = await getDayState();
+  if (state.breaktimeExtensionExpiresAt === null) return;
+  if (!(String(tabId) in state.breaktimeExtensionTabs)) return;
+  // Do not mutate the snapshot one event at a time: several onRemoved
+  // handlers may run concurrently after the user closes multiple tabs.
+  // The live tab list is the source of truth for this one condition.
+  const liveTabs = await browser.tabs.query({});
+  const hasEligibleTab = liveTabs.some(
+    (tab) => tab.id !== undefined && String(tab.id) in state.breaktimeExtensionTabs,
+  );
+  if (!hasEligibleTab) await endBreaktimeExtension();
+}
+
+/** Close tracked navigations not present in the extension's original snapshot. */
+export async function enforceExtensionNavigation(
+  tabId: number,
+  url: string | undefined,
+): Promise<boolean> {
+  const state = await getDayState();
+  if (state.breaktimeExtensionExpiresAt === null) return false;
+  if (state.breaktimeExtensionExpiresAt <= Date.now()) {
+    await endBreaktimeExtension();
+    return false;
+  }
+  const host = hostnameOf(url);
+  if (!host) return false;
+  const settings = await getSettings();
+  if (!isTracked(host, settings.trackedSites)) return false;
+  const allowedUrl = state.breaktimeExtensionTabs[String(tabId)];
+  if (allowedUrl !== undefined && samePage(allowedUrl, url)) return false;
+  await browser.tabs.remove(tabId).catch(() => null);
+  return true;
+}
+
+function samePage(a: string, b: string | undefined): boolean {
+  if (!b) return false;
+  try {
+    const left = new URL(a);
+    const right = new URL(b);
+    left.hash = "";
+    right.hash = "";
+    return left.href === right.href;
+  } catch {
+    return a === b;
+  }
 }
 
 /**

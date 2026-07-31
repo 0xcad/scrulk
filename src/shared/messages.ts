@@ -9,6 +9,7 @@
 export type Message =
   | { type: "breaktime:done" } // user clicked "I'm done!" — close all tracked tabs + open survey
   | { type: "breaktime:resume" } // user completed the hold challenge
+  | { type: "breaktime:extend" } // user gets one two-minute extension for this cycle
   | {
       type: "survey:submit";
       date: string; // 'YYYY-MM-DD'

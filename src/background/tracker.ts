@@ -114,6 +114,7 @@ export async function recompute(): Promise<void> {
   // via storage.onChanged and mount the overlay.
   if (
     !next.breaktimeOpen &&
+    next.breaktimeExtensionExpiresAt === null &&
     next.activeSince !== null &&
     effectiveMs(next, now) - next.lastBreaktimeAt >=
       settings.breaktimeMinutes * 60_000
@@ -173,12 +174,21 @@ function stateEqual(a: DayState, b: DayState): boolean {
     a.allSitesActiveSince === b.allSitesActiveSince &&
     a.lastBreaktimeAt === b.lastBreaktimeAt &&
     a.breaktimeOpen === b.breaktimeOpen &&
+    a.breaktimeExtensionExpiresAt === b.breaktimeExtensionExpiresAt &&
+    a.breaktimeExtensionUsed === b.breaktimeExtensionUsed &&
+    shallowRecordEqual(a.breaktimeExtensionTabs, b.breaktimeExtensionTabs) &&
     a.gatewayOpen === b.gatewayOpen &&
     a.tabLimitWarning === b.tabLimitWarning &&
     a.surveyFilledFor === b.surveyFilledFor &&
     a.breaktimeShownToday === b.breaktimeShownToday &&
     a.surveyContinueAllowed === b.surveyContinueAllowed
   );
+}
+
+function shallowRecordEqual(a: Record<string, string>, b: Record<string, string>): boolean {
+  const aKeys = Object.keys(a);
+  if (aKeys.length !== Object.keys(b).length) return false;
+  return aKeys.every((key) => a[key] === b[key]);
 }
 
 /**
@@ -215,6 +225,9 @@ export async function rolloverDay(
     allSitesActiveSince: null,
     lastBreaktimeAt: 0,
     breaktimeOpen: false,
+    breaktimeExtensionExpiresAt: null,
+    breaktimeExtensionUsed: false,
+    breaktimeExtensionTabs: {},
     gatewayOpen: false,
     tabLimitWarning: false,
     surveyFilledFor: null,

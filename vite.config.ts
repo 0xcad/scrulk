@@ -63,6 +63,7 @@ export default defineConfig({
       input: {
         survey: resolve(__dirname, "src/survey/index.html"),
         gateway: resolve(__dirname, "src/gateway/index.html"),
+        camera: resolve(__dirname, "src/camera/index.html"),
       },
     },
   },

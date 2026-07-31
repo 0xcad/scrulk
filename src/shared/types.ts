@@ -25,6 +25,12 @@ export interface Settings {
   sleepClockPosition: ClockPosition | null;
   /** Global position for the all-websites clock on untracked pages. */
   allSitesClockPosition: ClockPosition | null;
+  /** Show a mirrored, video-only self-view on tracked sites. */
+  cameraOverlayEnabled: boolean;
+  /** Last result of asking Firefox for this extension's camera access. */
+  cameraOverlayPermission: CameraOverlayPermission;
+  /** Single global position for the tracked-site camera overlay. */
+  cameraOverlayPosition: ClockPosition | null;
   /** Consecutive tracked-site usage days ending with the last completed day. */
   usageStreak: number;
 }
@@ -33,6 +39,8 @@ export interface ClockPosition {
   x: number;
   y: number;
 }
+
+export type CameraOverlayPermission = "unknown" | "granted" | "denied";
 
 export const DEFAULT_SETTINGS: Settings = {
   trackedSites: [],
@@ -46,6 +54,9 @@ export const DEFAULT_SETTINGS: Settings = {
   clockPositions: {},
   sleepClockPosition: null,
   allSitesClockPosition: null,
+  cameraOverlayEnabled: false,
+  cameraOverlayPermission: "unknown",
+  cameraOverlayPosition: null,
   usageStreak: 0,
 };
 

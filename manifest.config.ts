@@ -47,7 +47,11 @@ export default defineManifest({
   // makes the moz-extension:// URL loadable from a fresh tab.
   web_accessible_resources: [
     {
-      resources: ["src/survey/index.html", "src/gateway/index.html"],
+      resources: [
+        "src/survey/index.html",
+        "src/gateway/index.html",
+        "src/camera/index.html",
+      ],
       matches: ["<all_urls>"],
     },
   ],

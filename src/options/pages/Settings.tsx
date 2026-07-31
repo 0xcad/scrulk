@@ -2,6 +2,7 @@ import { useEffect, useState } from "preact/hooks";
 import { TrackedSitesList } from "../components/TrackedSitesList";
 import { NumberField } from "../components/NumberField";
 import { getSettings, onSettingsChange, setSettings } from "../../shared/storage";
+import type { CameraOverlayPermission } from "../../shared/types";
 
 export function Settings() {
   return (
@@ -55,7 +56,85 @@ export function Settings() {
         <AlwaysShowTimerField />
       </section>
 
+      <section>
+        <h2>Camera overlay</h2>
+        <p>
+          Show a small mirrored view of yourself on tracked websites. Scroll
+          Unlock requests video-only access; the website never receives your
+          camera stream.
+        </p>
+        <CameraOverlayField />
+      </section>
+
     </>
+  );
+}
+
+function CameraOverlayField() {
+  const [enabled, setEnabled] = useState<boolean | null>(null);
+  const [permission, setPermission] = useState<CameraOverlayPermission>("unknown");
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    void getSettings().then((s) => {
+      setEnabled(s.cameraOverlayEnabled);
+      setPermission(s.cameraOverlayPermission);
+    });
+    return onSettingsChange((s) => {
+      setEnabled(s.cameraOverlayEnabled);
+      setPermission(s.cameraOverlayPermission);
+    });
+  }, []);
+
+  const requestCamera = async () => {
+    setBusy(true);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: true,
+        audio: false,
+      });
+      stream.getTracks().forEach((track) => track.stop());
+      setPermission("granted");
+      await setSettings({ cameraOverlayPermission: "granted" });
+    } catch {
+      setPermission("denied");
+      await setSettings({ cameraOverlayPermission: "denied" });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  if (enabled === null) return <p>Loading…</p>;
+
+  const status = permission === "denied"
+    ? "Camera access is unavailable. Check Firefox’s camera permission for Scroll Unlock, then retry."
+    : permission === "granted"
+      ? "Camera access is ready. The preview appears only on tracked websites."
+      : "Camera access has not been requested yet.";
+
+  return (
+    <div class="camera-setting">
+      <label class="row">
+        <span>Show camera overlay</span>
+        <input
+          type="checkbox"
+          checked={enabled}
+          disabled={busy}
+          onChange={(e) => {
+            const next = (e.target as HTMLInputElement).checked;
+            setEnabled(next);
+            void setSettings({ cameraOverlayEnabled: next });
+            if (next) void requestCamera();
+          }}
+        />
+      </label>
+      <small class={permission === "denied" ? "error" : undefined}>{status}</small>
+      {enabled && permission === "denied" && (
+        <button type="button" disabled={busy} onClick={() => void requestCamera()}>
+          {busy ? "requesting…" : "retry camera access"}
+        </button>
+      )}
+    </div>
   );
 }
 

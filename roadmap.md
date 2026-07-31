@@ -208,6 +208,8 @@ idea: optional setting (default off) -- show usage timer on *all* websites, and 
 
 if "time for a break" is shown, or "pause" (gateway.tsx)  do not increment total timer. pause that timer.
 
+idea: on breaktime alert, gives you a +2 min extension. prevents you from opening new tracked tabs (idea is to let you get to a stopping point in whatever you're currently looking at). change the color of the timer
+
 ## TODO:
 
 
@@ -254,8 +256,6 @@ similar idea: a list of alternatives user has to click past? go for a short walk
 
 metrics idea: capture moving average of "outlier scrolling". my average right now is 11 mins per day, that seems suspiciously good, but I'm also trying to measure binge scrolling, which is less frequent. so maybe that's measuring a moving average of my top 5% outlier scroll sessions? another idea could also just be plotting a normal distribution of scrolling...
 * how long was this binge scroll session compared to your last one? what about the ones before? what do your trendlines look like?
-
-idea: on breaktime alert, gives you a +2 min extension. prevents you from opening new tracked tabs (idea is to let you get to a stopping point in whatever you're currently looking at). change the color of the timer
 
 idea: glance-back esque, look at yourself while you hold
 > Seeing herself through the eyes of the hidden video cameras that recorded her despair, she became acutely aware of herself as a subject in the world.

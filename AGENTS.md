@@ -126,6 +126,43 @@ manifest.config.ts ts-typed manifest, consumed by @crxjs at build time
    feature, add a component under `src/content/` and conditionally
    render it from `Root.tsx`. Don't add a second content script.
 
+## Breaktime implementation
+
+- `src/background/breaktime.ts` owns breaktime transitions and durable
+  alarms; `tracker.ts` only raises the normal usage-cadence alert.
+- State flow: active → alert → (resume → active | done → survey | extension
+  → alert). An extension is active time: tracking continues until its alarm
+  expires or its original tracked tabs are all closed.
+- Every persisted deadline needs a named `browser.alarms` alarm, registered
+  in `background/index.ts` and re-scheduled by `recompute()`.
+- All top-level URL changes are enforced in `tabs.onUpdated` in
+  `background/index.ts`, before tab-limit enforcement. Persist temporary
+  tab/page snapshots in `DayState`; never use module state. For concurrent
+  tab-removal events, query live tabs instead of decrementing a counter.
+- `Root.tsx` mounts document-wide behavior. Shadow-DOM CSS cannot style the
+  host page; use a component with document listeners/a document-level style
+  for page-wide interaction rules.
+
+## DayState reference
+
+`DayState` is persisted current-wake-day state. **Whenever adding, removing,
+or changing a `DayState` field, update this list and `DEFAULT_DAY_STATE`.**
+
+- `wakeDayStart`: start timestamp of the current wake-day.
+- `totalMs` / `activeSince`: accumulated and open tracked-time segment.
+- `allSitesMs` / `allSitesActiveSince`: equivalent segment for any HTTP(S)
+  page; display-only.
+- `lastBreaktimeAt`: tracked total at the last successfully resolved alert.
+- `breaktimeOpen`: a breaktime alert is currently blocking tracked pages.
+- `breaktimeExtensionExpiresAt`: active one-time extension deadline, or null.
+- `breaktimeExtensionUsed`: current alert cycle has consumed its extension.
+- `breaktimeExtensionTabs`: original tracked page URL by eligible tab ID.
+- `gatewayOpen`: an expired gateway overlay is pausing tracked time.
+- `tabLimitWarning`: tab-limit rejection pending display in the popup.
+- `surveyFilledFor`: wake-day key of the submitted survey, or null.
+- `breaktimeShownToday`: this wake-day has shown at least one break alert.
+- `surveyContinueAllowed`: post-survey tracked-site access has been approved.
+
 ## How to add a new setting
 
 1. Extend the `Settings` interface in `src/shared/types.ts` and add a default
@@ -164,9 +201,9 @@ in `src/background/tracker.ts` — do not update them anywhere else.
 
 ## How to add a content-script overlay (slice 2+)
 
-- Register dynamically with `browser.scripting.registerContentScripts` from
-  the background, filtered by the current tracked-site list. Re-register on
-  `onSettingsChange`.
+- The manifest registers one universal static content script. Add features as
+  conditional components in `Root.tsx`; do not dynamically register another
+  content script.
 - Render with Preact into a Shadow DOM root attached to a top-level
   `<div id="scrulk-root">` element. Shadow DOM keeps host-page CSS out.
 - Talk to the background via `browser.runtime.sendMessage` or
@@ -192,3 +229,16 @@ Add-on* → pick `dist/manifest.json`.
 
 Only declare permissions the *current slice* uses. Each future slice's PR
 adds the permissions it needs. The full eventual set is in `roadmap.md`.
+
+Current manifest permissions:
+
+- `storage`: settings, day state, gateway state, and tab-back map.
+- `tabs`: read URLs, update icons, create/close tabs, and enforce tab rules.
+- `alarms`: wake-day reset, breaktime cadence/extension, and gateway timers.
+- `idle`: pause usage tracking after inactivity.
+- `webNavigation`: gateway navigation interception.
+- Host permission `<all_urls>`: universal content script and tracked-page UI.
+
+**When code needs a new browser or host permission, update
+`manifest.config.ts` and this list in the same change; remove documentation
+when a permission is removed.**

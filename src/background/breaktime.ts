@@ -6,6 +6,7 @@ import { effectiveMs, type DayState, type Settings } from "../shared/types";
 import { currentWakeDayStart } from "../shared/wakeDay";
 
 const SURVEY_PAGE = "src/survey/index.html";
+const BREAKTIME_PAGE = "src/breaktime/index.html";
 
 export async function openSurveyTab(date: string): Promise<void> {
   const url = browser.runtime.getURL(`${SURVEY_PAGE}?date=${encodeURIComponent(date)}`);
@@ -87,7 +88,60 @@ export async function handleBreaktimeResume(): Promise<void> {
     breaktimeExtensionExpiresAt: null,
     breaktimeExtensionUsed: false,
     breaktimeExtensionTabs: {},
+    breaktimeChallengeTab: null,
   });
+}
+
+/**
+ * Replace the alert's originating tracked tab with the extension-origin
+ * challenge page. The saved snapshot survives service-worker restarts and
+ * supplies the exact return URL once the user completes the hold.
+ */
+export async function openBreaktimeChallenge(tabId: number | undefined): Promise<void> {
+  if (tabId === undefined) return;
+  const [state, settings, tab] = await Promise.all([
+    getDayState(),
+    getSettings(),
+    browser.tabs.get(tabId).catch(() => null),
+  ]);
+  if (!state.breaktimeOpen || !tab?.url) return;
+
+  const existing = state.breaktimeChallengeTab;
+  if (existing !== null) {
+    const existingTab = await browser.tabs.get(existing.tabId).catch(() => null);
+    if (existingTab) {
+      await browser.tabs.update(existing.tabId, { active: true }).catch(() => null);
+      if (existingTab.windowId !== undefined) {
+        await browser.windows.update(existingTab.windowId, { focused: true }).catch(() => null);
+      }
+      return;
+    }
+  }
+
+  const host = hostnameOf(tab.url);
+  if (host === null || !isTracked(host, settings.trackedSites)) return;
+  await setDayState({
+    ...state,
+    breaktimeChallengeTab: { tabId, returnUrl: tab.url },
+  });
+  await browser.tabs.update(tabId, { url: browser.runtime.getURL(BREAKTIME_PAGE) }).catch(() => null);
+}
+
+/** Clear a stale challenge snapshot when its extension page tab closes. */
+export async function handleBreaktimeChallengeTabRemoved(tabId: number): Promise<void> {
+  const state = await getDayState();
+  if (state.breaktimeChallengeTab?.tabId !== tabId) return;
+  await setDayState({ ...state, breaktimeChallengeTab: null });
+}
+
+/** Return a successful challenge tab to its original tracked URL. */
+export async function resumeBreaktimeChallenge(tabId: number | undefined): Promise<void> {
+  if (tabId === undefined) return;
+  const state = await getDayState();
+  const challenge = state.breaktimeChallengeTab;
+  if (challenge?.tabId !== tabId) return;
+  await handleBreaktimeResume();
+  await browser.tabs.update(tabId, { url: challenge.returnUrl }).catch(() => null);
 }
 
 /** Start the single two-minute extension available for an open alert. */
@@ -98,6 +152,10 @@ export async function handleBreaktimeExtend(): Promise<void> {
     browser.tabs.query({}),
   ]);
   if (!state.breaktimeOpen || state.breaktimeExtensionUsed) return;
+
+  if (state.breaktimeChallengeTab !== null) {
+    await browser.tabs.remove(state.breaktimeChallengeTab.tabId).catch(() => null);
+  }
 
   const extensionTabs: Record<string, string> = {};
   for (const tab of tabs) {
@@ -114,6 +172,7 @@ export async function handleBreaktimeExtend(): Promise<void> {
     breaktimeExtensionExpiresAt: expiresAt,
     breaktimeExtensionUsed: true,
     breaktimeExtensionTabs: extensionTabs,
+    breaktimeChallengeTab: null,
   });
   await browser.alarms.create(BREAKTIME_EXTENSION_ALARM, { when: expiresAt });
 }
@@ -188,9 +247,13 @@ function samePage(a: string, b: string | undefined): boolean {
  * a successful hold (`handleBreaktimeResume`) clears the flag.
  */
 export async function handleBreaktimeDone(): Promise<void> {
-  const settings = await getSettings();
+  const [settings, state] = await Promise.all([getSettings(), getDayState()]);
   const date = dateKey(currentWakeDayStart(Date.now(), settings.wakeUpTime));
   // Open survey first so closing the active tab doesn't race the create.
   await openSurveyTab(date);
+  if (state.breaktimeChallengeTab !== null) {
+    await setDayState({ ...state, breaktimeChallengeTab: null });
+    await browser.tabs.remove(state.breaktimeChallengeTab.tabId).catch(() => null);
+  }
   await closeTrackedTabs();
 }

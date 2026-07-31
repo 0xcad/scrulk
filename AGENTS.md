@@ -157,6 +157,7 @@ or changing a `DayState` field, update this list and `DEFAULT_DAY_STATE`.**
 - `breaktimeExtensionExpiresAt`: active one-time extension deadline, or null.
 - `breaktimeExtensionUsed`: current alert cycle has consumed its extension.
 - `breaktimeExtensionTabs`: original tracked page URL by eligible tab ID.
+- `breaktimeChallengeTab`: original tracked URL and tab ID while that tab shows the extension-origin hold challenge.
 - `gatewayOpen`: an expired gateway overlay is pausing tracked time.
 - `tabLimitWarning`: tab-limit rejection pending display in the popup.
 - `surveyFilledFor`: wake-day key of the submitted survey, or null.

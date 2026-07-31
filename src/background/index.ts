@@ -18,11 +18,13 @@ import {
   BREAKTIME_EXTENSION_ALARM,
   endBreaktimeExtension,
   enforceExtensionNavigation,
+  handleBreaktimeChallengeTabRemoved,
   handleBreaktimeExtend,
   handleBreaktimeDone,
-  handleBreaktimeResume,
   handleExtensionTabRemoved,
+  openBreaktimeChallenge,
   openSurveyTab,
+  resumeBreaktimeChallenge,
 } from "./breaktime";
 import { enforceTabLimit } from "./tabLimit";
 import { dateKey, upsertDay } from "../shared/history";
@@ -99,6 +101,7 @@ browser.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
 
 browser.tabs.onRemoved.addListener(async (tabId) => {
   await handleExtensionTabRemoved(tabId);
+  await handleBreaktimeChallengeTabRemoved(tabId);
   await forgetTab(tabId);
   await syncDomainTabPresence();
   await recompute();
@@ -148,8 +151,11 @@ browser.alarms.onAlarm.addListener(async (alarm) => {
 
 browser.runtime.onMessage.addListener((message: unknown, sender: browser.Runtime.MessageSender) => {
   const msg = message as Message;
+  if (msg.type === "breaktime:openChallenge") {
+    return openBreaktimeChallenge(sender?.tab?.id).then(() => recompute());
+  }
   if (msg.type === "breaktime:resume") {
-    return handleBreaktimeResume().then(() => recompute());
+    return resumeBreaktimeChallenge(sender?.tab?.id).then(() => recompute());
   }
   if (msg.type === "breaktime:extend") {
     return handleBreaktimeExtend().then(() => recompute());

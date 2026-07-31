@@ -177,6 +177,8 @@ function stateEqual(a: DayState, b: DayState): boolean {
     a.breaktimeExtensionExpiresAt === b.breaktimeExtensionExpiresAt &&
     a.breaktimeExtensionUsed === b.breaktimeExtensionUsed &&
     shallowRecordEqual(a.breaktimeExtensionTabs, b.breaktimeExtensionTabs) &&
+    a.breaktimeChallengeTab?.tabId === b.breaktimeChallengeTab?.tabId &&
+    a.breaktimeChallengeTab?.returnUrl === b.breaktimeChallengeTab?.returnUrl &&
     a.gatewayOpen === b.gatewayOpen &&
     a.tabLimitWarning === b.tabLimitWarning &&
     a.surveyFilledFor === b.surveyFilledFor &&
@@ -228,6 +230,7 @@ export async function rolloverDay(
     breaktimeExtensionExpiresAt: null,
     breaktimeExtensionUsed: false,
     breaktimeExtensionTabs: {},
+    breaktimeChallengeTab: null,
     gatewayOpen: false,
     tabLimitWarning: false,
     surveyFilledFor: null,

@@ -78,6 +78,8 @@ export interface DayState {
   breaktimeExtensionUsed: boolean;
   /** Original tracked page URL for each tab allowed during an extension. */
   breaktimeExtensionTabs: Record<string, string>;
+  /** Tab temporarily replaced with the extension-origin hold challenge. */
+  breaktimeChallengeTab: { tabId: number; returnUrl: string } | null;
   /** True while a gateway (first-visit-from-non-tracked) overlay is open. Pauses tracking like breaktime. */
   gatewayOpen: boolean;
   /** Set true when the tab limit blocked a new tracked tab; popup clears on view. */
@@ -106,6 +108,7 @@ export const DEFAULT_DAY_STATE: DayState = {
   breaktimeExtensionExpiresAt: null,
   breaktimeExtensionUsed: false,
   breaktimeExtensionTabs: {},
+  breaktimeChallengeTab: null,
   gatewayOpen: false,
   tabLimitWarning: false,
   surveyFilledFor: null,

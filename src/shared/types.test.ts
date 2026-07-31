@@ -32,6 +32,12 @@ describe("all-sites timer defaults", () => {
   });
 });
 
+describe("breaktime challenge defaults", () => {
+  it("has no saved challenge tab until the user enters the hold flow", () => {
+    expect(DEFAULT_DAY_STATE.breaktimeChallengeTab).toBeNull();
+  });
+});
+
 describe("isUsageStreakDay", () => {
   it("does not count today before tracked usage reaches the streak threshold", () => {
     expect(isUsageStreakDay(DEFAULT_DAY_STATE, Date.now())).toBe(false);

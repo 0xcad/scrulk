@@ -3,15 +3,12 @@ import browser from "webextension-polyfill";
 import type { Message } from "../shared/messages";
 import { getDayState, onDayStateChange } from "../shared/storage";
 import { DEFAULT_DAY_STATE, type DayState, effectiveMs } from "../shared/types";
-import { Challenge } from "./Challenge";
 import { overlayBaseStyles } from "./overlayStyles";
 
 /*import windowImgPath from "../assets/window.gif";
 const windowImg = browser.runtime.getURL(windowImgPath);*/
 
 const ALERT_GATE_MS = 30_000;
-
-type Phase = "alert" | "challenge";
 
 function send(msg: Message): Promise<unknown> {
   return browser.runtime.sendMessage(msg);
@@ -30,7 +27,6 @@ function formatUsage(ms: number): string {
 }
 
 export function BreaktimeOverlay() {
-  const [phase, setPhase] = useState<Phase>("alert");
   const [continueReady, setContinueReady] = useState(false);
   const [state, setState] = useState<DayState>(DEFAULT_DAY_STATE);
 
@@ -40,10 +36,9 @@ export function BreaktimeOverlay() {
   }, []);
 
   useEffect(() => {
-    if (phase !== "alert") return;
     const id = window.setTimeout(() => setContinueReady(true), ALERT_GATE_MS);
     return () => window.clearTimeout(id);
-  }, [phase]);
+  }, []);
 
   const usageMs = effectiveMs(state, Date.now());
 
@@ -52,22 +47,17 @@ export function BreaktimeOverlay() {
   };
   const onContinue = () => {
     if (!continueReady) return;
-    setPhase("challenge");
+    void send({ type: "breaktime:openChallenge" });
   };
   const onExtend = () => {
     void send({ type: "breaktime:extend" });
   };
-  const onChallengeComplete = () => {
-    void send({ type: "breaktime:resume" });
-  };
-
   return (
     <>
       <style>{overlayBaseStyles}</style>
       <div class="backdrop" role="dialog" aria-modal="true" aria-labelledby="bt-title">
         <div class="card">
-          {phase === "alert" && (
-            <>
+          <>
             {/*<img src={windowImg} class="window" alt="" />*/}
               <h2 id="bt-title">Time for a break</h2>
               <p>You've been at this for {formatUsage(usageMs)}.</p>
@@ -91,10 +81,7 @@ export function BreaktimeOverlay() {
                   </button>
                 )}
               </div>
-            </>
-          )}
-
-          {phase === "challenge" && <Challenge onComplete={onChallengeComplete} />}
+          </>
         </div>
       </div>
     </>

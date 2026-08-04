@@ -38,7 +38,8 @@ interface Props {
  *   - `UsageClock`: only on tracked sites.
  *   - `SleepClock`: every site, but only inside the 10h-before-wakeup window.
  *   - `PeekOverlay`: only on untracked sites when Peek is enabled.
- *   - `ExtensionFrame`: only on tracked sites during extended time.
+ *   - `ExtensionFrame`: only on tracked sites during extended time or after
+ *     post-survey access has been approved.
  *   - `BreaktimeOverlay`: only on tracked sites, only while the global
  *     `breaktimeOpen` flag is set.
  *   - `GatewayExpiredOverlay`: only on tracked sites, only while
@@ -109,13 +110,15 @@ export function Root({ matchedDomain }: Props) {
   const expiredAlertForDomain =
     matchedDomain !== null &&
     gateway[matchedDomain]?.expiredAlertActive === true;
+  const extensionFrameVisible =
+    matchedDomain !== null &&
+    (state.breaktimeExtensionExpiresAt !== null ||
+      state.surveyContinueAllowed);
 
   return (
     <>
       <style>{themeStyles}</style>
-      {matchedDomain !== null && state.breaktimeExtensionExpiresAt !== null && (
-        <ExtensionFrame />
-      )}
+      {extensionFrameVisible && <ExtensionFrame />}
       {(matchedDomain !== null || settings.alwaysShowTimer) && (
         <UsageClock matchedDomain={matchedDomain} alwaysShowTimer={settings.alwaysShowTimer} />
       )}

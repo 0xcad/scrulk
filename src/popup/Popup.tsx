@@ -214,7 +214,7 @@ export function Popup() {
         >
           open dashboard ↗
         </button>
-        {tracked && trackedMs > 0 && !state.surveyContinueAllowed && (
+        {!state.surveyContinueAllowed && (
           <button type="button" onClick={onDone}>
             i'm done with tracked sites 🔓
           </button>

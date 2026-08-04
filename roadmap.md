@@ -218,6 +218,10 @@ idea: on extended time view: do not show another timer. instead, add border/padd
 
 idea on one-click view: replicate Arc's "peek" feature. Open tracked sites in a peek window, where you can't open up other tracked sites. also go back to my notes.md
 
+idea: after ending a day (survey flow), make screen dim/grayscale if returning to tracked content / any site
+
+"I'm done with tracked sites" button has to be visible even not on a tracked site
+
 ## TODO:
 
 * i think there's a bug with the survey -> re-entry flow
@@ -231,18 +235,7 @@ Calendar probably needs more horizontal screen real estate, current look should 
 
 Remove comments referencing slices and whatnot
 
-===
-
-Idea: before pause gateway, just let the user view *one page*, no clicks, without interruption. So search engine -> reddit post, that's fine, google -> one yt video, that's fine.
-rules: 
-* must have referer (not from new tab)
-    * otherwise, show gateway
-* must be on a path? so can't be on youtube.com, reddit.com
-
-If they click anywhere else on the page, show the pause gateway
-This should not affect streak counts
-
-===
+==
 
 ai generated code cleanup:
 * after removing a website from a tracked page, remove its clockPositions from settings
@@ -250,9 +243,9 @@ ai generated code cleanup:
 
 ==
 
-"I'm done with tracked sites" button has to be visible even not on a tracked site
-    * idea: dropdown caret on right of this button to stop for 24 / 36 hrs?
-    * idea: put a stop for 24 / 36 hrs button on the survey?
+
+* idea: dropdown caret on right of I'm done with tracked sites button to stop for 24 / 36 hrs?
+ * idea: put a stop for 24 / 36 hrs button on the survey?
 
 ==
 
@@ -260,8 +253,6 @@ i routinely come back to my closed laptop and find total timer is at like 4 hrs
 
 metrics idea: capture moving average of "outlier scrolling". my average right now is 11 mins per day, that seems suspiciously good, but I'm also trying to measure binge scrolling, which is less frequent. so maybe that's measuring a moving average of my top 5% outlier scroll sessions? another idea could also just be plotting a normal distribution of scrolling...
 * how long was this binge scroll session compared to your last one? what about the ones before? what do your trendlines look like?
-
-idea: after ending a day (survey flow), make screen dim/grayscale if returning to tracked content / any site
 
 If I like camera on pause menu, keep it, but make the styling look nicer
 If I dislike it, get rid of it (commit 149aaf61becbf377cb89f73879f0045f6165819b)

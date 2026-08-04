@@ -3,7 +3,7 @@ import { useEffect } from "preact/hooks";
 const PAGE_STYLE_ID = "scrulk-extension-frame-page-inset";
 const FRAME_WIDTH_PX = 50;
 
-/** Insets a tracked page and marks an active breaktime extension. */
+/** Insets and desaturates the host page while keeping extension UI in color. */
 export function ExtensionFrame() {
   useEffect(() => {
     document.getElementById(PAGE_STYLE_ID)?.remove();
@@ -14,6 +14,10 @@ export function ExtensionFrame() {
       html {
         box-sizing: border-box !important;
         padding: ${FRAME_WIDTH_PX}px !important;
+      }
+
+      body {
+        filter: grayscale(100%) !important;
       }
     `;
     document.documentElement.appendChild(style);

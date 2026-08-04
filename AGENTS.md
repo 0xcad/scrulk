@@ -129,6 +129,22 @@ manifest.config.ts ts-typed manifest, consumed by @crxjs at build time
    feature, add a component under `src/content/` and conditionally
    render it from `Root.tsx`. Don't add a second content script.
 
+## Peek previews
+
+- `settings.peekEnabled` defaults to true. An unmodified primary click from an
+  untracked top-level page to a tracked HTTP(S) link opens one Peek iframe;
+  `target="_blank"` is included, while modifier clicks and downloads are not.
+- The top-level URL stays untracked while Peek is open, so time accrues only to
+  all-sites usage. Peek subframes must bypass gateways, breaktime, surveys,
+  tab limits, tracked overlays, and tracked usage. `all_frames` is enabled only
+  so the named `PEEK_FRAME_NAME` frame can install `ExtensionLinkLock`; every
+  other subframe bails immediately.
+- The arrow promotes the original Peek URL to a normal top-level navigation.
+  Closing by X, backdrop, or Escape restores parent scrolling.
+- `syncPeekFrameRule()` keeps the dynamic CSP/X-Frame-Options removal rule in
+  sync on install, startup, and settings changes; disabling Peek removes it.
+  Keep `installExtensionLinkLock()` safe for dynamic links and full cleanup.
+
 ## Breaktime implementation
 
 - `src/background/breaktime.ts` owns breaktime transitions and durable

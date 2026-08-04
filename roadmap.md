@@ -214,6 +214,10 @@ idea: on breaktime alert, gives you a +2 min extension. prevents you from openin
 idea: glance-back esque, look at yourself while you hold
 > Seeing herself through the eyes of the hidden video cameras that recorded her despair, she became acutely aware of herself as a subject in the world.
 
+idea: on extended time view: do not show another timer. instead, add border/padding around the page, make it gray or smtg. add a timer there. "shrinking window".
+
+idea on one-click view: replicate Arc's "peek" feature. Open tracked sites in a peek window, where you can't open up other tracked sites. also go back to my notes.md
+
 ## TODO:
 
 * i think there's a bug with the survey -> re-entry flow
@@ -272,11 +276,6 @@ If I dislike it, get rid of it (commit 149aaf61becbf377cb89f73879f0045f6165819b)
 
 camera on tracked pages: don't show immediately, show after, say, 10 minutes of use
 * if tab is closed, click "connecting..." again to reopen camera window
-
-idea: on extended time view: do not show another timer. instead, add border/padding around the page, make it gray or smtg. add a timer there. "shrinking window".
-
-idea on one-click view: replicat Arc's "peek" feature. Open tracked sites in a peek window, where you can't open up other tracked sites. also go back to my notes.md
-
 
 *wonderful* idea: A DNS, MITM proxy (with trusted root certificate) that just loads scroll unlock whenever you use it. must run a server then to store data in the backend. instead of browser extension pages, something like `scroll-unlock.local` could be used? or, best user-experience, the extension communicates with the locally running server. extension settings modify the server settings. if we get connection to the server (heartbeat), hide all shadow DOM and just let DNS injection handle everything.
 * Value: If I want to get around this, i can just open a different browser, open a private browsing window, and I'm stopped. i never fuck with my DNS settings. Editing my hosts file is super inconvenient. Also, you can get it on multiple devices in sync for cheap

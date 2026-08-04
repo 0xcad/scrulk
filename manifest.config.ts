@@ -11,7 +11,13 @@ export default defineManifest({
   // Slice 2 adds alarms (daily reset), idle (pause-when-AFK).
   // webNavigation lets the background intercept top-frame navigations to
   // tracked hosts and redirect them through the gateway page.
-  permissions: ["storage", "tabs", "alarms", "idle", "webNavigation"],
+  permissions: [
+    "storage",
+    "tabs",
+    "alarms",
+    "idle",
+    "webNavigation",
+  ],
 
   // Content script for the usage clock + (later) sleep clock runs on every
   // page; it bails fast on non-tracked hosts.
@@ -47,7 +53,10 @@ export default defineManifest({
   // makes the moz-extension:// URL loadable from a fresh tab.
   web_accessible_resources: [
     {
-      resources: ["src/survey/index.html", "src/gateway/index.html"],
+      resources: [
+        "src/survey/index.html",
+        "src/gateway/index.html",
+      ],
       matches: ["<all_urls>"],
     },
   ],

@@ -26,7 +26,9 @@ function mount(matched: string | null): void {
     host.style.cssText =
       "all: initial; position: fixed; inset: 0; pointer-events: none; z-index: 2147483647;";
     document.documentElement.appendChild(host);
-    shadowRoot = host.attachShadow({ mode: "open" });
+    // The closed root prevents host-page scripts from reaching media objects
+    // owned by extension overlays (notably CameraOverlay's remote stream).
+    shadowRoot = host.attachShadow({ mode: "closed" });
   }
   mountedFor = matched;
   render(<Root matchedDomain={matched} />, shadowRoot);

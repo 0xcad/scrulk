@@ -32,6 +32,14 @@ describe("all-sites timer defaults", () => {
   });
 });
 
+describe("camera overlay defaults", () => {
+  it("is disabled until the user explicitly enables it", () => {
+    expect(DEFAULT_SETTINGS.cameraOverlayEnabled).toBe(false);
+    expect(DEFAULT_SETTINGS.cameraOverlayPermission).toBe("unknown");
+    expect(DEFAULT_SETTINGS.cameraOverlayPosition).toBeNull();
+  });
+});
+
 describe("isUsageStreakDay", () => {
   it("does not count today before tracked usage reaches the streak threshold", () => {
     expect(isUsageStreakDay(DEFAULT_DAY_STATE, Date.now())).toBe(false);

@@ -48,6 +48,9 @@ export type Message =
       // per-domain CONTINUE flag so subsequent loads bypass the gateway.
       type: "gateway:setContinue";
       domain: string;
-    };
+    }
+  | { type: "camera:enable" }
+  | { type: "camera:ensure" }
+  | { type: "camera:disable" };
 
 export type MessageType = Message["type"];

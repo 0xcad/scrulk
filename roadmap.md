@@ -252,6 +252,8 @@ ai generated code cleanup:
 
 ==
 
+is GateWay / "Pause" / "Time's up" wall clock time? I think it is, should it be?
+
 idea: collect bullet points from user about what they want to be doing online *instead* of using tracked sites. show those in an accordion in the modal popup. occasionally, when user is scrolling, show these at random intervals to user one at a time
 * if you let an app collect scope creep for long enough, eventually everything turns to a todo application
 
@@ -267,6 +269,14 @@ idea: just make all tracked pages load 100ms slower or smtg?
 If I like camera on pause menu, keep it, but make the styling look nicer
 If I dislike it, get rid of it (commit 149aaf61becbf377cb89f73879f0045f6165819b)
 * codex resume 019fb5d7-5d24-7c22-9803-be04b224db47
+
+camera on tracked pages: don't show immediately, show after, say, 10 minutes of use
+* if tab is closed, click "connecting..." again to reopen camera window
+
+idea: on extended time view: do not show another timer. instead, add border/padding around the page, make it gray or smtg. add a timer there. "shrinking window".
+
+idea on one-click view: replicat Arc's "peek" feature. Open tracked sites in a peek window, where you can't open up other tracked sites. also go back to my notes.md
+
 
 *wonderful* idea: A DNS, MITM proxy (with trusted root certificate) that just loads scroll unlock whenever you use it. must run a server then to store data in the backend. instead of browser extension pages, something like `scroll-unlock.local` could be used? or, best user-experience, the extension communicates with the locally running server. extension settings modify the server settings. if we get connection to the server (heartbeat), hide all shadow DOM and just let DNS injection handle everything.
 * Value: If I want to get around this, i can just open a different browser, open a private browsing window, and I'm stopped. i never fuck with my DNS settings. Editing my hosts file is super inconvenient. Also, you can get it on multiple devices in sync for cheap

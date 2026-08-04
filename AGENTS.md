@@ -121,7 +121,8 @@ manifest.config.ts ts-typed manifest, consumed by @crxjs at build time
    `UsageClock` (tracked only unless `alwaysShowTimer` is enabled; tracked
    pages use their per-domain position and untracked pages use the global
    `allSitesClockPosition`), `SleepClock` (universal, self-hides
-   outside the 10h window), `BreaktimeOverlay` (tracked + flag). Later
+   outside the 10h window), `CameraOverlay` (tracked + enabled, fed by an
+   extension-owned background helper tab), `BreaktimeOverlay` (tracked + flag). Later
    additions: `ResumeAfterSurveyOverlay`. When you add a new content
    feature, add a component under `src/content/` and conditionally
    render it from `Root.tsx`. Don't add a second content script.

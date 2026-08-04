@@ -17,6 +17,7 @@ import {
   type Settings,
 } from "../shared/types";
 import { BreaktimeOverlay } from "./BreaktimeOverlay";
+import { CameraOverlay } from "./CameraOverlay";
 import { DimOverlay } from "./DimOverlay";
 import { ExtensionLinkLock } from "./ExtensionLinkLock";
 import { GatewayExpiredOverlay } from "./GatewayExpiredOverlay";
@@ -109,6 +110,9 @@ export function Root({ matchedDomain }: Props) {
       {(matchedDomain !== null || settings.alwaysShowTimer) && (
         <UsageClock matchedDomain={matchedDomain} alwaysShowTimer={settings.alwaysShowTimer} />
       )}
+      {matchedDomain !== null &&
+        settings.cameraOverlayEnabled &&
+        settings.cameraOverlayPermission === "granted" && <CameraOverlay />}
       <SleepClock />
       <DimOverlay state={state} settings={settings} gateway={gateway} matchedDomain={matchedDomain} />
       {matchedDomain !== null && state.breaktimeExtensionExpiresAt !== null && (

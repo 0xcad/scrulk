@@ -51,6 +51,15 @@ export function Settings() {
       </section>
 
       <section>
+        <h2>Peek previews</h2>
+        <p>
+          Open tracked links clicked on untracked websites in a temporary
+          preview without starting tracked time or applying restrictions.
+        </p>
+        <PeekEnabledField />
+      </section>
+
+      <section>
         <h2>Always show timer</h2>
         <p>
           Show your total time on all websites, even when the current site is not tracked.
@@ -70,6 +79,32 @@ export function Settings() {
       </section>
 
     </>
+  );
+}
+
+function PeekEnabledField() {
+  const [enabled, setEnabled] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    void getSettings().then((s) => setEnabled(s.peekEnabled));
+    return onSettingsChange((s) => setEnabled(s.peekEnabled));
+  }, []);
+
+  if (enabled === null) return <p>Loading…</p>;
+
+  return (
+    <label class="row">
+      <span>Open tracked links in Peek</span>
+      <input
+        type="checkbox"
+        checked={enabled}
+        onChange={(e) => {
+          const next = (e.target as HTMLInputElement).checked;
+          setEnabled(next);
+          void setSettings({ peekEnabled: next });
+        }}
+      />
+    </label>
   );
 }
 

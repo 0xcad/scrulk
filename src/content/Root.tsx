@@ -23,6 +23,7 @@ import { DimOverlay } from "./DimOverlay";
 import { ExtensionFrame } from "./ExtensionFrame";
 import { ExtensionLinkLock } from "./ExtensionLinkLock";
 import { GatewayExpiredOverlay } from "./GatewayExpiredOverlay";
+import { PeekOverlay } from "./PeekOverlay";
 import { SleepClock } from "./SleepClock";
 import { UsageClock } from "./UsageClock";
 
@@ -36,6 +37,7 @@ interface Props {
  * overlays to show:
  *   - `UsageClock`: only on tracked sites.
  *   - `SleepClock`: every site, but only inside the 10h-before-wakeup window.
+ *   - `PeekOverlay`: only on untracked sites when Peek is enabled.
  *   - `ExtensionFrame`: only on tracked sites during extended time.
  *   - `BreaktimeOverlay`: only on tracked sites, only while the global
  *     `breaktimeOpen` flag is set.
@@ -121,6 +123,9 @@ export function Root({ matchedDomain }: Props) {
         settings.cameraOverlayEnabled &&
         settings.cameraOverlayPermission === "granted" && <CameraOverlay />}
       <SleepClock />
+      {matchedDomain === null && settings.peekEnabled && (
+        <PeekOverlay trackedSites={settings.trackedSites} />
+      )}
       <DimOverlay state={state} settings={settings} gateway={gateway} matchedDomain={matchedDomain} />
       {matchedDomain !== null && state.breaktimeExtensionExpiresAt !== null && (
         <ExtensionLinkLock />

@@ -42,6 +42,7 @@ import {
 } from "./gateway";
 import { onGatewayStateChange } from "../shared/storage";
 import { closeCameraHub, ensureCameraHub } from "./camera";
+import { syncPeekFrameRule } from "./peek";
 
 // MV3 service worker: ephemeral. No long-lived module-level state.
 // All listeners must be registered synchronously at top level so the worker
@@ -56,6 +57,7 @@ browser.runtime.onInstalled.addListener(async ({ reason }) => {
     await setSettings({ firstInstalledAt: Date.now() });
   }
   await refreshAllTabIcons(current.trackedSites);
+  await syncPeekFrameRule(current);
   await ensureDayResetAlarm(current.wakeUpTime);
   await recompute();
 });
@@ -63,6 +65,7 @@ browser.runtime.onInstalled.addListener(async ({ reason }) => {
 browser.runtime.onStartup.addListener(async () => {
   const settings = await getSettings();
   await refreshAllTabIcons(settings.trackedSites);
+  await syncPeekFrameRule(settings);
   await ensureDayResetAlarm(settings.wakeUpTime);
   await recompute();
 });
@@ -280,6 +283,7 @@ onSettingsChange(async (next) => {
     await closeCameraHub();
   }
   await refreshAllTabIcons(next.trackedSites);
+  await syncPeekFrameRule(next);
   await ensureDayResetAlarm(next.wakeUpTime);
   await recompute();
 });

@@ -1,6 +1,8 @@
 import { render } from "preact";
 import { findMatchingDomain } from "../shared/domain";
 import { getSettings, onSettingsChange } from "../shared/storage";
+import { installExtensionLinkLock } from "./ExtensionLinkLock";
+import { PEEK_CLOSE_MESSAGE, PEEK_FRAME_NAME } from "./PeekOverlay";
 import { Root } from "./Root";
 
 const HOST_ID = "scrulk-root";
@@ -34,7 +36,19 @@ function mount(matched: string | null): void {
   render(<Root matchedDomain={matched} />, shadowRoot);
 }
 
-void evaluate();
-onSettingsChange(() => {
+if (window.top !== window) {
+  if (window.name === PEEK_FRAME_NAME) {
+    installExtensionLinkLock();
+    document.addEventListener("keydown", (event) => {
+      if (event.key !== "Escape") return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      window.parent.postMessage(PEEK_CLOSE_MESSAGE, "*");
+    }, true);
+  }
+} else {
   void evaluate();
-});
+  onSettingsChange(() => {
+    void evaluate();
+  });
+}

@@ -17,10 +17,11 @@ export default defineManifest({
     "alarms",
     "idle",
     "webNavigation",
+    "declarativeNetRequestWithHostAccess",
   ],
 
-  // Content script for the usage clock + (later) sleep clock runs on every
-  // page; it bails fast on non-tracked hosts.
+  // The universal content script mounts top-level features on every page and
+  // installs only the Peek link lock in explicitly named subframes.
   host_permissions: ["<all_urls>"],
 
   content_scripts: [
@@ -28,7 +29,9 @@ export default defineManifest({
       matches: ["<all_urls>"],
       js: ["src/content/index.tsx"],
       run_at: "document_idle",
-      all_frames: false,
+      // Subframes bail immediately unless they are a named Peek frame, where
+      // the content script installs only the document-navigation link lock.
+      all_frames: true,
     },
   ],
 

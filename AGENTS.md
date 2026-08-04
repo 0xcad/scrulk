@@ -123,7 +123,9 @@ manifest.config.ts ts-typed manifest, consumed by @crxjs at build time
    `allSitesClockPosition`), `SleepClock` (universal, self-hides
    outside the 10h window), `CameraOverlay` (tracked + enabled, fed by an
    extension-owned background helper tab), `BreaktimeOverlay` (tracked + flag). Later
-   additions: `ResumeAfterSurveyOverlay`. When you add a new content
+   additions: `ResumeAfterSurveyOverlay`. `PeekOverlay` intercepts tracked
+   links on untracked top-level pages; its named iframe installs only the
+   imperative `ExtensionLinkLock`. When you add a new content
    feature, add a component under `src/content/` and conditionally
    render it from `Root.tsx`. Don't add a second content script.
 
@@ -238,6 +240,8 @@ Current manifest permissions:
 - `alarms`: wake-day reset, breaktime cadence/extension, and gateway timers.
 - `idle`: pause usage tracking after inactivity.
 - `webNavigation`: gateway navigation interception.
+- `declarativeNetRequestWithHostAccess`: remove tracked-site framing headers
+  for Peek preview iframes.
 - Host permission `<all_urls>`: universal content script and tracked-page UI.
 
 **When code needs a new browser or host permission, update

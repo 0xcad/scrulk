@@ -15,6 +15,8 @@ export interface Settings {
   breaktimeMinutes: number;
   /** Max simultaneous tabs whose host is tracked. Excess tabs auto-close. Default 3. */
   tabLimit: number;
+  /** Open tracked links clicked on untracked pages in an embedded Peek preview. */
+  peekEnabled: boolean;
   /** Show the all-websites clock on every HTTP(S) page. Default false. */
   alwaysShowTimer: boolean;
   /** Whether the shared all-websites timer is showing its detail rows. */
@@ -49,6 +51,7 @@ export const DEFAULT_SETTINGS: Settings = {
   wakeUpTime: "07:00",
   breaktimeMinutes: 30,
   tabLimit: 3,
+  peekEnabled: true,
   alwaysShowTimer: false,
   alwaysShowTimerExpanded: false,
   clockPositions: {},

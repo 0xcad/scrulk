@@ -85,7 +85,10 @@ manifest.config.ts ts-typed manifest, consumed by @crxjs at build time
    live display via `effectiveMs(state, Date.now())`. **Do not** add a
    setInterval in the background. Adding new "is the user active?" inputs
    means: register a listener that calls `recompute()`, and (if needed)
-   plumb the input into `readActivity()`.
+   plumb the input into `readActivity()`. The one-shot activity-check alarm
+   is the sole exception: while a segment is open it refreshes
+   `activityCheckpointAt` once a minute so laptop-sleep/browser-restart gaps
+   can be excluded. It never increments usage directly.
 
    `dayState.allSitesMs` / `allSitesActiveSince` use the same model for
    focused, non-idle HTTP(S) pages. They are always collected, but never
@@ -171,6 +174,8 @@ or changing a `DayState` field, update this list and `DEFAULT_DAY_STATE`.**
 - `totalMs` / `activeSince`: accumulated and open tracked-time segment.
 - `allSitesMs` / `allSitesActiveSince`: equivalent segment for any HTTP(S)
   page; display-only.
+- `activityCheckpointAt`: latest liveness confirmation for any open usage
+  segment, or null when both segments are closed.
 - `lastBreaktimeAt`: tracked total at the last successfully resolved alert.
 - `breaktimeOpen`: a breaktime alert is currently blocking tracked pages.
 - `breaktimeExtensionExpiresAt`: active one-time extension deadline, or null.

@@ -128,6 +128,10 @@ browser.idle.onStateChanged.addListener(async () => {
 });
 
 browser.alarms.onAlarm.addListener(async (alarm) => {
+  if (alarm.name === ALARM_NAMES.ACTIVITY_CHECK) {
+    await recompute();
+    return;
+  }
   if (alarm.name === ALARM_NAMES.DAY_RESET) {
     await handleDayResetAlarm();
     await recompute();

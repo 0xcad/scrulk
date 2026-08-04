@@ -15,8 +15,14 @@ import {
 } from "../shared/wakeDay";
 import { effectiveAllSitesMs, effectiveMs, isUsageStreakDay, type DayState } from "../shared/types";
 import { scheduleBreaktimeAlarm } from "./breaktime";
+import {
+  ACTIVITY_CHECK_INTERVAL_MS,
+  checkpointOpenActivity,
+  reconcileStaleActivity,
+} from "./activityCheckpoint";
 
 const DAY_RESET_ALARM = "scrulk:day-reset";
+const ACTIVITY_CHECK_ALARM = "scrulk:activity-check";
 /**
  * The tracker is *event-driven*. We never tick a counter. Instead we
  * maintain `dayState.activeSince`: the moment the user became active on a
@@ -81,13 +87,16 @@ export async function recompute(): Promise<void> {
   const settings = await getSettings();
   const now = Date.now();
   const expectedStart = currentWakeDayStart(now, settings.wakeUpTime);
-  let state = await getDayState();
+  const storedState = await getDayState();
+  // Reconcile a missed liveness checkpoint before rollover. Otherwise an
+  // open segment spanning sleep and a wake-day boundary would be finalized
+  // at the boundary and still count suspended time.
+  let state = reconcileStaleActivity(storedState, now);
 
   // If we somehow missed an alarm-driven reset (browser was off across the
   // boundary), do it lazily here.
   if (state.wakeDayStart !== expectedStart) {
     state = await rolloverDay(state, expectedStart);
-    await setDayState(state);
   }
 
   const inputs = await readActivity();
@@ -126,11 +135,34 @@ export async function recompute(): Promise<void> {
     next = { ...next, breaktimeOpen: true, breaktimeShownToday: true };
   }
 
-  if (!stateEqual(state, next)) {
+  next = checkpointOpenActivity(next, now);
+
+  if (!stateEqual(storedState, next)) {
     await setDayState(next);
   }
   await ensureDayResetAlarm(settings.wakeUpTime);
+  await syncActivityCheckAlarm(next);
   await scheduleBreaktimeAlarm(next, settings);
+}
+
+async function syncActivityCheckAlarm(state: DayState): Promise<void> {
+  const hasOpenSegment =
+    state.activeSince !== null || state.allSitesActiveSince !== null;
+  const existing = await browser.alarms
+    .get(ACTIVITY_CHECK_ALARM)
+    .catch(() => null);
+
+  if (!hasOpenSegment) {
+    if (existing) {
+      await browser.alarms.clear(ACTIVITY_CHECK_ALARM).catch(() => false);
+    }
+    return;
+  }
+
+  const when =
+    (state.activityCheckpointAt ?? Date.now()) + ACTIVITY_CHECK_INTERVAL_MS;
+  if (existing && Math.abs(existing.scheduledTime - when) < 1000) return;
+  await browser.alarms.create(ACTIVITY_CHECK_ALARM, { when });
 }
 
 function applyAllSitesTransition(
@@ -172,6 +204,7 @@ function stateEqual(a: DayState, b: DayState): boolean {
     a.activeSince === b.activeSince &&
     a.allSitesMs === b.allSitesMs &&
     a.allSitesActiveSince === b.allSitesActiveSince &&
+    a.activityCheckpointAt === b.activityCheckpointAt &&
     a.lastBreaktimeAt === b.lastBreaktimeAt &&
     a.breaktimeOpen === b.breaktimeOpen &&
     a.breaktimeExtensionExpiresAt === b.breaktimeExtensionExpiresAt &&
@@ -223,6 +256,7 @@ export async function rolloverDay(
     activeSince: null,
     allSitesMs: 0,
     allSitesActiveSince: null,
+    activityCheckpointAt: null,
     lastBreaktimeAt: 0,
     breaktimeOpen: false,
     breaktimeExtensionExpiresAt: null,
@@ -246,7 +280,10 @@ export async function ensureDayResetAlarm(wakeUpTime: string): Promise<void> {
 export async function handleDayResetAlarm(): Promise<void> {
   const settings = await getSettings();
   const now = Date.now();
-  const state = await getDayState();
+  // Missed alarms can be delivered in any order after device wake. Reconcile
+  // here as well as in recompute() so a delayed day-reset alarm cannot archive
+  // suspended time before the activity-check alarm gets a chance to run.
+  const state = reconcileStaleActivity(await getDayState(), now);
   const next = await rolloverDay(
     state,
     currentWakeDayStart(now, settings.wakeUpTime),
@@ -255,4 +292,7 @@ export async function handleDayResetAlarm(): Promise<void> {
   await ensureDayResetAlarm(settings.wakeUpTime);
 }
 
-export const ALARM_NAMES = { DAY_RESET: DAY_RESET_ALARM } as const;
+export const ALARM_NAMES = {
+  DAY_RESET: DAY_RESET_ALARM,
+  ACTIVITY_CHECK: ACTIVITY_CHECK_ALARM,
+} as const;

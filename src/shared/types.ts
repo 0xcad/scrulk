@@ -75,6 +75,8 @@ export const SETTINGS_KEY = "settings" as const;
  * - `activeSince`: epoch ms when the user became active+tracked, or null.
  * - `allSitesMs` / `allSitesActiveSince`: the equivalent tally for any
  *   focused, non-idle HTTP(S) page. This never drives friction behavior.
+ * - `activityCheckpointAt`: latest confirmation that an open segment was
+ *   running, used to exclude laptop-sleep and browser-restart gaps.
  */
 export interface DayState {
   wakeDayStart: number;
@@ -82,6 +84,7 @@ export interface DayState {
   activeSince: number | null;
   allSitesMs: number;
   allSitesActiveSince: number | null;
+  activityCheckpointAt: number | null;
   /** effectiveMs at which the most recent breaktime alert was resolved. */
   lastBreaktimeAt: number;
   /** True while a breaktime alert is currently outstanding. */
@@ -115,6 +118,7 @@ export const DEFAULT_DAY_STATE: DayState = {
   activeSince: null,
   allSitesMs: 0,
   allSitesActiveSince: null,
+  activityCheckpointAt: null,
   lastBreaktimeAt: 0,
   breaktimeOpen: false,
   breaktimeExtensionExpiresAt: null,

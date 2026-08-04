@@ -222,6 +222,8 @@ idea: after ending a day (survey flow), make screen dim/grayscale if returning t
 
 "I'm done with tracked sites" button has to be visible even not on a tracked site
 
+i routinely come back to my closed laptop and find total timer is at like 4 hrs
+
 ## TODO:
 
 * i think there's a bug with the survey -> re-entry flow
@@ -248,8 +250,6 @@ ai generated code cleanup:
  * idea: put a stop for 24 / 36 hrs button on the survey?
 
 ==
-
-i routinely come back to my closed laptop and find total timer is at like 4 hrs
 
 metrics idea: capture moving average of "outlier scrolling". my average right now is 11 mins per day, that seems suspiciously good, but I'm also trying to measure binge scrolling, which is less frequent. so maybe that's measuring a moving average of my top 5% outlier scroll sessions? another idea could also just be plotting a normal distribution of scrolling...
 * how long was this binge scroll session compared to your last one? what about the ones before? what do your trendlines look like?

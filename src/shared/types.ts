@@ -7,6 +7,8 @@ export const STREAK_THRESHOLD_MS = 20_000;
 
 export interface Settings {
   trackedSites: string[];
+  /** Preview eligible tracked links read-only before entering the gateway. */
+  peekEnabled: boolean;
   installedAt: number;
   firstInstalledAt: number;
   /** Local time-of-day "HH:MM" (24h) at which the day boundary rolls over. Default "07:00". */
@@ -44,6 +46,7 @@ export type CameraOverlayPermission = "unknown" | "granted" | "denied";
 
 export const DEFAULT_SETTINGS: Settings = {
   trackedSites: [],
+  peekEnabled: true,
   installedAt: 0,
   firstInstalledAt: 0,
   wakeUpTime: "07:00",
@@ -156,6 +159,19 @@ export const GATEWAY_STATE_KEY = "gatewayState" as const;
  * `gateway:goBack` and `gateway:imDone` to know where to send the tab. */
 export type TabBackMap = Record<string /* tabId */, string /* url */>;
 export const TAB_BACK_MAP_KEY = "gatewayTabBack" as const;
+
+/** Durable, tab-scoped state for an active read-only tracked-site preview. */
+export interface PeekSession {
+  token: string;
+  sourceUrl: string;
+  destUrl: string;
+  domain: string;
+  /** Session-rule ID that removes framing headers for this tab/domain. */
+  dnrRuleId: number;
+}
+
+export type PeekSessionMap = Record<string /* tabId */, PeekSession>;
+export const PEEK_SESSIONS_KEY = "peekSessions" as const;
 
 /** Computed live display = totalMs + (activeSince ? now - activeSince : 0). */
 export function effectiveMs(state: DayState, now: number): number {

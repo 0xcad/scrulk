@@ -32,6 +32,12 @@ describe("all-sites timer defaults", () => {
   });
 });
 
+describe("Peek defaults", () => {
+  it("is enabled by default", () => {
+    expect(DEFAULT_SETTINGS.peekEnabled).toBe(true);
+  });
+});
+
 describe("camera overlay defaults", () => {
   it("is disabled until the user explicitly enables it", () => {
     expect(DEFAULT_SETTINGS.cameraOverlayEnabled).toBe(false);

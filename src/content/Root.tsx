@@ -15,6 +15,7 @@ import {
   DEFAULT_SETTINGS,
   type DayState,
   type GatewayState,
+  type PeekSession,
   type Settings,
 } from "../shared/types";
 import { BreaktimeOverlay } from "./BreaktimeOverlay";
@@ -25,16 +26,21 @@ import { ExtensionLinkLock } from "./ExtensionLinkLock";
 import { GatewayExpiredOverlay } from "./GatewayExpiredOverlay";
 import { SleepClock } from "./SleepClock";
 import { UsageClock } from "./UsageClock";
+import { PeekFrame } from "./PeekFrame";
+import { PeekLinkInterceptor } from "./PeekLinkInterceptor";
 
 interface Props {
   matchedDomain: string | null;
+  peekSession: PeekSession | null;
 }
 
 /**
  * Top-level renderer inside the Shadow DOM root. The shadow root is mounted
  * on every page (universal content script); this component decides which
  * overlays to show:
- *   - `UsageClock`: only on tracked sites.
+ *   - `PeekLinkInterceptor`: ordinary tracked-link clicks from untracked pages.
+ *   - `PeekFrame`: read-only, all-sites-only tracked page preview.
+ *   - `UsageClock`: tracked sites, plus all sites when configured.
  *   - `SleepClock`: every site, but only inside the 10h-before-wakeup window.
  *   - `ExtensionFrame`: only on tracked sites during extended time.
  *   - `BreaktimeOverlay`: only on tracked sites, only while the global
@@ -49,7 +55,7 @@ interface Props {
  * survey page, any tracked-tab visit fires a one-shot `survey:redirect`
  * which closes this tab and opens the survey.
  */
-export function Root({ matchedDomain }: Props) {
+export function Root({ matchedDomain, peekSession }: Props) {
   const [state, setState] = useState<DayState>(DEFAULT_DAY_STATE);
   const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS);
   const [gateway, setGateway] = useState<GatewayState>({});
@@ -84,6 +90,7 @@ export function Root({ matchedDomain }: Props) {
   useEffect(() => {
     if (
       matchedDomain === null ||
+      peekSession !== null ||
       state.surveyFilledFor === null ||
       state.surveyContinueAllowed ||
       state.breaktimeOpen ||
@@ -99,6 +106,7 @@ export function Root({ matchedDomain }: Props) {
     void browser.runtime.sendMessage(msg).catch(() => null);
   }, [
     matchedDomain,
+    peekSession,
     state.surveyFilledFor,
     state.surveyContinueAllowed,
     state.breaktimeOpen,
@@ -111,25 +119,49 @@ export function Root({ matchedDomain }: Props) {
   return (
     <>
       <style>{themeStyles}</style>
-      {matchedDomain !== null && state.breaktimeExtensionExpiresAt !== null && (
-        <ExtensionFrame />
+      {matchedDomain === null && peekSession === null && (
+        <PeekLinkInterceptor
+          trackedSites={settings.trackedSites}
+          enabled={settings.peekEnabled}
+        />
       )}
-      {(matchedDomain !== null || settings.alwaysShowTimer) && (
-        <UsageClock matchedDomain={matchedDomain} alwaysShowTimer={settings.alwaysShowTimer} />
-      )}
-      {matchedDomain !== null &&
+      {peekSession === null &&
+        matchedDomain !== null &&
+        state.breaktimeExtensionExpiresAt !== null && (
+          <ExtensionFrame />
+        )}
+      {((peekSession === null && matchedDomain !== null) ||
+        settings.alwaysShowTimer) && (
+          <UsageClock
+            matchedDomain={peekSession === null ? matchedDomain : null}
+            alwaysShowTimer={settings.alwaysShowTimer}
+          />
+        )}
+      {peekSession === null &&
+        matchedDomain !== null &&
         settings.cameraOverlayEnabled &&
         settings.cameraOverlayPermission === "granted" && <CameraOverlay />}
       <SleepClock />
-      <DimOverlay state={state} settings={settings} gateway={gateway} matchedDomain={matchedDomain} />
-      {matchedDomain !== null && state.breaktimeExtensionExpiresAt !== null && (
-        <ExtensionLinkLock />
+      {peekSession !== null ? (
+        <PeekFrame session={peekSession} />
+      ) : (
+        <>
+          <DimOverlay
+            state={state}
+            settings={settings}
+            gateway={gateway}
+            matchedDomain={matchedDomain}
+          />
+          {matchedDomain !== null && state.breaktimeExtensionExpiresAt !== null && (
+            <ExtensionLinkLock />
+          )}
+          {matchedDomain !== null && state.breaktimeOpen && <BreaktimeOverlay />}
+          {matchedDomain !== null &&
+            expiredAlertForDomain &&
+            !state.breaktimeOpen &&
+            visible && <GatewayExpiredOverlay domain={matchedDomain} />}
+        </>
       )}
-      {matchedDomain !== null && state.breaktimeOpen && <BreaktimeOverlay />}
-      {matchedDomain !== null &&
-        expiredAlertForDomain &&
-        !state.breaktimeOpen &&
-        visible && <GatewayExpiredOverlay domain={matchedDomain} />}
     </>
   );
 }

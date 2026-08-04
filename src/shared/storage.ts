@@ -4,10 +4,12 @@ import {
   DEFAULT_DAY_STATE,
   DEFAULT_SETTINGS,
   GATEWAY_STATE_KEY,
+  PEEK_SESSIONS_KEY,
   SETTINGS_KEY,
   TAB_BACK_MAP_KEY,
   type DayState,
   type GatewayState,
+  type PeekSessionMap,
   type Settings,
   type TabBackMap,
 } from "./types";
@@ -106,4 +108,29 @@ export async function getTabBackMap(): Promise<TabBackMap> {
 
 export async function setTabBackMap(next: TabBackMap): Promise<void> {
   await browser.storage.local.set({ [TAB_BACK_MAP_KEY]: next });
+}
+
+export async function getPeekSessions(): Promise<PeekSessionMap> {
+  const stored = await browser.storage.local.get(PEEK_SESSIONS_KEY);
+  return (stored[PEEK_SESSIONS_KEY] as PeekSessionMap | undefined) ?? {};
+}
+
+export async function setPeekSessions(next: PeekSessionMap): Promise<void> {
+  await browser.storage.local.set({ [PEEK_SESSIONS_KEY]: next });
+}
+
+export function onPeekSessionsChange(
+  cb: (next: PeekSessionMap) => void,
+): Unsubscribe {
+  const listener = (
+    changes: Record<string, browser.Storage.StorageChange>,
+    area: string,
+  ) => {
+    if (area !== "local") return;
+    const change = changes[PEEK_SESSIONS_KEY];
+    if (!change) return;
+    cb((change.newValue as PeekSessionMap | undefined) ?? {});
+  };
+  browser.storage.onChanged.addListener(listener);
+  return () => browser.storage.onChanged.removeListener(listener);
 }

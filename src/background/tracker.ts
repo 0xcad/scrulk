@@ -4,6 +4,7 @@ import { dateKey, upsertDay } from "../shared/history";
 import {
   getDayState,
   getGatewayState,
+  getPeekSessions,
   getSettings,
   setDayState,
   setSettings,
@@ -31,24 +32,29 @@ const DAY_RESET_ALARM = "scrulk:day-reset";
 type ActivityInputs = {
   windowFocused: boolean;
   activeTabUrl: string | undefined;
+  activeTabId: number | undefined;
   idleState: chrome.idle.IdleState;
   trackedSites: string[];
+  peekTabIds: Set<number>;
 };
 
 async function readActivity(): Promise<ActivityInputs> {
-  const [settings, focusedWindow] = await Promise.all([
+  const [settings, focusedWindow, peekSessions] = await Promise.all([
     getSettings(),
     browser.windows
       .getLastFocused({ populate: true })
       .catch(() => null),
+    getPeekSessions(),
   ]);
 
   let activeTabUrl: string | undefined;
+  let activeTabId: number | undefined;
   let windowFocused = false;
   if (focusedWindow && focusedWindow.focused && focusedWindow.tabs) {
     windowFocused = true;
     const active = focusedWindow.tabs.find((t) => t.active);
     activeTabUrl = active?.url;
+    activeTabId = active?.id;
   }
 
   // queryState requires an interval; 60s matches the user spec.
@@ -59,14 +65,22 @@ async function readActivity(): Promise<ActivityInputs> {
   return {
     windowFocused,
     activeTabUrl,
+    activeTabId,
     idleState,
     trackedSites: settings.trackedSites,
+    peekTabIds: new Set(Object.keys(peekSessions).map(Number)),
   };
 }
 
 function shouldBeActive(inputs: ActivityInputs): boolean {
   if (!inputs.windowFocused) return false;
   if (inputs.idleState !== "active") return false;
+  if (
+    inputs.activeTabId !== undefined &&
+    inputs.peekTabIds.has(inputs.activeTabId)
+  ) {
+    return false;
+  }
   const host = hostnameOf(inputs.activeTabUrl);
   if (!host) return false;
   return isTracked(host, inputs.trackedSites);

@@ -15,6 +15,15 @@ export function Settings() {
       </section>
 
       <section>
+        <h2>Peek preview</h2>
+        <p>
+          Preview tracked links opened from untracked pages before starting
+          tracked time.
+        </p>
+        <PeekField />
+      </section>
+
+      <section>
         <h2>Wake up time</h2>
         <p>
           What time do you usually have to wake up? Daily usage resets when you need to wake up, not midnight.
@@ -167,6 +176,33 @@ function AlwaysShowTimerField() {
         }}
       />
       <small>Also records and displays total time on all websites.</small>
+    </label>
+  );
+}
+
+function PeekField() {
+  const [enabled, setEnabled] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    void getSettings().then((s) => setEnabled(s.peekEnabled));
+    return onSettingsChange((s) => setEnabled(s.peekEnabled));
+  }, []);
+
+  if (enabled === null) return <p>Loading…</p>;
+
+  return (
+    <label class="row">
+      <span>Open tracked links in Peek</span>
+      <input
+        type="checkbox"
+        checked={enabled}
+        onChange={(e) => {
+          const next = (e.target as HTMLInputElement).checked;
+          setEnabled(next);
+          void setSettings({ peekEnabled: next });
+        }}
+      />
+      <small>Applies to ordinary left-clicks; modified clicks keep their native behavior.</small>
     </label>
   );
 }

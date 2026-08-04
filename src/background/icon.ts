@@ -1,5 +1,6 @@
 import browser from "webextension-polyfill";
 import { hostnameOf, isTracked } from "../shared/domain";
+import { getPeekSessions } from "../shared/storage";
 
 import activeIcon16 from "../assets/icon-active-16.png";
 import activeIcon32 from "../assets/icon-active-32.png";
@@ -29,9 +30,12 @@ export async function updateIconForTab(
   tabId: number,
   url: string | undefined,
   tracked: string[],
+  peekTabIds?: Set<number>,
 ): Promise<void> {
   const host = hostnameOf(url);
-  const active = host !== null && isTracked(host, tracked);
+  const peekIds = peekTabIds ?? new Set(Object.keys(await getPeekSessions()).map(Number));
+  const active =
+    !peekIds.has(tabId) && host !== null && isTracked(host, tracked);
   const path = active ? ICONS.active : ICONS.inactive;
   try {
     await browser.action.setIcon({ tabId, path });
@@ -41,10 +45,16 @@ export async function updateIconForTab(
 }
 
 export async function refreshAllTabIcons(tracked: string[]): Promise<void> {
-  const tabs = await browser.tabs.query({});
+  const [tabs, peekSessions] = await Promise.all([
+    browser.tabs.query({}),
+    getPeekSessions(),
+  ]);
+  const peekTabIds = new Set(Object.keys(peekSessions).map(Number));
   await Promise.all(
     tabs.map((t) =>
-      t.id !== undefined ? updateIconForTab(t.id, t.url, tracked) : null,
+      t.id !== undefined
+        ? updateIconForTab(t.id, t.url, tracked, peekTabIds)
+        : null,
     ),
   );
 }

@@ -3,6 +3,7 @@ import {
   getDayState,
   getSettings,
   onSettingsChange,
+  onPeekSessionsChange,
   setDayState,
   setSettings,
 } from "../shared/storage";
@@ -42,12 +43,24 @@ import {
 } from "./gateway";
 import { onGatewayStateChange } from "../shared/storage";
 import { closeCameraHub, ensureCameraHub } from "./camera";
+import {
+  getPeekSessionForTab,
+  handlePeekClose,
+  handlePeekDestinationUpdate,
+  handlePeekOpen,
+  handlePeekPromote,
+  pruneInvalidPeekSessions,
+  reconcilePeekSessions,
+  removePeekSession,
+  syncPeekNavigation,
+} from "./peek";
 
 // MV3 service worker: ephemeral. No long-lived module-level state.
 // All listeners must be registered synchronously at top level so the worker
 // can be revived to handle events.
 
 browser.runtime.onInstalled.addListener(async ({ reason }) => {
+  await reconcilePeekSessions();
   const current = await getSettings();
   if (reason === "install") {
     await setSettings({ installedAt: Date.now() });
@@ -61,6 +74,7 @@ browser.runtime.onInstalled.addListener(async ({ reason }) => {
 });
 
 browser.runtime.onStartup.addListener(async () => {
+  await reconcilePeekSessions();
   const settings = await getSettings();
   await refreshAllTabIcons(settings.trackedSites);
   await ensureDayResetAlarm(settings.wakeUpTime);
@@ -78,17 +92,21 @@ browser.tabs.onActivated.addListener(async ({ tabId }) => {
 
 browser.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
   if (!changeInfo.url && changeInfo.status !== "loading") return;
+  let isPeek = (await getPeekSessionForTab(tabId)) !== null;
+  if (isPeek && changeInfo.url) {
+    isPeek = await syncPeekNavigation(tabId, tab.url);
+  }
   const { trackedSites } = await getSettings();
   await updateIconForTab(tabId, tab.url, trackedSites);
   if (changeInfo.url) {
-    if (await enforceExtensionNavigation(tabId, changeInfo.url)) {
+    if (!isPeek && await enforceExtensionNavigation(tabId, changeInfo.url)) {
       await syncDomainTabPresence();
       await recompute();
       return;
     }
     // A tab just navigated to a (possibly) tracked URL — only moment a fresh
     // tracked tab can push us over the limit.
-    await enforceTabLimit(tabId, changeInfo.url);
+    if (!isPeek) await enforceTabLimit(tabId, changeInfo.url);
     // The set of tabs-on-each-tracked-domain may have changed; refresh
     // gateway state so domains with zero remaining tabs get cleared.
     await syncDomainTabPresence();
@@ -100,6 +118,7 @@ browser.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
 
 browser.tabs.onRemoved.addListener(async (tabId) => {
   await handleExtensionTabRemoved(tabId);
+  await removePeekSession(tabId);
   await forgetTab(tabId);
   await syncDomainTabPresence();
   await recompute();
@@ -149,6 +168,35 @@ browser.alarms.onAlarm.addListener(async (alarm) => {
 
 browser.runtime.onMessage.addListener((message: unknown, sender: browser.Runtime.MessageSender) => {
   const msg = message as Message;
+  if (msg.type === "peek:open") {
+    return handlePeekOpen(
+      msg.destUrl,
+      msg.token,
+      sender.tab,
+    ).then(async (opened) => {
+      await recompute();
+      return opened;
+    });
+  }
+  if (msg.type === "peek:close") {
+    return handlePeekClose(msg.token, sender.tab?.id).then(async (closed) => {
+      await recompute();
+      return closed;
+    });
+  }
+  if (msg.type === "peek:promote") {
+    return handlePeekPromote(msg.token, sender.tab?.id).then(async (promoted) => {
+      await recompute();
+      return promoted;
+    });
+  }
+  if (msg.type === "peek:updateDest") {
+    return handlePeekDestinationUpdate(
+      msg.token,
+      msg.destUrl,
+      sender.tab?.id,
+    );
+  }
   if (msg.type === "breaktime:resume") {
     return handleBreaktimeResume().then(() => recompute());
   }
@@ -279,6 +327,7 @@ onSettingsChange(async (next) => {
   if (!next.cameraOverlayEnabled) {
     await closeCameraHub();
   }
+  await pruneInvalidPeekSessions(next.trackedSites);
   await refreshAllTabIcons(next.trackedSites);
   await ensureDayResetAlarm(next.wakeUpTime);
   await recompute();
@@ -288,4 +337,12 @@ onSettingsChange(async (next) => {
 // mirrors the "expired alert active" flag.
 onGatewayStateChange(() => {
   void recompute();
+});
+
+onPeekSessionsChange(() => {
+  void (async () => {
+    const settings = await getSettings();
+    await refreshAllTabIcons(settings.trackedSites);
+    await recompute();
+  })();
 });

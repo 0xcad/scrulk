@@ -3,6 +3,7 @@ import { findMatchingDomain, hostnameOf } from "../shared/domain";
 import {
   getDayState,
   getGatewayState,
+  getPeekSessions,
   getSettings,
   getTabBackMap,
   setGatewayState,
@@ -48,7 +49,10 @@ function parseExpireAlarm(name: string): string | null {
 }
 
 /** True if `domain` currently has any state that should bypass the gateway. */
-function isUnlocked(entry: GatewayDomainState | undefined, now: number): boolean {
+export function isGatewayUnlocked(
+  entry: GatewayDomainState | undefined,
+  now: number,
+): boolean {
   if (!entry) return false;
   if (entry.continueFlag) return true;
   if (entry.timerExpiresAt !== undefined && entry.timerExpiresAt > now) {
@@ -89,7 +93,7 @@ export async function handleBeforeNavigate(
   if (dayState.breaktimeOpen) return;
 
   const state = await getGatewayState();
-  if (isUnlocked(state[matched], Date.now())) return;
+  if (isGatewayUnlocked(state[matched], Date.now())) return;
 
   // Capture the tab's pre-navigation URL as the "back" target. tab.url at
   // onBeforeNavigate is still the previous committed URL.
@@ -126,9 +130,13 @@ export async function handleCommitted(
 async function countTabsByDomain(
   trackedSites: string[],
 ): Promise<Map<string, number>> {
-  const tabs = await browser.tabs.query({});
+  const [tabs, peekSessions] = await Promise.all([
+    browser.tabs.query({}),
+    getPeekSessions(),
+  ]);
   const counts = new Map<string, number>();
   for (const t of tabs) {
+    if (t.id !== undefined && peekSessions[String(t.id)] !== undefined) continue;
     const host = hostnameOf(t.url);
     if (!host) continue;
     const d = findMatchingDomain(host, trackedSites);
@@ -246,8 +254,12 @@ export async function handleExpireAlarm(domain: string): Promise<void> {
 /** gateway:imDone — back-nav every tab on `domain` and clear state. */
 export async function handleImDone(domain: string): Promise<void> {
   const settings = await getSettings();
-  const tabs = await browser.tabs.query({});
+  const [tabs, peekSessions] = await Promise.all([
+    browser.tabs.query({}),
+    getPeekSessions(),
+  ]);
   const targets = tabs.filter((t) => {
+    if (t.id !== undefined && peekSessions[String(t.id)] !== undefined) return false;
     const host = hostnameOf(t.url);
     if (!host) return false;
     return findMatchingDomain(host, settings.trackedSites) === domain;

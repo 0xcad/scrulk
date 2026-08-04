@@ -1,6 +1,11 @@
 import browser from "webextension-polyfill";
 import { hostnameOf, isTracked } from "../shared/domain";
-import { getDayState, getSettings, setDayState } from "../shared/storage";
+import {
+  getDayState,
+  getPeekSessions,
+  getSettings,
+  setDayState,
+} from "../shared/storage";
 
 /**
  * Close `tabId` if it pushes the count of tracked-host tabs over
@@ -20,8 +25,12 @@ export async function enforceTabLimit(
   const settings = await getSettings();
   if (!isTracked(host, settings.trackedSites)) return;
 
-  const tabs = await browser.tabs.query({});
+  const [tabs, peekSessions] = await Promise.all([
+    browser.tabs.query({}),
+    getPeekSessions(),
+  ]);
   const trackedCount = tabs.filter((t) => {
+    if (t.id !== undefined && peekSessions[String(t.id)] !== undefined) return false;
     const h = hostnameOf(t.url);
     return h !== null && isTracked(h, settings.trackedSites);
   }).length;

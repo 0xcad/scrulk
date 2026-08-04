@@ -93,6 +93,10 @@ export function Gateway() {
   }, []);
 
   const onGoBack = () => {
+    if (back) {
+      void send({ type: "gateway:goBack" }).catch(() => null);
+      return;
+    }
     // Prefer browser-back: it preserves the user's history including any
     // forward stack. Falls back to background-orchestrated navigation when
     // there's no prior entry (e.g. tab was opened fresh on TRACKED).

@@ -1,7 +1,12 @@
 import browser from "webextension-polyfill";
 import { hostnameOf, isTracked } from "../shared/domain";
 import { dateKey } from "../shared/history";
-import { getDayState, getSettings, setDayState } from "../shared/storage";
+import {
+  getDayState,
+  getPeekSessions,
+  getSettings,
+  setDayState,
+} from "../shared/storage";
 import { effectiveMs, type DayState, type Settings } from "../shared/types";
 import { currentWakeDayStart } from "../shared/wakeDay";
 
@@ -13,10 +18,14 @@ export async function openSurveyTab(date: string): Promise<void> {
 }
 
 export async function closeTrackedTabs(): Promise<void> {
-  const settings = await getSettings();
-  const tabs = await browser.tabs.query({});
+  const [settings, tabs, peekSessions] = await Promise.all([
+    getSettings(),
+    browser.tabs.query({}),
+    getPeekSessions(),
+  ]);
   const ids = tabs
     .filter((t) => {
+      if (t.id !== undefined && peekSessions[String(t.id)] !== undefined) return false;
       const host = hostnameOf(t.url);
       return host !== null && isTracked(host, settings.trackedSites);
     })
@@ -92,15 +101,17 @@ export async function handleBreaktimeResume(): Promise<void> {
 
 /** Start the single two-minute extension available for an open alert. */
 export async function handleBreaktimeExtend(): Promise<void> {
-  const [state, settings, tabs] = await Promise.all([
+  const [state, settings, tabs, peekSessions] = await Promise.all([
     getDayState(),
     getSettings(),
     browser.tabs.query({}),
+    getPeekSessions(),
   ]);
   if (!state.breaktimeOpen || state.breaktimeExtensionUsed) return;
 
   const extensionTabs: Record<string, string> = {};
   for (const tab of tabs) {
+    if (tab.id !== undefined && peekSessions[String(tab.id)] !== undefined) continue;
     const host = hostnameOf(tab.url);
     if (tab.id !== undefined && tab.url && host && isTracked(host, settings.trackedSites)) {
       extensionTabs[String(tab.id)] = tab.url;

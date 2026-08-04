@@ -9,26 +9,28 @@ export default defineManifest({
   version: "0.1.0",
 
   // Slice 2 adds alarms (daily reset), idle (pause-when-AFK).
-  // webNavigation lets the background intercept top-frame navigations to
-  // tracked hosts and redirect them through the gateway page.
+  // webNavigation intercepts top-frame tracked navigation for the gateway.
+  // declarativeNetRequestWithHostAccess removes framing headers only for
+  // active, tab-scoped Peek subframes.
   permissions: [
     "storage",
     "tabs",
     "alarms",
     "idle",
     "webNavigation",
+    "declarativeNetRequestWithHostAccess",
   ],
 
-  // Content script for the usage clock + (later) sleep clock runs on every
-  // page; it bails fast on non-tracked hosts.
+  // One universal content script owns clocks, Peek interception, and every
+  // tracked-site overlay.
   host_permissions: ["<all_urls>"],
 
   content_scripts: [
     {
       matches: ["<all_urls>"],
       js: ["src/content/index.tsx"],
-      run_at: "document_idle",
-      all_frames: false,
+      run_at: "document_start",
+      all_frames: true,
     },
   ],
 

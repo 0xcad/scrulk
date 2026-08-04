@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "preact/hooks";
 import browser from "webextension-polyfill";
+import themeStyles from "../shared/theme.css?inline";
 import type { Message } from "../shared/messages";
 import {
   getDayState,
@@ -19,6 +20,7 @@ import {
 import { BreaktimeOverlay } from "./BreaktimeOverlay";
 import { CameraOverlay } from "./CameraOverlay";
 import { DimOverlay } from "./DimOverlay";
+import { ExtensionFrame } from "./ExtensionFrame";
 import { ExtensionLinkLock } from "./ExtensionLinkLock";
 import { GatewayExpiredOverlay } from "./GatewayExpiredOverlay";
 import { SleepClock } from "./SleepClock";
@@ -34,6 +36,7 @@ interface Props {
  * overlays to show:
  *   - `UsageClock`: only on tracked sites.
  *   - `SleepClock`: every site, but only inside the 10h-before-wakeup window.
+ *   - `ExtensionFrame`: only on tracked sites during extended time.
  *   - `BreaktimeOverlay`: only on tracked sites, only while the global
  *     `breaktimeOpen` flag is set.
  *   - `GatewayExpiredOverlay`: only on tracked sites, only while
@@ -107,6 +110,10 @@ export function Root({ matchedDomain }: Props) {
 
   return (
     <>
+      <style>{themeStyles}</style>
+      {matchedDomain !== null && state.breaktimeExtensionExpiresAt !== null && (
+        <ExtensionFrame />
+      )}
       {(matchedDomain !== null || settings.alwaysShowTimer) && (
         <UsageClock matchedDomain={matchedDomain} alwaysShowTimer={settings.alwaysShowTimer} />
       )}

@@ -1,9 +1,10 @@
+@import "../shared/theme.css";
+
 :root {
   color-scheme: light dark;
   font-family: system-ui, sans-serif;
   --border: color-mix(in srgb, currentColor 15%, transparent);
   --light: color-mix(in srgb, currentColor 85%, transparent);
-  --primary: #FF5733;
 }
 
 body {

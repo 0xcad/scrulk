@@ -1,3 +1,5 @@
+@import "../shared/theme.css";
+
 :root {
   color-scheme: light dark;
   font-family: system-ui, sans-serif;
@@ -9,7 +11,6 @@ body {
   display: grid;
   place-items: center;
   background: color-mix(in srgb, currentColor 4%, transparent);
-  --primary: #FF5733;
   --border: color-mix(in srgb, currentColor 25%, transparent);
 }
 

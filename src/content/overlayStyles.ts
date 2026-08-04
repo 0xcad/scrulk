@@ -13,7 +13,6 @@ export const overlayBaseStyles = `
     place-items: center;
     font: 14px/1.4 system-ui, sans-serif;
     color: #111;
-    --primary: #FF5733;
   }
   .card {
     background: Canvas;

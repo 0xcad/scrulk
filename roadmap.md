@@ -256,19 +256,12 @@ ai generated code cleanup:
 
 ==
 
-is GateWay / "Pause" / "Time's up" wall clock time? I think it is, should it be?
-
-idea: collect bullet points from user about what they want to be doing online *instead* of using tracked sites. show those in an accordion in the modal popup. occasionally, when user is scrolling, show these at random intervals to user one at a time
-* if you let an app collect scope creep for long enough, eventually everything turns to a todo application
-
-similar idea: a list of alternatives user has to click past? go for a short walk, call someone, tonic water, cigarette, drink. often i scroll when i'm feeling overworked and lack energy. what should i do instead?
+i routinely come back to my closed laptop and find total timer is at like 4 hrs
 
 metrics idea: capture moving average of "outlier scrolling". my average right now is 11 mins per day, that seems suspiciously good, but I'm also trying to measure binge scrolling, which is less frequent. so maybe that's measuring a moving average of my top 5% outlier scroll sessions? another idea could also just be plotting a normal distribution of scrolling...
 * how long was this binge scroll session compared to your last one? what about the ones before? what do your trendlines look like?
 
 idea: after ending a day (survey flow), make screen dim/grayscale if returning to tracked content / any site
-
-idea: just make all tracked pages load 100ms slower or smtg?
 
 If I like camera on pause menu, keep it, but make the styling look nicer
 If I dislike it, get rid of it (commit 149aaf61becbf377cb89f73879f0045f6165819b)
@@ -276,6 +269,7 @@ If I dislike it, get rid of it (commit 149aaf61becbf377cb89f73879f0045f6165819b)
 
 camera on tracked pages: don't show immediately, show after, say, 10 minutes of use
 * if tab is closed, click "connecting..." again to reopen camera window
+* regression: it's broken?
 
 *wonderful* idea: A DNS, MITM proxy (with trusted root certificate) that just loads scroll unlock whenever you use it. must run a server then to store data in the backend. instead of browser extension pages, something like `scroll-unlock.local` could be used? or, best user-experience, the extension communicates with the locally running server. extension settings modify the server settings. if we get connection to the server (heartbeat), hide all shadow DOM and just let DNS injection handle everything.
 * Value: If I want to get around this, i can just open a different browser, open a private browsing window, and I'm stopped. i never fuck with my DNS settings. Editing my hosts file is super inconvenient. Also, you can get it on multiple devices in sync for cheap
@@ -297,3 +291,14 @@ idea: what would it look like for a system to:
 one problem is that sometimes, "research" is scrolling/scanning. You gotta look around a lot to figure out if something is worth reading or not...
 Could perhaps turn or turn off this setting? "Deep focus" mode or something, which I turn on only when I have a task I want to start (e.g, writing), and resources pulled up of something i want to do...
 ^For this, and predictive pre-commitment, I think to what a misinformation researcher told me at CMU. I really wondered how they could track the spread of misinformation so broadly across the internet. What does that look like at a technical level? This researcher said that misinfo has a "signature", essentially, unique properties in its virality, and they don't track when sources are wrong but *how sources spread* to determine if something is misinfo or not. Could be the same thing here...
+
+## ideas I've determined may be bad
+
+idea: collect bullet points from user about what they want to be doing online *instead* of using tracked sites. show those in an accordion in the modal popup. occasionally, when user is scrolling, show these at random intervals to user one at a time
+* if you let an app collect scope creep for long enough, eventually everything turns to a todo application
+
+similar idea: a list of alternatives user has to click past? go for a short walk, call someone, tonic water, cigarette, drink. often i scroll when i'm feeling overworked and lack energy. what should i do instead?
+
+
+idea: just make all tracked pages load 100ms slower or smtg?
+* I personally always load shit in the background

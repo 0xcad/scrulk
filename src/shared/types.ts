@@ -1,7 +1,7 @@
 /**
  * Settings is the single object stored under storage key "settings".
- * Future slices add fields here. When adding a field: extend this interface,
- * give it a default in DEFAULT_SETTINGS, and surface a control on Settings.tsx.
+ * When adding a field: extend this interface, give it a default in
+ * DEFAULT_SETTINGS, and surface a control on Settings.tsx.
  */
 export const STREAK_THRESHOLD_MS = 20_000;
 

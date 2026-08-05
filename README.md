@@ -5,10 +5,6 @@ websites you flag. Add a domain to your tracked list and the extension layers
 on friction: a usage clock, breaktime alerts, a tab limit, a regret survey,
 and a sleep-time countdown.
 
-Slice 1 (current): foundation — tracked-site list, popup, per-tab icon. See
-[`roadmap.md`](./roadmap.md) for the full plan and
-[`CLAUDE.md`](./CLAUDE.md) for the contributor guide.
-
 ## Develop
 
 ```sh

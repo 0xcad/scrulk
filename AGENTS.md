@@ -15,9 +15,6 @@ reduce time spent on websites they've flagged. The user maintains a list of
 - a reflection survey + calendar history,
 - a "sleep clock" countdown to wake-up time on every site.
 
-Slice 1 (current) only ships the foundation: tracked-site CRUD, popup, per-tab
-icon. The full slice plan lives in `roadmap.md`.
-
 ## Stack
 
 - **Manifest V3.** Required for Chrome; supported by Firefox 115+.
@@ -26,8 +23,8 @@ icon. The full slice plan lives in `roadmap.md`.
 - **`webextension-polyfill`** so we always write `browser.*` and it works on
   both browsers.
 - **`browser.storage.local`** for settings + day state. **IndexedDB** (via
-  `idb`) for time-series history — added in slice 7.
-- Plain CSS. Shadow DOM for content-script overlays in slice 2+.
+  `idb`) for time-series history.
+- Plain CSS. Shadow DOM for content-script overlays.
 
 ## Layout
 
@@ -39,7 +36,7 @@ src/
     tracker.ts     event-driven usage tracker + day-reset alarm
   content/         injected on every page; bails on non-tracked hosts
     index.tsx      mount/unmount controller
-    UsageClock.tsx draggable Shadow-DOM overlay (slice 2)
+    UsageClock.tsx draggable Shadow-DOM overlay
   popup/           toolbar popup (Preact)
   options/         dashboard page (Preact, Home/Calendar/Settings tabs)
     pages/         one file per top-level page
@@ -56,10 +53,10 @@ manifest.config.ts ts-typed manifest, consumed by @crxjs at build time
 ## Invariants — read before coding
 
 1. **Service worker is ephemeral.** No module-level state in `src/background/`.
-   Persist via `browser.storage.local` and schedule via `browser.alarms`
-   (slice 2+) — never `setTimeout` for anything that must outlive a few
-   seconds. Register all event listeners synchronously at module top so the
-   worker can be revived to handle them.
+   Persist via `browser.storage.local` and use `browser.alarms` for scheduling—
+   never `setTimeout` for anything that must outlive a few seconds. Register all
+   event listeners synchronously at module top so the worker can be revived to
+   handle them.
 
 2. **All tracked-site matching goes through `isTracked`.** Never inline
    hostname comparison. The rule is: exact match OR subdomain match. Adding
@@ -73,7 +70,7 @@ manifest.config.ts ts-typed manifest, consumed by @crxjs at build time
 
 4. **Day boundary = wake-up time.** The "day" runs from one wake-up time to
    the next. Anything time-bucketed (usage totals, survey rows) keys on the
-   wake-day, not the calendar day. (Implemented in slice 2.)
+   wake-day, not the calendar day.
 
 5. **Display name vs. internal name.** User-visible strings say
    "Scroll Unlock". `package.json` and code identifiers use `scrulk`.
@@ -101,10 +98,9 @@ manifest.config.ts ts-typed manifest, consumed by @crxjs at build time
 
 7. **Content script is universal + reactive.** `src/content/index.tsx` runs
    on `<all_urls>`, bails fast when host isn't tracked, and (un)mounts on
-   `storage.onChanged`. When you add a new content-script feature
-   (slice 6 sleep clock; slice 4 breaktime overlay), add another component
-   in `src/content/` and conditionally mount it from `index.tsx` — don't
-   register a second content script.
+   `storage.onChanged`. When you add a new content-script feature, add another
+   component in `src/content/` and conditionally mount it from `index.tsx` —
+   don't register a second content script.
 
 8. **Background ↔ content sync via `storage.onChanged`.** No
    `runtime.sendMessage` for *state*. The background writes to storage; the
@@ -223,7 +219,7 @@ in `src/background/tracker.ts` — do not update them anywhere else.
 - **Calendar:** streaks are not persisted in `DayRecord` or displayed in the
   calendar.
 
-## How to add a content-script overlay (slice 2+)
+## How to add a content-script overlay
 
 - The manifest registers one universal static content script. Add features as
   conditional components in `Root.tsx`; do not dynamically register another
@@ -240,7 +236,7 @@ in `src/background/tracker.ts` — do not update them anywhere else.
 npm install
 npm run build      # → dist/
 npm run dev        # HMR for popup + options; background reloads on save
-npm test           # vitest (domain matching only in slice 1)
+npm test           # vitest
 ```
 
 **Firefox**: open `about:debugging#/runtime/this-firefox` → *Load Temporary
@@ -251,8 +247,7 @@ Add-on* → pick `dist/manifest.json`.
 
 ## Permissions philosophy
 
-Only declare permissions the *current slice* uses. Each future slice's PR
-adds the permissions it needs. The full eventual set is in `roadmap.md`.
+Only declare permissions the extension currently uses.
 
 Current manifest permissions:
 

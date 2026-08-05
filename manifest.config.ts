@@ -8,7 +8,6 @@ export default defineManifest({
     "Yet another digital wellness tool, but this is the one that works for me. Get unlocked.",
   version: "0.1.0",
 
-  // Slice 2 adds alarms (daily reset), idle (pause-when-AFK).
   // webNavigation lets the background intercept top-frame navigations to
   // tracked hosts and redirect them through the gateway page.
   permissions: [

@@ -43,6 +43,7 @@ describe("camera overlay defaults", () => {
     expect(DEFAULT_SETTINGS.cameraOverlayEnabled).toBe(false);
     expect(DEFAULT_SETTINGS.cameraOverlayPermission).toBe("unknown");
     expect(DEFAULT_SETTINGS.cameraOverlayPosition).toBeNull();
+    expect(DEFAULT_SETTINGS.cameraOverlaySize).toBeNull();
   });
 });
 

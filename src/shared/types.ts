@@ -33,6 +33,8 @@ export interface Settings {
   cameraOverlayPermission: CameraOverlayPermission;
   /** Single global position for the tracked-site camera overlay. */
   cameraOverlayPosition: ClockPosition | null;
+  /** Single global size for the tracked-site camera overlay. */
+  cameraOverlaySize: CameraOverlaySize | null;
   /** Consecutive tracked-site usage days ending with the last completed day. */
   usageStreak: number;
 }
@@ -40,6 +42,11 @@ export interface Settings {
 export interface ClockPosition {
   x: number;
   y: number;
+}
+
+export interface CameraOverlaySize {
+  width: number;
+  height: number;
 }
 
 export type CameraOverlayPermission = "unknown" | "granted" | "denied";
@@ -60,6 +67,7 @@ export const DEFAULT_SETTINGS: Settings = {
   cameraOverlayEnabled: false,
   cameraOverlayPermission: "unknown",
   cameraOverlayPosition: null,
+  cameraOverlaySize: null,
   usageStreak: 0,
 };
 

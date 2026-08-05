@@ -1,9 +1,16 @@
 import { useEffect, useRef, useState } from "preact/hooks";
 import browser from "webextension-polyfill";
 import type { Message } from "../shared/messages";
+import {
+  CAMERA_ASPECT_RATIO,
+  CAMERA_MIN_SIZE,
+  cameraSizeForWidth,
+  resizedCameraSize,
+} from "../shared/camera";
 import { getSettings, setSettings } from "../shared/storage";
 import type {
   CameraOverlayPermission,
+  CameraOverlaySize,
   ClockPosition,
 } from "../shared/types";
 
@@ -11,6 +18,7 @@ const DEFAULT_POS: ClockPosition = { x: 16, y: 64 };
 const CAMERA_PORT = "scrulk-camera-viewer";
 const WATCHDOG_INTERVAL_MS = 2_000;
 const STALLED_AFTER_MS = 6_000;
+const CAMERA_BORDER_PX = 4;
 
 type HubMessage =
   | { type: "offer"; sdp: string }
@@ -40,6 +48,7 @@ interface Props {
 
 export function CameraOverlay({ permission }: Props) {
   const [pos, setPos] = useState<ClockPosition>(DEFAULT_POS);
+  const [size, setSize] = useState<CameraOverlaySize>(CAMERA_MIN_SIZE);
   const [ready, setReady] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const dragRef = useRef<{
@@ -51,10 +60,23 @@ export function CameraOverlay({ permission }: Props) {
     startY: number;
     moved: boolean;
   } | null>(null);
+  const resizeRef = useRef<{
+    startX: number;
+    startY: number;
+    startWidth: number;
+    size: CameraOverlaySize;
+  } | null>(null);
 
   useEffect(() => {
     void getSettings().then((settings) => {
-      setPos(settings.cameraOverlayPosition ?? DEFAULT_POS);
+      const savedPos = settings.cameraOverlayPosition ?? DEFAULT_POS;
+      setPos(savedPos);
+      setSize(
+        cameraSizeForWidth(
+          settings.cameraOverlaySize?.width ?? CAMERA_MIN_SIZE.width,
+          maxCameraWidth(savedPos),
+        ),
+      );
     });
   }, []);
 
@@ -324,6 +346,49 @@ export function CameraOverlay({ permission }: Props) {
     if (!drag.moved && !ready) openCameraHub();
   };
 
+  const onResizePointerDown = (event: PointerEvent) => {
+    event.stopPropagation();
+    const target = event.currentTarget as HTMLElement;
+    target.setPointerCapture(event.pointerId);
+    resizeRef.current = {
+      startX: event.clientX,
+      startY: event.clientY,
+      startWidth: size.width,
+      size,
+    };
+  };
+
+  const onResizePointerMove = (event: PointerEvent) => {
+    event.stopPropagation();
+    const resize = resizeRef.current;
+    if (!resize) return;
+    const next = resizedCameraSize(
+      resize.startWidth,
+      event.clientX - resize.startX,
+      event.clientY - resize.startY,
+      maxCameraWidth(pos),
+    );
+    resize.size = next;
+    setSize(next);
+  };
+
+  const onResizePointerUp = (event: PointerEvent) => {
+    event.stopPropagation();
+    const resize = resizeRef.current;
+    if (!resize) return;
+    resizeRef.current = null;
+    void setSettings({ cameraOverlaySize: resize.size });
+  };
+
+  const resizeByKeyboard = (delta: number) => {
+    const next = cameraSizeForWidth(
+      size.width + delta,
+      maxCameraWidth(pos),
+    );
+    setSize(next);
+    void setSettings({ cameraOverlaySize: next });
+  };
+
   const unavailable = permission === "denied";
 
   return (
@@ -331,7 +396,12 @@ export function CameraOverlay({ permission }: Props) {
       <style>{styles}</style>
       <div
         class={`camera${ready ? " ready" : ""}`}
-        style={{ left: `${pos.x}px`, top: `${pos.y}px` }}
+        style={{
+          left: `${pos.x}px`,
+          top: `${pos.y}px`,
+          width: `${size.width}px`,
+          height: `${size.height}px`,
+        }}
         title={
           unavailable
             ? "Camera access unavailable (click to retry)"
@@ -339,21 +409,10 @@ export function CameraOverlay({ permission }: Props) {
               ? "Scroll Unlock camera preview (drag to move)"
               : "Camera connecting (click to reopen helper tab)"
         }
-        role={!ready ? "button" : undefined}
-        tabIndex={!ready ? 0 : undefined}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
         onPointerCancel={() => { dragRef.current = null; }}
-        onKeyDown={(event) => {
-          if (
-            !ready &&
-            (event.key === "Enter" || event.key === " ")
-          ) {
-            event.preventDefault();
-            openCameraHub();
-          }
-        }}
       >
         <video
           ref={videoRef}
@@ -373,6 +432,32 @@ export function CameraOverlay({ permission }: Props) {
           </span>
         )}
         <span class="indicator" aria-label="Camera active" />
+        <button
+          type="button"
+          class="resize-handle"
+          aria-label="Resize camera preview"
+          title="Resize camera preview"
+          onPointerDown={onResizePointerDown}
+          onPointerMove={onResizePointerMove}
+          onPointerUp={onResizePointerUp}
+          onPointerCancel={(event) => {
+            event.stopPropagation();
+            resizeRef.current = null;
+          }}
+          onKeyDown={(event) => {
+            event.stopPropagation();
+            if (event.key === "ArrowRight" || event.key === "ArrowDown") {
+              event.preventDefault();
+              resizeByKeyboard(16);
+            } else if (
+              event.key === "ArrowLeft" ||
+              event.key === "ArrowUp"
+            ) {
+              event.preventDefault();
+              resizeByKeyboard(-16);
+            }
+          }}
+        />
       </div>
     </>
   );
@@ -382,12 +467,20 @@ function clamp(n: number, lo: number, hi: number): number {
   return Math.max(lo, Math.min(hi, n));
 }
 
+function maxCameraWidth(pos: ClockPosition): number {
+  const horizontalRoom = window.innerWidth - pos.x - CAMERA_BORDER_PX;
+  const verticalRoom =
+    (window.innerHeight - pos.y - CAMERA_BORDER_PX) * CAMERA_ASPECT_RATIO;
+  return Math.max(
+    CAMERA_MIN_SIZE.width,
+    Math.min(horizontalRoom, verticalRoom),
+  );
+}
+
 const styles = `
   :host { all: initial; }
   .camera {
     position: fixed;
-    width: 160px;
-    height: 120px;
     overflow: hidden;
     pointer-events: auto;
     border: 2px solid rgba(255, 255, 255, 0.92);
@@ -433,4 +526,32 @@ const styles = `
     box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.35);
   }
   .camera:not(.ready) .indicator { opacity: 0.35; }
+  .resize-handle {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    z-index: 2;
+    width: 24px;
+    height: 24px;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background:
+      linear-gradient(
+        135deg,
+        transparent 0 48%,
+        rgba(255, 255, 255, 0.9) 49% 56%,
+        transparent 57% 64%,
+        rgba(255, 255, 255, 0.9) 65% 72%,
+        transparent 73%
+      );
+    color: white;
+    cursor: nwse-resize;
+    touch-action: none;
+  }
+  .resize-handle:focus-visible {
+    outline: 2px solid white;
+    outline-offset: -4px;
+  }
 `;

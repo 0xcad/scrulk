@@ -1,5 +1,11 @@
 import { hostnameOf, isTracked } from "./domain";
-import type { DayState, Settings } from "./types";
+import type { CameraOverlaySize, DayState, Settings } from "./types";
+
+export const CAMERA_ASPECT_RATIO = 4 / 3;
+export const CAMERA_MIN_SIZE: CameraOverlaySize = {
+  width: 160,
+  height: 120,
+};
 
 type CameraOverlaySettings = Pick<Settings, "cameraOverlayEnabled">;
 
@@ -9,6 +15,36 @@ type CameraHubSettings = Pick<
 >;
 
 type CameraDayState = Pick<DayState, "breaktimeShownToday">;
+
+export function cameraSizeForWidth(
+  requestedWidth: number,
+  maxWidth = Number.POSITIVE_INFINITY,
+): CameraOverlaySize {
+  const finiteWidth = Number.isFinite(requestedWidth)
+    ? requestedWidth
+    : CAMERA_MIN_SIZE.width;
+  const finiteMax = Number.isFinite(maxWidth)
+    ? Math.max(CAMERA_MIN_SIZE.width, maxWidth)
+    : Number.POSITIVE_INFINITY;
+  const width = Math.round(
+    Math.max(CAMERA_MIN_SIZE.width, Math.min(finiteWidth, finiteMax)),
+  );
+  return { width, height: width / CAMERA_ASPECT_RATIO };
+}
+
+export function resizedCameraSize(
+  startWidth: number,
+  deltaX: number,
+  deltaY: number,
+  maxWidth: number,
+): CameraOverlaySize {
+  const verticalWidthDelta = deltaY * CAMERA_ASPECT_RATIO;
+  const widthDelta =
+    Math.abs(deltaX) >= Math.abs(verticalWidthDelta)
+      ? deltaX
+      : verticalWidthDelta;
+  return cameraSizeForWidth(startWidth + widthDelta, maxWidth);
+}
 
 export function shouldShowCameraOverlay(
   matchedDomain: string | null,

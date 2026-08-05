@@ -2,7 +2,10 @@ import { useEffect, useRef, useState } from "preact/hooks";
 import browser from "webextension-polyfill";
 import type { Message } from "../shared/messages";
 import { getSettings, setSettings } from "../shared/storage";
-import type { ClockPosition } from "../shared/types";
+import type {
+  CameraOverlayPermission,
+  ClockPosition,
+} from "../shared/types";
 
 const DEFAULT_POS: ClockPosition = { x: 16, y: 64 };
 const CAMERA_PORT = "scrulk-camera-viewer";
@@ -31,7 +34,11 @@ type InboundVideoStats = {
  * This context never calls getUserMedia, so the tracked site is never granted
  * camera permission or direct access to the capture device.
  */
-export function CameraOverlay() {
+interface Props {
+  permission: CameraOverlayPermission;
+}
+
+export function CameraOverlay({ permission }: Props) {
   const [pos, setPos] = useState<ClockPosition>(DEFAULT_POS);
   const [ready, setReady] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -40,6 +47,9 @@ export function CameraOverlay() {
     dy: number;
     w: number;
     h: number;
+    startX: number;
+    startY: number;
+    moved: boolean;
   } | null>(null);
 
   useEffect(() => {
@@ -48,7 +58,18 @@ export function CameraOverlay() {
     });
   }, []);
 
+  const openCameraHub = () => {
+    const message: Message = { type: "camera:enable" };
+    void browser.runtime.sendMessage(message).catch(() => null);
+  };
+
   useEffect(() => {
+    if (permission === "denied") {
+      setReady(false);
+      if (videoRef.current) videoRef.current.srcObject = null;
+      return;
+    }
+
     let disposed = false;
     let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
     let watchdogTimer: ReturnType<typeof setInterval> | null = null;
@@ -266,7 +287,7 @@ export function CameraOverlay() {
       clearReconnectTimer();
       clearConnection(true);
     };
-  }, []);
+  }, [permission]);
 
   const onPointerDown = (event: PointerEvent) => {
     const target = event.currentTarget as HTMLElement;
@@ -276,21 +297,34 @@ export function CameraOverlay() {
       dy: event.clientY - pos.y,
       w: target.offsetWidth,
       h: target.offsetHeight,
+      startX: event.clientX,
+      startY: event.clientY,
+      moved: false,
     };
   };
   const onPointerMove = (event: PointerEvent) => {
     const drag = dragRef.current;
     if (!drag) return;
+    if (
+      Math.abs(event.clientX - drag.startX) > 4 ||
+      Math.abs(event.clientY - drag.startY) > 4
+    ) {
+      drag.moved = true;
+    }
     setPos({
       x: clamp(event.clientX - drag.dx, 0, window.innerWidth - drag.w),
       y: clamp(event.clientY - drag.dy, 0, window.innerHeight - drag.h),
     });
   };
   const onPointerUp = () => {
-    if (!dragRef.current) return;
+    const drag = dragRef.current;
+    if (!drag) return;
     dragRef.current = null;
     void setSettings({ cameraOverlayPosition: pos });
+    if (!drag.moved && !ready) openCameraHub();
   };
+
+  const unavailable = permission === "denied";
 
   return (
     <>
@@ -298,11 +332,28 @@ export function CameraOverlay() {
       <div
         class={`camera${ready ? " ready" : ""}`}
         style={{ left: `${pos.x}px`, top: `${pos.y}px` }}
-        title="Scroll Unlock camera preview (drag to move)"
+        title={
+          unavailable
+            ? "Camera access unavailable (click to retry)"
+            : ready
+              ? "Scroll Unlock camera preview (drag to move)"
+              : "Camera connecting (click to reopen helper tab)"
+        }
+        role={!ready ? "button" : undefined}
+        tabIndex={!ready ? 0 : undefined}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
         onPointerCancel={() => { dragRef.current = null; }}
+        onKeyDown={(event) => {
+          if (
+            !ready &&
+            (event.key === "Enter" || event.key === " ")
+          ) {
+            event.preventDefault();
+            openCameraHub();
+          }
+        }}
       >
         <video
           ref={videoRef}
@@ -314,7 +365,13 @@ export function CameraOverlay() {
           onWaiting={() => setReady(false)}
           onStalled={() => setReady(false)}
         />
-        {!ready && <span class="connecting">connecting…</span>}
+        {!ready && (
+          <span class={unavailable ? "connecting error" : "connecting"}>
+            {unavailable
+              ? "camera access unavailable — click to retry"
+              : "connecting…"}
+          </span>
+        )}
         <span class="indicator" aria-label="Camera active" />
       </div>
     </>
@@ -357,6 +414,13 @@ const styles = `
     background: rgba(22, 22, 26, 0.82);
     color: white;
     font: 600 12px/1 system-ui, sans-serif;
+  }
+  .connecting.error {
+    padding: 12px;
+    box-sizing: border-box;
+    color: #ffd4cf;
+    text-align: center;
+    line-height: 1.35;
   }
   .indicator {
     position: absolute;

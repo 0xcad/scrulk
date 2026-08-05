@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "preact/hooks";
 import browser from "webextension-polyfill";
 import themeStyles from "../shared/theme.css?inline";
 import type { Message } from "../shared/messages";
+import { shouldShowCameraOverlay } from "../shared/camera";
 import {
   getDayState,
   getGatewayState,
@@ -122,9 +123,9 @@ export function Root({ matchedDomain }: Props) {
       {(matchedDomain !== null || settings.alwaysShowTimer) && (
         <UsageClock matchedDomain={matchedDomain} alwaysShowTimer={settings.alwaysShowTimer} />
       )}
-      {matchedDomain !== null &&
-        settings.cameraOverlayEnabled &&
-        settings.cameraOverlayPermission === "granted" && <CameraOverlay />}
+      {shouldShowCameraOverlay(matchedDomain, settings, state) && (
+        <CameraOverlay permission={settings.cameraOverlayPermission} />
+      )}
       <SleepClock />
       {matchedDomain === null && settings.peekEnabled && (
         <PeekOverlay trackedSites={settings.trackedSites} />

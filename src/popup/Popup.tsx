@@ -127,6 +127,9 @@ export function Popup() {
   const todayMs = settings.alwaysShowTimer ? allSitesMs : trackedMs;
   const display = formatDuration(todayMs);
   const usageStreak = liveUsageStreakCount(settings.usageStreak, state, now);
+  const cameraAccessWarning =
+    settings.cameraOverlayEnabled &&
+    settings.cameraOverlayPermission === "denied";
 
   const onAdd = async () => {
     if (!displayHost) return;
@@ -153,10 +156,19 @@ export function Popup() {
     <main>
       <h1>Scroll Unlock</h1>
 
-      {warnSeen && (
-        <p class="warning" role="alert">
-          You can't open more than {settings.tabLimit} tracked tabs at once.
-        </p>
+      {(warnSeen || cameraAccessWarning) && (
+        <div class="warning" role="alert">
+          {warnSeen && (
+            <p>
+              You can't open more than {settings.tabLimit} tracked tabs at once.
+            </p>
+          )}
+          {cameraAccessWarning && (
+            <p>
+              Camera access is unavailable. Open the dashboard to retry camera access.
+            </p>
+          )}
+        </div>
       )}
 
       {settings.alwaysShowTimer ? (

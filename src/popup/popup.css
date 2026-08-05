@@ -149,6 +149,14 @@ p {
   margin: 0;
 }
 
+.warning p {
+  margin: 0;
+}
+
+.warning p + p {
+  margin-top: 6px;
+}
+
 .settings-section {
   border-top: 1px solid color-mix(in srgb, currentColor 15%, transparent);
   padding-top: 8px;

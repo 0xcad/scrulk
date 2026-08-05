@@ -2,6 +2,7 @@ import browser from "webextension-polyfill";
 import {
   getDayState,
   getSettings,
+  onDayStateChange,
   onSettingsChange,
   setDayState,
   setSettings,
@@ -41,7 +42,12 @@ import {
   syncDomainTabPresence,
 } from "./gateway";
 import { onGatewayStateChange } from "../shared/storage";
-import { closeCameraHub, ensureCameraHub } from "./camera";
+import {
+  closeCameraHub,
+  ensureCameraHub,
+  ensureCameraHubForOverlay,
+  syncCameraHubForActiveTab,
+} from "./camera";
 import { syncPeekFrameRule } from "./peek";
 
 // MV3 service worker: ephemeral. No long-lived module-level state.
@@ -60,6 +66,7 @@ browser.runtime.onInstalled.addListener(async ({ reason }) => {
   await syncPeekFrameRule(current);
   await ensureDayResetAlarm(current.wakeUpTime);
   await recompute();
+  await syncCameraHubForActiveTab();
 });
 
 browser.runtime.onStartup.addListener(async () => {
@@ -68,6 +75,7 @@ browser.runtime.onStartup.addListener(async () => {
   await syncPeekFrameRule(settings);
   await ensureDayResetAlarm(settings.wakeUpTime);
   await recompute();
+  await syncCameraHubForActiveTab();
 });
 
 browser.tabs.onActivated.addListener(async ({ tabId }) => {
@@ -77,6 +85,7 @@ browser.tabs.onActivated.addListener(async ({ tabId }) => {
     await updateIconForTab(tabId, tab.url, trackedSites);
   }
   await recompute();
+  await syncCameraHubForActiveTab();
 });
 
 browser.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
@@ -87,6 +96,7 @@ browser.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
     if (await enforceExtensionNavigation(tabId, changeInfo.url)) {
       await syncDomainTabPresence();
       await recompute();
+      await syncCameraHubForActiveTab();
       return;
     }
     // A tab just navigated to a (possibly) tracked URL — only moment a fresh
@@ -99,6 +109,7 @@ browser.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
   if (changeInfo.url || changeInfo.status === "complete") {
     await recompute();
   }
+  await syncCameraHubForActiveTab();
 });
 
 browser.tabs.onRemoved.addListener(async (tabId) => {
@@ -106,6 +117,7 @@ browser.tabs.onRemoved.addListener(async (tabId) => {
   await forgetTab(tabId);
   await syncDomainTabPresence();
   await recompute();
+  await syncCameraHubForActiveTab();
 });
 
 browser.webNavigation.onBeforeNavigate.addListener((details) => {
@@ -118,6 +130,7 @@ browser.webNavigation.onCommitted.addListener((details) => {
 
 browser.windows.onFocusChanged.addListener(async () => {
   await recompute();
+  await syncCameraHubForActiveTab();
 });
 
 // 60s idle threshold matches the user spec ("AFK with focused tab shouldn't
@@ -200,13 +213,7 @@ browser.runtime.onMessage.addListener((message: unknown, sender: browser.Runtime
     return ensureCameraHub(true, sender.tab);
   }
   if (msg.type === "camera:ensure") {
-    return getSettings().then((settings) => {
-      if (!settings.cameraOverlayEnabled) return undefined;
-      return ensureCameraHub(
-        settings.cameraOverlayPermission !== "granted",
-        sender.tab,
-      );
-    });
+    return ensureCameraHubForOverlay(sender.tab);
   }
   if (msg.type === "camera:disable") {
     return closeCameraHub();
@@ -290,6 +297,11 @@ onSettingsChange(async (next) => {
   await syncPeekFrameRule(next);
   await ensureDayResetAlarm(next.wakeUpTime);
   await recompute();
+  await syncCameraHubForActiveTab();
+});
+
+onDayStateChange(() => {
+  void syncCameraHubForActiveTab();
 });
 
 // Propagate gateway-state changes into the tracker so dayState.gatewayOpen

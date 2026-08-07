@@ -24,12 +24,13 @@ function stopKey(e: Event) {
  * Mounted on tracked tabs when the per-domain X-min timer has expired but
  * tabs are still open. User picks:
  *   - "I'm done"  → background back-navigates every tab on this domain.
- *   - "Continue"  → expands into the 20-char journal; on submit sets the
- *                   per-domain CONTINUE flag and unmounts.
+ *   - "Continue"  → expands into two 20-char journal prompts; on submit
+ *                   sets the per-domain CONTINUE flag and unmounts.
  */
 export function GatewayExpiredOverlay({ domain }: Props) {
   const [expanded, setExpanded] = useState(false);
   const [text, setText] = useState("");
+  const [alternativeText, setAlternativeText] = useState("");
 
   const onImDone = () => {
     void send({ type: "gateway:imDone", domain }).catch(() => null);
@@ -38,12 +39,13 @@ export function GatewayExpiredOverlay({ domain }: Props) {
   const onContinue = () => setExpanded(true);
 
   const onConfirm = () => {
-    if (text.length < MIN_CHARS) return;
+    if (text.length < MIN_CHARS || alternativeText.length < MIN_CHARS) return;
     void send({ type: "gateway:setContinue", domain }).catch(() => null);
   };
 
   const count = text.length;
-  const ready = count >= MIN_CHARS;
+  const alternativeCount = alternativeText.length;
+  const ready = count >= MIN_CHARS && alternativeCount >= MIN_CHARS;
 
   return (
     <>
@@ -92,6 +94,25 @@ export function GatewayExpiredOverlay({ domain }: Props) {
               <div class="counter" aria-live="polite">
                 {count}/{MIN_CHARS}
               </div>
+              <label for="gw-alternative">
+                If I could be doing anything right now, what would it be?
+              </label>
+              <textarea
+                id="gw-alternative"
+                value={alternativeText}
+                onInput={(e) =>
+                  setAlternativeText(
+                    (e.currentTarget as HTMLTextAreaElement).value,
+                  )
+                }
+                onKeyDown={stopKey}
+                onKeyUp={stopKey}
+                onKeyPress={stopKey}
+                rows={4}
+              />
+              <div class="counter" aria-live="polite">
+                {alternativeCount}/{MIN_CHARS}
+              </div>
               <div class="buttons">
                 <button
                   type="button"
@@ -124,6 +145,9 @@ const extraStyles = `
     font-size: 12px;
     opacity: 0.8;
     margin-bottom: 6px;
+  }
+  .journal .counter + label {
+    margin-top: 14px;
   }
   .journal textarea {
     width: 100%;

@@ -262,6 +262,10 @@ If I like camera on pause menu, keep it, but make the styling look nicer
 If I dislike it, get rid of it (commit 149aaf61becbf377cb89f73879f0045f6165819b)
 * codex resume 019fb5d7-5d24-7c22-9803-be04b224db47
 
+Focus/research mode: hide timer, intentionally more permissive?
+
+idea: on "hold to continue" button, show a percentage of times I've regretted scrolling for X amount of time? requires bringing survey back
+
 *wonderful* idea: A DNS, MITM proxy (with trusted root certificate) that just loads scroll unlock whenever you use it. must run a server then to store data in the backend. instead of browser extension pages, something like `scroll-unlock.local` could be used? or, best user-experience, the extension communicates with the locally running server. extension settings modify the server settings. if we get connection to the server (heartbeat), hide all shadow DOM and just let DNS injection handle everything.
 * Value: If I want to get around this, i can just open a different browser, open a private browsing window, and I'm stopped. i never fuck with my DNS settings. Editing my hosts file is super inconvenient. Also, you can get it on multiple devices in sync for cheap
 

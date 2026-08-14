@@ -30,8 +30,6 @@ export function Survey() {
   const [currentDate, setCurrentDate] = useState<string | null>(null);
   const [notes, setNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  /** Was the survey already filled for this date when the page opened? */
-  const [alreadyFilled, setAlreadyFilled] = useState(false);
   /** Recorded totalMs from history (used when viewing a past day). */
   const [recordTotalMs, setRecordTotalMs] = useState<number | null>(null);
   const [recordAllSitesMs, setRecordAllSitesMs] = useState<number | null>(null);
@@ -52,7 +50,6 @@ export function Survey() {
       if (existing) {
         if (existing.notes !== null) {
           setNotes(existing.notes);
-          setAlreadyFilled(true);
         }
         setRecordTotalMs(existing.totalMs);
         setRecordAllSitesMs(existing.allSitesMs ?? null);
@@ -143,7 +140,7 @@ export function Survey() {
         </div>
       </form>
 
-      {alreadyFilled && isToday && (
+      {isToday && dayState.popupDoneToday && !dayState.surveyContinueAllowed && (
         <button type="button" class="continue-link" onClick={onContinue}>
           Continue to tracked sites
         </button>

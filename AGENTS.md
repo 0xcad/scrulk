@@ -1,4 +1,4 @@
-# CLAUDE.md
+# AGENTS.md
 
 Project guide for LLM coding agents working on **Scroll Unlock (ScrUlk)**.
 
@@ -10,7 +10,8 @@ reduce time spent on websites they've flagged. The user maintains a list of
 
 - a usage clock that ticks while a tracked site is focused,
 - optional all-websites time tracking and an always-visible timer,
-- a 30-min breaktime alert with a hold-to-continue challenge,
+- a once-daily focused waiting screen and user-chosen usage allowances,
+- a break overlay with an optional extension and hold-to-continue challenge,
 - a tab limit,
 - a reflection survey + calendar history,
 - a "sleep clock" countdown to wake-up time on every site.
@@ -34,11 +35,13 @@ src/
     index.ts       entry; all listeners registered at top level
     icon.ts        per-tab icon switching
     tracker.ts     event-driven usage tracker + day-reset alarm
+    gateway.ts     global tracked-navigation interception + access-page tabs
   content/         injected on every page; bails on non-tracked hosts
     index.tsx      mount/unmount controller
     UsageClock.tsx draggable Shadow-DOM overlay
   popup/           toolbar popup (Preact)
-  options/         dashboard page (Preact, Home/Calendar/Settings tabs)
+  gateway/         waiting, time-picker, and camera challenge extension page
+  options/         dashboard page (Preact, Home/Settings + debug-only Debug)
     pages/         one file per top-level page
     components/    shared widgets
   shared/
@@ -89,7 +92,7 @@ manifest.config.ts ts-typed manifest, consumed by @crxjs at build time
 
    `dayState.allSitesMs` / `allSitesActiveSince` use the same model for
    focused, non-idle HTTP(S) pages. They are always collected, but never
-   affect breaktime, gateway, tab-limit, or streak behavior. The
+   affect access allowances, tab-limit, or streak behavior. The
    `alwaysShowTimer` setting controls whether this value is shown.
 
    Day rollover finalizes open segments at the wake-day boundary, never at a
@@ -121,8 +124,10 @@ manifest.config.ts ts-typed manifest, consumed by @crxjs at build time
    pages use their per-domain position and untracked pages use the global
    `allSitesClockPosition`), `SleepClock` (universal, self-hides
    outside the 10h window), `CameraOverlay` (tracked + enabled, fed by an
-   extension-owned background helper tab), `BreaktimeOverlay` (tracked + flag). Later
-   additions: `ResumeAfterSurveyOverlay`. `PeekOverlay` intercepts tracked
+   extension-owned background helper tab), `BreaktimeOverlay` (tracked during
+   a break), `RemainingTimeOverlay` (tracked while a saved allowance awaits
+   acknowledgement), and `ExtensionFrame` (during the two-minute extension
+   or after a popup-originated lock is overridden). `PeekOverlay` intercepts tracked
    links on untracked top-level pages; its named iframe installs only the
    imperative `ExtensionLinkLock`. When you add a new content
    feature, add a component under `src/content/` and conditionally
@@ -134,7 +139,7 @@ manifest.config.ts ts-typed manifest, consumed by @crxjs at build time
   untracked top-level page to a tracked HTTP(S) link opens one Peek iframe;
   `target="_blank"` is included, while modifier clicks and downloads are not.
 - The top-level URL stays untracked while Peek is open, so time accrues only to
-  all-sites usage. Peek subframes must bypass gateways, breaktime, surveys,
+  all-sites usage. Peek subframes must bypass the access flow, surveys,
   tab limits, tracked overlays, and tracked usage. `all_frames` is enabled only
   so the named `PEEK_FRAME_NAME` frame can install `ExtensionLinkLock`; every
   other subframe bails immediately.
@@ -144,13 +149,31 @@ manifest.config.ts ts-typed manifest, consumed by @crxjs at build time
   sync on install, startup, and settings changes; disabling Peek removes it.
   Keep `installExtensionLinkLock()` safe for dynamic links and full cleanup.
 
-## Breaktime implementation
+## Global access flow
 
-- `src/background/breaktime.ts` owns breaktime transitions and durable
-  alarms; `tracker.ts` only raises the normal usage-cadence alert.
-- State flow: active → alert → (resume → active | done → survey | extension
-  → alert). An extension is active time: tracking continues until its alarm
-  expires or its original tracked tabs are all closed.
+- All tracked domains share one wake-day-scoped flow in `DayState`:
+  `waiting → waitingReady → picking → browsing → break → challenge → picking`.
+  The initial wait occurs once per wake-day. The waiting tab must be selected
+  in a focused window, but browser idle state does not pause it.
+- The 2/5/10-minute choice is accumulated focused usage across all tracked
+  sites, not wall time. Closing every tracked tab preserves a partially used
+  allowance; the next visit enters `resumePrompt` and tracking resumes only
+  after acknowledgement.
+- `src/background/gateway.ts` intercepts tracked top-frame navigations. There
+  is one extension access page across waiting, picking, and challenge phases;
+  duplicate tracked attempts close and focus the existing access page.
+- `src/background/breaktime.ts` owns allowance choices, break transitions,
+  survey actions, and durable allowance/extension alarms. At allowance expiry,
+  every tracked tab shows `BreaktimeOverlay`. Continue unlocks after 30 seconds
+  and opens the camera challenge page; completing the hold returns to picking.
+- A two-minute extension is wall-clock time, usable once per cycle, and limited
+  to the original tracked tab/page snapshot. It ends at its alarm or when all
+  eligible tabs close. Its tracked pages use the grayscale/inset frame.
+- Break-overlay “I'm done” closes tracked tabs, opens a survey, and makes the
+  next tracked attempt open the picker. Popup “I'm done with tracked sites” is
+  distinct: it enters `popupLocked`, and only that survey shows the immediate
+  “Continue to tracked sites” action. Overriding it enables grayscale/inset
+  tracked pages for the rest of the wake-day.
 - Every persisted deadline needs a named `browser.alarms` alarm, registered
   in `background/index.ts` and re-scheduled by `recompute()`.
 - All top-level URL changes are enforced in `tabs.onUpdated` in
@@ -172,16 +195,21 @@ or changing a `DayState` field, update this list and `DEFAULT_DAY_STATE`.**
   page; display-only.
 - `activityCheckpointAt`: latest liveness confirmation for any open usage
   segment, or null when both segments are closed.
-- `lastBreaktimeAt`: tracked total at the last successfully resolved alert.
-- `breaktimeOpen`: a breaktime alert is currently blocking tracked pages.
+- `accessFlowPhase`: global waiting/picking/browsing/break/challenge/lock phase.
+- `waitingMs` / `waitingActiveSince`: accumulated and open focused wait.
+- `waitingCheckpointAt`: liveness checkpoint for the waiting segment.
+- `waitingPageFocused`: last focus report from the waiting extension document.
+- `allowanceMs` / `allowanceStartTotalMs`: selected allowance and tracked-total
+  baseline used by `remainingAllowanceMs`.
+- `breakOpenedAt`: synchronized start of the break overlay's 30-second gate.
 - `breaktimeExtensionExpiresAt`: active one-time extension deadline, or null.
 - `breaktimeExtensionUsed`: current alert cycle has consumed its extension.
 - `breaktimeExtensionTabs`: original tracked page URL by eligible tab ID.
-- `gatewayOpen`: an expired gateway overlay is pausing tracked time.
 - `tabLimitWarning`: tab-limit rejection pending display in the popup.
 - `surveyFilledFor`: wake-day key of the submitted survey, or null.
 - `breaktimeShownToday`: this wake-day has shown at least one break alert.
-- `surveyContinueAllowed`: post-survey tracked-site access has been approved.
+- `popupDoneToday`: popup-originated tracked-site lock was used this wake-day.
+- `surveyContinueAllowed`: that popup lock was explicitly overridden.
 
 ## How to add a new setting
 
@@ -189,8 +217,8 @@ or changing a `DayState` field, update this list and `DEFAULT_DAY_STATE`.**
    to `DEFAULT_SETTINGS`.
 2. Surface a control on `src/options/pages/Settings.tsx`. Group related
    settings under their own `<section>` with an `<h2>`.
-   (Exception: computed/internal settings like `usageStreak`
-   are written by the background and have no user-facing control.)
+   (Exceptions: computed/internal settings like `usageStreak`, and debug-only
+   settings like `waitingMinutes`, do not appear on the normal Settings tab.)
 3. Anything that reacts to the setting subscribes via `onSettingsChange`.
 
 ## All-websites time
@@ -235,6 +263,8 @@ in `src/background/tracker.ts` — do not update them anywhere else.
 ```sh
 npm install
 npm run build      # → dist/
+npm run build:firefox
+npm run build:firefox-debug # includes dashboard Debug tab for waitingMinutes
 npm run dev        # HMR for popup + options; background reloads on save
 npm test           # vitest
 ```
@@ -251,11 +281,11 @@ Only declare permissions the extension currently uses.
 
 Current manifest permissions:
 
-- `storage`: settings, day state, gateway state, and tab-back map.
+- `storage`: settings and wake-day state.
 - `tabs`: read URLs, update icons, create/close tabs, and enforce tab rules.
-- `alarms`: wake-day reset, breaktime cadence/extension, and gateway timers.
+- `alarms`: wake-day reset, activity checks, focused waiting, allowances, and extensions.
 - `idle`: pause usage tracking after inactivity.
-- `webNavigation`: gateway navigation interception.
+- `webNavigation`: global tracked-navigation interception.
 - `declarativeNetRequestWithHostAccess`: remove tracked-site framing headers
   for Peek preview iframes.
 - Host permission `<all_urls>`: universal content script and tracked-page UI.

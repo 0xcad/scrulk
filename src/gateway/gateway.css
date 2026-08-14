@@ -58,6 +58,10 @@ body {
   object-fit: cover;
 }
 
+.overlay-card {
+  width: min(380px, calc(100vw - 64px));
+}
+
 h1 {
   margin: 0;
   font-size: 18px;

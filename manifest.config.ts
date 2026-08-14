@@ -9,7 +9,7 @@ export default defineManifest({
   version: "0.1.0",
 
   // webNavigation lets the background intercept top-frame navigations to
-  // tracked hosts and redirect them through the gateway page.
+  // tracked hosts and route them through the global access page.
   permissions: [
     "storage",
     "tabs",

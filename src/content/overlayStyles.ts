@@ -1,19 +1,8 @@
 /**
- * Base CSS shared by full-screen content-script overlays (BreaktimeOverlay,
- * GatewayOverlay). Each overlay injects this plus any feature-specific rules.
+ * Card and control CSS shared by full-screen content-script overlays.
  */
 export const overlayBaseStyles = `
   :host { all: initial; }
-  .backdrop {
-    position: fixed;
-    inset: 0;
-    pointer-events: auto;
-    background: color-mix(in srgb, currentColor 4%, Canvas);
-    display: grid;
-    place-items: center;
-    font: 14px/1.4 system-ui, sans-serif;
-    color: #111;
-  }
   .card {
     background: Canvas;
     max-width: 380px;

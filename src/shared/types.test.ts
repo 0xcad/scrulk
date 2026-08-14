@@ -3,9 +3,11 @@ import {
   DEFAULT_DAY_STATE,
   DEFAULT_SETTINGS,
   effectiveAllSitesMs,
+  effectiveWaitingMs,
   isUsageStreakDay,
   liveUsageStreakCount,
   STREAK_THRESHOLD_MS,
+  remainingAllowanceMs,
 } from "./types";
 
 describe("effectiveAllSitesMs", () => {
@@ -29,6 +31,40 @@ describe("effectiveAllSitesMs", () => {
 describe("all-sites timer defaults", () => {
   it("starts collapsed", () => {
     expect(DEFAULT_SETTINGS.alwaysShowTimerExpanded).toBe(false);
+  });
+});
+
+describe("global access flow", () => {
+  it("defaults to a five-minute initial wait", () => {
+    expect(DEFAULT_SETTINGS.waitingMinutes).toBe(5);
+    expect(DEFAULT_DAY_STATE.accessFlowPhase).toBe("waiting");
+  });
+
+  it("accumulates only the open waiting segment", () => {
+    expect(effectiveWaitingMs({
+      ...DEFAULT_DAY_STATE,
+      waitingMs: 2_000,
+      waitingActiveSince: 7_000,
+    }, 10_000)).toBe(5_000);
+  });
+
+  it("computes allowance remaining from global tracked usage", () => {
+    expect(remainingAllowanceMs({
+      ...DEFAULT_DAY_STATE,
+      totalMs: 75_000,
+      allowanceMs: 120_000,
+      allowanceStartTotalMs: 30_000,
+    }, 100_000)).toBe(75_000);
+  });
+
+  it("includes an open tracked segment and clamps exhausted allowances", () => {
+    expect(remainingAllowanceMs({
+      ...DEFAULT_DAY_STATE,
+      totalMs: 100_000,
+      activeSince: 10_000,
+      allowanceMs: 60_000,
+      allowanceStartTotalMs: 0,
+    }, 20_000)).toBe(0);
   });
 });
 

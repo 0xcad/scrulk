@@ -11,8 +11,8 @@ export interface Settings {
   firstInstalledAt: number;
   /** Local time-of-day "HH:MM" (24h) at which the day boundary rolls over. Default "07:00". */
   wakeUpTime: string;
-  /** Minutes of accumulated tracked usage between breaktime alerts. Default 30. */
-  breaktimeMinutes: number;
+  /** Focused minutes required on the once-per-wake-day waiting page. */
+  waitingMinutes: number;
   /** Max simultaneous tabs whose host is tracked. Excess tabs auto-close. Default 3. */
   tabLimit: number;
   /** Open tracked links clicked on untracked pages in an embedded Peek preview. */
@@ -51,12 +51,22 @@ export interface CameraOverlaySize {
 
 export type CameraOverlayPermission = "unknown" | "granted" | "denied";
 
+export type AccessFlowPhase =
+  | "waiting"
+  | "waitingReady"
+  | "picking"
+  | "browsing"
+  | "resumePrompt"
+  | "break"
+  | "challenge"
+  | "popupLocked";
+
 export const DEFAULT_SETTINGS: Settings = {
   trackedSites: [],
   installedAt: 0,
   firstInstalledAt: 0,
   wakeUpTime: "07:00",
-  breaktimeMinutes: 30,
+  waitingMinutes: 5,
   tabLimit: 3,
   peekEnabled: true,
   alwaysShowTimer: false,
@@ -93,29 +103,35 @@ export interface DayState {
   allSitesMs: number;
   allSitesActiveSince: number | null;
   activityCheckpointAt: number | null;
-  /** effectiveMs at which the most recent breaktime alert was resolved. */
-  lastBreaktimeAt: number;
-  /** True while a breaktime alert is currently outstanding. */
-  breaktimeOpen: boolean;
+  /** Global access state shared by every tracked domain. */
+  accessFlowPhase: AccessFlowPhase;
+  waitingMs: number;
+  waitingActiveSince: number | null;
+  waitingCheckpointAt: number | null;
+  /** Last focus report from the waiting extension document. */
+  waitingPageFocused: boolean;
+  /** Chosen tracked-usage allowance and its effectiveMs baseline. */
+  allowanceMs: number | null;
+  allowanceStartTotalMs: number | null;
+  /** Wall-clock moment the current break prompt opened. */
+  breakOpenedAt: number | null;
   /** Wall-clock expiry for a one-time breaktime extension, else null. */
   breaktimeExtensionExpiresAt: number | null;
   /** Prevents another extension until this breaktime cycle is resolved. */
   breaktimeExtensionUsed: boolean;
   /** Original tracked page URL for each tab allowed during an extension. */
   breaktimeExtensionTabs: Record<string, string>;
-  /** True while a gateway (first-visit-from-non-tracked) overlay is open. Pauses tracking like breaktime. */
-  gatewayOpen: boolean;
   /** Set true when the tab limit blocked a new tracked tab; popup clears on view. */
   tabLimitWarning: boolean;
   /** 'YYYY-MM-DD' wake-day key the survey was submitted for, else null. */
   surveyFilledFor: string | null;
   /** True once the breaktime alert has been shown at least once this wake-day. */
   breaktimeShownToday: boolean;
+  /** The popup's explicit "done with tracked sites" action was used today. */
+  popupDoneToday: boolean;
   /**
-   * True once the user has clicked "Continue" on the post-survey page for
-   * the current wake-day. While false (and `surveyFilledFor` is set), any
-   * tracked tab gets closed and redirected to the survey. Resets on rollover
-   * and on a fresh `survey:submit`.
+   * True once the user overrides today's popup-originated lock from the
+   * survey. Together with popupDoneToday this enables the grayscale frame.
    */
   surveyContinueAllowed: boolean;
 }
@@ -127,55 +143,45 @@ export const DEFAULT_DAY_STATE: DayState = {
   allSitesMs: 0,
   allSitesActiveSince: null,
   activityCheckpointAt: null,
-  lastBreaktimeAt: 0,
-  breaktimeOpen: false,
+  accessFlowPhase: "waiting",
+  waitingMs: 0,
+  waitingActiveSince: null,
+  waitingCheckpointAt: null,
+  waitingPageFocused: false,
+  allowanceMs: null,
+  allowanceStartTotalMs: null,
+  breakOpenedAt: null,
   breaktimeExtensionExpiresAt: null,
   breaktimeExtensionUsed: false,
   breaktimeExtensionTabs: {},
-  gatewayOpen: false,
   tabLimitWarning: false,
   surveyFilledFor: null,
   breaktimeShownToday: false,
+  popupDoneToday: false,
   surveyContinueAllowed: false,
 };
 
 export const DAY_STATE_KEY = "dayState" as const;
 
-/**
- * Per-domain state for the gateway flow (initial gateway page → X-min timer →
- * expired alert → CONTINUE). Keyed by the matched tracked domain (the value
- * `findMatchingDomain` returns, not the raw hostname).
- *
- * - `timerExpiresAt`: epoch ms; while > now, visits to `domain` skip the gateway.
- * - `expiredAlertActive`: true once the timer fired and at least one TRACKED
- *   tab was still open. Content scripts on that domain render the "I'm done /
- *   continue" overlay while this is set.
- * - `continueFlag`: true after the user finishes the journal. Visits skip the
- *   gateway until every tab on `domain` is closed.
- *
- * When no tabs on a domain remain open, the entry is deleted entirely (the
- * tabs.onRemoved/onUpdated listener cleans up). An absent entry means
- * "next visit shows the initial gateway".
- */
-export interface GatewayDomainState {
-  timerExpiresAt?: number;
-  expiredAlertActive?: boolean;
-  continueFlag?: boolean;
-}
-
-export type GatewayState = Record<string, GatewayDomainState>;
-
-export const GATEWAY_STATE_KEY = "gatewayState" as const;
-
-/** Per-tab last committed URL whose host was NOT tracked. Used by
- * `gateway:goBack` and `gateway:imDone` to know where to send the tab. */
-export type TabBackMap = Record<string /* tabId */, string /* url */>;
-export const TAB_BACK_MAP_KEY = "gatewayTabBack" as const;
-
 /** Computed live display = totalMs + (activeSince ? now - activeSince : 0). */
 export function effectiveMs(state: DayState, now: number): number {
   if (state.activeSince === null) return state.totalMs;
   return state.totalMs + Math.max(0, now - state.activeSince);
+}
+
+export function effectiveWaitingMs(state: DayState, now: number): number {
+  return state.waitingMs +
+    (state.waitingActiveSince === null
+      ? 0
+      : Math.max(0, now - state.waitingActiveSince));
+}
+
+export function remainingAllowanceMs(state: DayState, now: number): number {
+  if (state.allowanceMs === null || state.allowanceStartTotalMs === null) return 0;
+  return Math.max(
+    0,
+    state.allowanceMs - (effectiveMs(state, now) - state.allowanceStartTotalMs),
+  );
 }
 
 /** Computed live display for active time on all HTTP(S) websites. */

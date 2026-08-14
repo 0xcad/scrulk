@@ -1,17 +1,15 @@
 import { useEffect, useRef } from "preact/hooks";
-import { effectiveMs, type DayState, type GatewayState, type Settings } from "../shared/types";
+import { remainingAllowanceMs, type DayState } from "../shared/types";
 
 const DIM_WINDOW_MS = 15_000;
 const MAX_OPACITY = 0.7;
 
 interface Props {
   state: DayState;
-  settings: Settings;
-  gateway: GatewayState;
   matchedDomain: string | null;
 }
 
-export function DimOverlay({ state, settings, gateway, matchedDomain }: Props) {
+export function DimOverlay({ state, matchedDomain }: Props) {
   const divRef = useRef<HTMLDivElement>(null);
   const timeoutRef = useRef<number | null>(null);
   const rafRef = useRef<number | null>(null);
@@ -24,8 +22,7 @@ export function DimOverlay({ state, settings, gateway, matchedDomain }: Props) {
     if (!div) return;
 
     const interruptActive =
-      state.breaktimeOpen ||
-      (matchedDomain !== null && gateway[matchedDomain]?.expiredAlertActive === true);
+      state.accessFlowPhase !== "browsing";
 
     if (interruptActive) {
       div.style.transition = "none";
@@ -36,17 +33,13 @@ export function DimOverlay({ state, settings, gateway, matchedDomain }: Props) {
     const now = Date.now();
     let minMs = Infinity;
 
-    if (matchedDomain !== null && state.activeSince !== null) {
-      const t =
-        state.lastBreaktimeAt +
-        settings.breaktimeMinutes * 60_000 -
-        effectiveMs(state, now);
+    if (
+      matchedDomain !== null &&
+      state.activeSince !== null &&
+      state.breaktimeExtensionExpiresAt === null
+    ) {
+      const t = remainingAllowanceMs(state, now);
       if (t > 0) minMs = Math.min(minMs, t);
-    }
-
-    if (matchedDomain !== null) {
-      const exp = gateway[matchedDomain]?.timerExpiresAt;
-      if (exp !== undefined && exp > now) minMs = Math.min(minMs, exp - now);
     }
 
     if (minMs === Infinity || minMs > DIM_WINDOW_MS) {
@@ -71,7 +64,7 @@ export function DimOverlay({ state, settings, gateway, matchedDomain }: Props) {
       div.style.transition = `opacity ${minMs / 1000}s linear`;
       div.style.opacity = String(MAX_OPACITY);
     });
-  }, [state, settings, gateway, matchedDomain]);
+  }, [state, matchedDomain]);
 
   // Cleanup on unmount
   useEffect(() => {

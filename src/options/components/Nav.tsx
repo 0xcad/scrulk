@@ -1,4 +1,4 @@
-export type Page = "home" | "settings";
+export type Page = "home" | "settings" | "debug";
 
 interface Props {
   page: Page;
@@ -8,6 +8,7 @@ interface Props {
 const PAGES: { id: Page; label: string }[] = [
   { id: "home", label: "Home" },
   { id: "settings", label: "Settings" },
+  ...(__SCRULK_DEBUG__ ? [{ id: "debug" as const, label: "Debug" }] : []),
 ];
 
 export function Nav({ page, onChange }: Props) {

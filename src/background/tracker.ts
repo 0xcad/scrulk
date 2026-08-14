@@ -3,26 +3,34 @@ import { hostnameOf, isTracked } from "../shared/domain";
 import { dateKey, upsertDay } from "../shared/history";
 import {
   getDayState,
-  getGatewayState,
   getSettings,
   setDayState,
   setSettings,
 } from "../shared/storage";
-import { anyExpiredAlertActive } from "./gateway";
+import { isAccessPageUrl } from "./gateway";
 import {
   currentWakeDayStart,
   nextWakeUpAt,
 } from "../shared/wakeDay";
-import { effectiveAllSitesMs, effectiveMs, isUsageStreakDay, type DayState } from "../shared/types";
+import {
+  effectiveAllSitesMs,
+  effectiveMs,
+  effectiveWaitingMs,
+  isUsageStreakDay,
+  remainingAllowanceMs,
+  type DayState,
+} from "../shared/types";
 import { scheduleBreaktimeAlarm } from "./breaktime";
 import {
   ACTIVITY_CHECK_INTERVAL_MS,
+  ACTIVITY_STALE_AFTER_MS,
   checkpointOpenActivity,
   reconcileStaleActivity,
 } from "./activityCheckpoint";
 
 const DAY_RESET_ALARM = "scrulk:day-reset";
 const ACTIVITY_CHECK_ALARM = "scrulk:activity-check";
+const WAITING_ALARM = "scrulk:waiting";
 /**
  * The tracker is *event-driven*. We never tick a counter. Instead we
  * maintain `dayState.activeSince`: the moment the user became active on a
@@ -92,6 +100,7 @@ export async function recompute(): Promise<void> {
   // open segment spanning sleep and a wake-day boundary would be finalized
   // at the boundary and still count suspended time.
   let state = reconcileStaleActivity(storedState, now);
+  state = reconcileStaleWaiting(state, now);
 
   // If we somehow missed an alarm-driven reset (browser was off across the
   // boundary), do it lazily here.
@@ -100,21 +109,32 @@ export async function recompute(): Promise<void> {
   }
 
   const inputs = await readActivity();
-  // Mirror gateway state into dayState.gatewayOpen so the tracker pauses
-  // while either friction prompt is visible. This applies to both the
-  // tracked-site and always-visible all-sites clocks.
-  const gatewayPaused = anyExpiredAlertActive(await getGatewayState());
-  if (state.gatewayOpen !== gatewayPaused) {
-    state = applyTransition(state, false, now);
-    state = { ...state, gatewayOpen: gatewayPaused };
+  const waitingActive =
+    state.accessFlowPhase === "waiting" &&
+    state.waitingPageFocused &&
+    inputs.windowFocused &&
+    isAccessPageUrl(inputs.activeTabUrl);
+  state = applyWaitingTransition(state, waitingActive, now);
+  if (
+    state.accessFlowPhase === "waiting" &&
+    effectiveWaitingMs(state, now) >= settings.waitingMinutes * 60_000
+  ) {
+    state = applyWaitingTransition(state, false, now);
+    state = {
+      ...state,
+      accessFlowPhase: "waitingReady",
+      waitingPageFocused: false,
+    };
   }
-  // Tracking pauses while a break alert is open: the user shouldn't accrue
-  // time on the modal itself, and re-entry after "I'm done" should land on
-  // a paused clock.
-  const wantActive =
-    !state.breaktimeOpen && !state.gatewayOpen && shouldBeActive(inputs);
-  const wantAllSitesActive =
-    !state.breaktimeOpen && !state.gatewayOpen && shouldTrackAllSites(inputs);
+
+  const flowAllowsTracking = state.accessFlowPhase === "browsing";
+  const wantActive = flowAllowsTracking && shouldBeActive(inputs);
+  const allSitesPaused =
+    state.accessFlowPhase === "break" ||
+    state.accessFlowPhase === "challenge" ||
+    state.accessFlowPhase === "resumePrompt" ||
+    state.accessFlowPhase === "popupLocked";
+  const wantAllSitesActive = !allSitesPaused && shouldTrackAllSites(inputs);
   let next = applyTransition(state, wantActive, now);
   next = applyAllSitesTransition(next, wantAllSitesActive, now);
 
@@ -122,32 +142,42 @@ export async function recompute(): Promise<void> {
   // currently open, raise it. Content scripts on tracked tabs pick this up
   // via storage.onChanged and mount the overlay.
   if (
-    !next.breaktimeOpen &&
+    next.accessFlowPhase === "browsing" &&
     next.breaktimeExtensionExpiresAt === null &&
+    next.allowanceMs !== null &&
     next.activeSince !== null &&
-    effectiveMs(next, now) - next.lastBreaktimeAt >=
-      settings.breaktimeMinutes * 60_000
+    remainingAllowanceMs(next, now) <= 0
   ) {
     // Raising the alert pauses tracking — close the open segment now so the
     // clock stops the moment the alert appears, even if the user stays on
     // the page (no focus/idle event would otherwise fire to recompute).
     next = applyTransition(next, false, now);
-    next = { ...next, breaktimeOpen: true, breaktimeShownToday: true };
+    next = applyAllSitesTransition(next, false, now);
+    next = {
+      ...next,
+      accessFlowPhase: "break",
+      breakOpenedAt: now,
+      breaktimeShownToday: true,
+    };
   }
 
   next = checkpointOpenActivity(next, now);
+  next = checkpointWaiting(next, now);
 
   if (!stateEqual(storedState, next)) {
     await setDayState(next);
   }
   await ensureDayResetAlarm(settings.wakeUpTime);
   await syncActivityCheckAlarm(next);
-  await scheduleBreaktimeAlarm(next, settings);
+  await syncWaitingAlarm(next, settings.waitingMinutes);
+  await scheduleBreaktimeAlarm(next);
 }
 
 async function syncActivityCheckAlarm(state: DayState): Promise<void> {
   const hasOpenSegment =
-    state.activeSince !== null || state.allSitesActiveSince !== null;
+    state.activeSince !== null ||
+    state.allSitesActiveSince !== null ||
+    state.waitingActiveSince !== null;
   const existing = await browser.alarms
     .get(ACTIVITY_CHECK_ALARM)
     .catch(() => null);
@@ -163,6 +193,61 @@ async function syncActivityCheckAlarm(state: DayState): Promise<void> {
     (state.activityCheckpointAt ?? Date.now()) + ACTIVITY_CHECK_INTERVAL_MS;
   if (existing && Math.abs(existing.scheduledTime - when) < 1000) return;
   await browser.alarms.create(ACTIVITY_CHECK_ALARM, { when });
+}
+
+async function syncWaitingAlarm(state: DayState, waitingMinutes: number): Promise<void> {
+  if (state.accessFlowPhase !== "waiting" || state.waitingActiveSince === null) {
+    await browser.alarms.clear(WAITING_ALARM).catch(() => null);
+    return;
+  }
+  const remaining = waitingMinutes * 60_000 - effectiveWaitingMs(state, Date.now());
+  if (remaining <= 0) return;
+  const when = Date.now() + remaining;
+  const existing = await browser.alarms.get(WAITING_ALARM).catch(() => null);
+  if (existing && Math.abs(existing.scheduledTime - when) < 1000) return;
+  await browser.alarms.create(WAITING_ALARM, { when });
+}
+
+function applyWaitingTransition(
+  state: DayState,
+  wantActive: boolean,
+  now: number,
+): DayState {
+  if (wantActive && state.waitingActiveSince === null) {
+    return { ...state, waitingActiveSince: now };
+  }
+  if (!wantActive && state.waitingActiveSince !== null) {
+    return {
+      ...state,
+      waitingMs: state.waitingMs + Math.max(0, now - state.waitingActiveSince),
+      waitingActiveSince: null,
+      waitingCheckpointAt: null,
+    };
+  }
+  return state;
+}
+
+function reconcileStaleWaiting(state: DayState, now: number): DayState {
+  if (state.waitingActiveSince === null) return state;
+  if (
+    state.waitingCheckpointAt !== null &&
+    now - state.waitingCheckpointAt <= ACTIVITY_STALE_AFTER_MS
+  ) return state;
+  const confirmedAt = state.waitingCheckpointAt ?? state.waitingActiveSince;
+  const cutoff = Math.min(now, confirmedAt + ACTIVITY_CHECK_INTERVAL_MS);
+  return {
+    ...state,
+    waitingMs: state.waitingMs + Math.max(0, cutoff - state.waitingActiveSince),
+    waitingActiveSince: null,
+    waitingCheckpointAt: null,
+  };
+}
+
+function checkpointWaiting(state: DayState, now: number): DayState {
+  const checkpoint = state.waitingActiveSince === null ? null : now;
+  return state.waitingCheckpointAt === checkpoint
+    ? state
+    : { ...state, waitingCheckpointAt: checkpoint };
 }
 
 function applyAllSitesTransition(
@@ -205,15 +290,21 @@ function stateEqual(a: DayState, b: DayState): boolean {
     a.allSitesMs === b.allSitesMs &&
     a.allSitesActiveSince === b.allSitesActiveSince &&
     a.activityCheckpointAt === b.activityCheckpointAt &&
-    a.lastBreaktimeAt === b.lastBreaktimeAt &&
-    a.breaktimeOpen === b.breaktimeOpen &&
+    a.accessFlowPhase === b.accessFlowPhase &&
+    a.waitingMs === b.waitingMs &&
+    a.waitingActiveSince === b.waitingActiveSince &&
+    a.waitingCheckpointAt === b.waitingCheckpointAt &&
+    a.waitingPageFocused === b.waitingPageFocused &&
+    a.allowanceMs === b.allowanceMs &&
+    a.allowanceStartTotalMs === b.allowanceStartTotalMs &&
+    a.breakOpenedAt === b.breakOpenedAt &&
     a.breaktimeExtensionExpiresAt === b.breaktimeExtensionExpiresAt &&
     a.breaktimeExtensionUsed === b.breaktimeExtensionUsed &&
     shallowRecordEqual(a.breaktimeExtensionTabs, b.breaktimeExtensionTabs) &&
-    a.gatewayOpen === b.gatewayOpen &&
     a.tabLimitWarning === b.tabLimitWarning &&
     a.surveyFilledFor === b.surveyFilledFor &&
     a.breaktimeShownToday === b.breaktimeShownToday &&
+    a.popupDoneToday === b.popupDoneToday &&
     a.surveyContinueAllowed === b.surveyContinueAllowed
   );
 }
@@ -257,15 +348,21 @@ export async function rolloverDay(
     allSitesMs: 0,
     allSitesActiveSince: null,
     activityCheckpointAt: null,
-    lastBreaktimeAt: 0,
-    breaktimeOpen: false,
+    accessFlowPhase: "waiting",
+    waitingMs: 0,
+    waitingActiveSince: null,
+    waitingCheckpointAt: null,
+    waitingPageFocused: false,
+    allowanceMs: null,
+    allowanceStartTotalMs: null,
+    breakOpenedAt: null,
     breaktimeExtensionExpiresAt: null,
     breaktimeExtensionUsed: false,
     breaktimeExtensionTabs: {},
-    gatewayOpen: false,
     tabLimitWarning: false,
     surveyFilledFor: null,
     breaktimeShownToday: false,
+    popupDoneToday: false,
     surveyContinueAllowed: false,
   };
 }
@@ -295,4 +392,5 @@ export async function handleDayResetAlarm(): Promise<void> {
 export const ALARM_NAMES = {
   DAY_RESET: DAY_RESET_ALARM,
   ACTIVITY_CHECK: ACTIVITY_CHECK_ALARM,
+  WAITING: WAITING_ALARM,
 } as const;

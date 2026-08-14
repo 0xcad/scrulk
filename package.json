@@ -9,6 +9,7 @@
     "dev:firefox": "BROWSER=firefox vite",
     "build": "tsc --noEmit && vite build",
     "build:firefox": "tsc --noEmit && BROWSER=firefox vite build",
+    "build:firefox-debug": "tsc --noEmit && BROWSER=firefox SCRULK_DEBUG=1 vite build",
     "test": "vitest run",
     "test:watch": "vitest"
   },

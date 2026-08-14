@@ -2,10 +2,14 @@ import browser from "webextension-polyfill";
 import { hostnameOf, isTracked } from "../shared/domain";
 import { dateKey } from "../shared/history";
 import { getDayState, getSettings, setDayState } from "../shared/storage";
-import { effectiveMs, type DayState, type Settings } from "../shared/types";
+import { effectiveMs, remainingAllowanceMs, type DayState } from "../shared/types";
 import { currentWakeDayStart } from "../shared/wakeDay";
+import { ensureAccessPage, focusFirstTrackedTab } from "./gateway";
 
 const SURVEY_PAGE = "src/survey/index.html";
+const EXTENSION_MS = 2 * 60_000;
+export const BREAKTIME_ALARM = "scrulk:allowance";
+export const BREAKTIME_EXTENSION_ALARM = "scrulk:breaktime-extension";
 
 export async function openSurveyTab(date: string): Promise<void> {
   const url = browser.runtime.getURL(`${SURVEY_PAGE}?date=${encodeURIComponent(date)}`);
@@ -16,101 +20,142 @@ export async function closeTrackedTabs(): Promise<void> {
   const settings = await getSettings();
   const tabs = await browser.tabs.query({});
   const ids = tabs
-    .filter((t) => {
-      const host = hostnameOf(t.url);
+    .filter((tab) => {
+      const host = hostnameOf(tab.pendingUrl ?? tab.url);
       return host !== null && isTracked(host, settings.trackedSites);
     })
-    .map((t) => t.id)
+    .map((tab) => tab.id)
     .filter((id): id is number => id !== undefined);
-  if (ids.length > 0) {
-    await browser.tabs.remove(ids).catch(() => null);
-  }
+  if (ids.length > 0) await browser.tabs.remove(ids).catch(() => null);
 }
 
-export const BREAKTIME_ALARM = "scrulk:breaktime";
-export const BREAKTIME_EXTENSION_ALARM = "scrulk:breaktime-extension";
-const EXTENSION_MS = 2 * 60_000;
-
-/**
- * Schedule the next breaktime alarm based on remaining time until the
- * threshold. Cleared if no segment is open or an alert is already showing —
- * tracker.recompute() will re-call this on every relevant event.
- */
-export async function scheduleBreaktimeAlarm(
-  state: DayState,
-  settings: Settings,
-): Promise<void> {
+export async function scheduleBreaktimeAlarm(state: DayState): Promise<void> {
   if (state.breaktimeExtensionExpiresAt !== null) {
     await browser.alarms.clear(BREAKTIME_ALARM).catch(() => null);
     const existing = await browser.alarms.get(BREAKTIME_EXTENSION_ALARM).catch(() => null);
     if (
-      existing &&
-      Math.abs(existing.scheduledTime - state.breaktimeExtensionExpiresAt) < 1000
-    ) return;
-    await browser.alarms.create(BREAKTIME_EXTENSION_ALARM, {
-      when: state.breaktimeExtensionExpiresAt,
-    });
+      !existing ||
+      Math.abs(existing.scheduledTime - state.breaktimeExtensionExpiresAt) >= 1000
+    ) {
+      await browser.alarms.create(BREAKTIME_EXTENSION_ALARM, {
+        when: state.breaktimeExtensionExpiresAt,
+      });
+    }
     return;
   }
   await browser.alarms.clear(BREAKTIME_EXTENSION_ALARM).catch(() => null);
-  if (state.breaktimeOpen || state.activeSince === null) {
+  if (state.accessFlowPhase !== "browsing" || state.activeSince === null) {
     await browser.alarms.clear(BREAKTIME_ALARM).catch(() => null);
     return;
   }
-  const now = Date.now();
-  const since = effectiveMs(state, now) - state.lastBreaktimeAt;
-  const remaining = settings.breaktimeMinutes * 60_000 - since;
+  const remaining = remainingAllowanceMs(state, Date.now());
   if (remaining <= 0) {
-    // Already past threshold — recompute() will flip breaktimeOpen on its
-    // next call. Don't schedule.
     await browser.alarms.clear(BREAKTIME_ALARM).catch(() => null);
     return;
   }
-  const when = now + remaining;
+  const when = Date.now() + remaining;
   const existing = await browser.alarms.get(BREAKTIME_ALARM).catch(() => null);
   if (existing && Math.abs(existing.scheduledTime - when) < 1000) return;
   await browser.alarms.create(BREAKTIME_ALARM, { when });
 }
 
-/**
- * Called when the user successfully completes the hold challenge. Closes the
- * current alert and opens a new breaktime cycle from the current effectiveMs.
- */
-export async function handleBreaktimeResume(): Promise<void> {
+export async function handleWaitContinue(): Promise<void> {
   const state = await getDayState();
-  if (!state.breaktimeOpen) return;
+  if (state.accessFlowPhase !== "waitingReady") return;
+  await setDayState({
+    ...state,
+    accessFlowPhase: "picking",
+    waitingPageFocused: false,
+  });
+}
+
+export async function handleWaitingFocus(focused: boolean): Promise<void> {
+  const state = await getDayState();
+  if (
+    state.accessFlowPhase !== "waiting" ||
+    state.waitingPageFocused === focused
+  ) return;
+  await setDayState({ ...state, waitingPageFocused: focused });
+}
+
+export async function handleChooseAllowance(
+  minutes: number,
+  destUrl: string | undefined,
+  senderTabId: number | undefined,
+): Promise<void> {
+  if (![2, 5, 10].includes(minutes)) return;
+  const state = await getDayState();
+  if (state.accessFlowPhase !== "picking") return;
   const now = Date.now();
   await setDayState({
     ...state,
-    breaktimeOpen: false,
-    lastBreaktimeAt: effectiveMs(state, now),
+    accessFlowPhase: "browsing",
+    allowanceMs: minutes * 60_000,
+    allowanceStartTotalMs: effectiveMs(state, now),
+    breakOpenedAt: null,
     breaktimeExtensionExpiresAt: null,
     breaktimeExtensionUsed: false,
     breaktimeExtensionTabs: {},
   });
+  if (senderTabId === undefined) return;
+  if (destUrl?.startsWith("http://") || destUrl?.startsWith("https://")) {
+    await browser.tabs.update(senderTabId, { url: destUrl }).catch(() => null);
+  } else {
+    await browser.tabs.remove(senderTabId).catch(() => null);
+    await focusFirstTrackedTab();
+  }
 }
 
-/** Start the single two-minute extension available for an open alert. */
+export async function handleResumePrompt(): Promise<void> {
+  const state = await getDayState();
+  if (state.accessFlowPhase !== "resumePrompt") return;
+  await setDayState({ ...state, accessFlowPhase: "browsing" });
+}
+
+export async function handleBreaktimeContinue(
+  sourceTab: browser.Tabs.Tab | undefined,
+): Promise<void> {
+  const state = await getDayState();
+  if (
+    state.accessFlowPhase !== "break" ||
+    state.breakOpenedAt === null ||
+    Date.now() - state.breakOpenedAt < 30_000
+  ) return;
+  await setDayState({ ...state, accessFlowPhase: "challenge" });
+  await ensureAccessPage(sourceTab);
+}
+
+export async function handleChallengeComplete(): Promise<void> {
+  const state = await getDayState();
+  if (state.accessFlowPhase !== "challenge") return;
+  await setDayState({
+    ...state,
+    accessFlowPhase: "picking",
+    allowanceMs: null,
+    allowanceStartTotalMs: null,
+    breakOpenedAt: null,
+  });
+}
+
 export async function handleBreaktimeExtend(): Promise<void> {
   const [state, settings, tabs] = await Promise.all([
     getDayState(),
     getSettings(),
     browser.tabs.query({}),
   ]);
-  if (!state.breaktimeOpen || state.breaktimeExtensionUsed) return;
-
+  if (state.accessFlowPhase !== "break" || state.breaktimeExtensionUsed) return;
   const extensionTabs: Record<string, string> = {};
   for (const tab of tabs) {
-    const host = hostnameOf(tab.url);
-    if (tab.id !== undefined && tab.url && host && isTracked(host, settings.trackedSites)) {
-      extensionTabs[String(tab.id)] = tab.url;
+    const url = tab.pendingUrl ?? tab.url;
+    const host = hostnameOf(url);
+    if (tab.id !== undefined && url && host && isTracked(host, settings.trackedSites)) {
+      extensionTabs[String(tab.id)] = url;
     }
   }
-
   const expiresAt = Date.now() + EXTENSION_MS;
   await setDayState({
     ...state,
-    breaktimeOpen: false,
+    accessFlowPhase: "browsing",
     breaktimeExtensionExpiresAt: expiresAt,
     breaktimeExtensionUsed: true,
     breaktimeExtensionTabs: extensionTabs,
@@ -118,35 +163,32 @@ export async function handleBreaktimeExtend(): Promise<void> {
   await browser.alarms.create(BREAKTIME_EXTENSION_ALARM, { when: expiresAt });
 }
 
-/** Restore the alert once an extension expires, or no eligible tabs remain. */
 export async function endBreaktimeExtension(): Promise<void> {
   const state = await getDayState();
   if (state.breaktimeExtensionExpiresAt === null) return;
   await browser.alarms.clear(BREAKTIME_EXTENSION_ALARM).catch(() => null);
   await setDayState({
     ...state,
-    breaktimeOpen: true,
+    accessFlowPhase: "break",
+    breakOpenedAt: Date.now(),
     breaktimeExtensionExpiresAt: null,
     breaktimeExtensionTabs: {},
   });
 }
 
-/** End early once none of the original tracked tabs still exists. */
 export async function handleExtensionTabRemoved(tabId: number): Promise<void> {
   const state = await getDayState();
-  if (state.breaktimeExtensionExpiresAt === null) return;
-  if (!(String(tabId) in state.breaktimeExtensionTabs)) return;
-  // Do not mutate the snapshot one event at a time: several onRemoved
-  // handlers may run concurrently after the user closes multiple tabs.
-  // The live tab list is the source of truth for this one condition.
+  if (
+    state.breaktimeExtensionExpiresAt === null ||
+    !(String(tabId) in state.breaktimeExtensionTabs)
+  ) return;
   const liveTabs = await browser.tabs.query({});
-  const hasEligibleTab = liveTabs.some(
+  const hasEligible = liveTabs.some(
     (tab) => tab.id !== undefined && String(tab.id) in state.breaktimeExtensionTabs,
   );
-  if (!hasEligibleTab) await endBreaktimeExtension();
+  if (!hasEligible) await endBreaktimeExtension();
 }
 
-/** Close tracked navigations not present in the extension's original snapshot. */
 export async function enforceExtensionNavigation(
   tabId: number,
   url: string | undefined,
@@ -180,17 +222,44 @@ function samePage(a: string, b: string | undefined): boolean {
   }
 }
 
-/**
- * Called when the user clicks "I'm done!". Opens the survey page in a fresh
- * tab and closes every tracked-site tab across all windows. Leaves
- * `breaktimeOpen=true` deliberately: if the user reopens any tracked site
- * before completing the hold challenge, the overlay mounts immediately. Only
- * a successful hold (`handleBreaktimeResume`) clears the flag.
- */
-export async function handleBreaktimeDone(): Promise<void> {
+async function openTodaySurvey(): Promise<void> {
   const settings = await getSettings();
   const date = dateKey(currentWakeDayStart(Date.now(), settings.wakeUpTime));
-  // Open survey first so closing the active tab doesn't race the create.
   await openSurveyTab(date);
+}
+
+/** Break-overlay done: survey is informational and the next visit uses picker. */
+export async function handleBreaktimeDone(): Promise<void> {
+  const state = await getDayState();
+  await setDayState({
+    ...state,
+    accessFlowPhase: "picking",
+    allowanceMs: null,
+    allowanceStartTotalMs: null,
+    breakOpenedAt: null,
+    breaktimeExtensionExpiresAt: null,
+    breaktimeExtensionUsed: false,
+    breaktimeExtensionTabs: {},
+  });
+  await openTodaySurvey();
+  await closeTrackedTabs();
+}
+
+/** Popup-only done: lock tracked access behind the survey continuation. */
+export async function handlePopupDone(): Promise<void> {
+  const state = await getDayState();
+  await setDayState({
+    ...state,
+    accessFlowPhase: "popupLocked",
+    popupDoneToday: true,
+    surveyContinueAllowed: false,
+    allowanceMs: null,
+    allowanceStartTotalMs: null,
+    breakOpenedAt: null,
+    breaktimeExtensionExpiresAt: null,
+    breaktimeExtensionUsed: false,
+    breaktimeExtensionTabs: {},
+  });
+  await openTodaySurvey();
   await closeTrackedTabs();
 }

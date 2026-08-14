@@ -3,15 +3,13 @@ import browser from "webextension-polyfill";
 import type { Message } from "../shared/messages";
 import { getDayState, onDayStateChange } from "../shared/storage";
 import { DEFAULT_DAY_STATE, type DayState, effectiveMs } from "../shared/types";
-import { Challenge } from "./Challenge";
 import { overlayBaseStyles } from "./overlayStyles";
+import { FullPageOverlay, fullPageOverlayStyles } from "../shared/FullPageOverlay";
 
 /*import windowImgPath from "../assets/window.gif";
 const windowImg = browser.runtime.getURL(windowImgPath);*/
 
 const ALERT_GATE_MS = 30_000;
-
-type Phase = "alert" | "challenge";
 
 function send(msg: Message): Promise<unknown> {
   return browser.runtime.sendMessage(msg);
@@ -30,7 +28,6 @@ function formatUsage(ms: number): string {
 }
 
 export function BreaktimeOverlay() {
-  const [phase, setPhase] = useState<Phase>("alert");
   const [continueReady, setContinueReady] = useState(false);
   const [state, setState] = useState<DayState>(DEFAULT_DAY_STATE);
 
@@ -40,10 +37,16 @@ export function BreaktimeOverlay() {
   }, []);
 
   useEffect(() => {
-    if (phase !== "alert") return;
-    const id = window.setTimeout(() => setContinueReady(true), ALERT_GATE_MS);
-    return () => window.clearTimeout(id);
-  }, [phase]);
+    const sync = () => {
+      setContinueReady(
+        state.breakOpenedAt !== null &&
+        Date.now() - state.breakOpenedAt >= ALERT_GATE_MS,
+      );
+    };
+    sync();
+    const id = window.setInterval(sync, 250);
+    return () => window.clearInterval(id);
+  }, [state.breakOpenedAt]);
 
   const usageMs = effectiveMs(state, Date.now());
 
@@ -52,51 +55,39 @@ export function BreaktimeOverlay() {
   };
   const onContinue = () => {
     if (!continueReady) return;
-    setPhase("challenge");
+    void send({ type: "access:startChallenge" });
   };
   const onExtend = () => {
     void send({ type: "breaktime:extend" });
   };
-  const onChallengeComplete = () => {
-    void send({ type: "breaktime:resume" });
-  };
-
   return (
     <>
-      <style>{overlayBaseStyles}</style>
-      <div class="backdrop" role="dialog" aria-modal="true" aria-labelledby="bt-title">
+      <style>{fullPageOverlayStyles + overlayBaseStyles}</style>
+      <FullPageOverlay labelledBy="bt-title">
         <div class="card">
-          {phase === "alert" && (
-            <>
             {/*<img src={windowImg} class="window" alt="" />*/}
-              <h2 id="bt-title">Time for a break</h2>
-              <p>You've been at this for {formatUsage(usageMs)}.</p>
-              <div class="buttons">
-                <button type="button" class="primary" onClick={onDone}>
-                  I'm done!
-                </button>
-                <button
-                  title="this action cannot be undone"
-                  type="button"
-                  class="secondary"
-                  onClick={onContinue}
-                  aria-disabled={!continueReady}
-                  data-disabled={!continueReady}
-                >
-                  Continue &gt;
-                </button>
-                {!state.breaktimeExtensionUsed && (
-                  <button type="button" class="secondary" onClick={onExtend}>
-                    extend for 2 minutes
-                  </button>
-                )}
-              </div>
-            </>
-          )}
-
-          {phase === "challenge" && <Challenge onComplete={onChallengeComplete} />}
+          <h2 id="bt-title">Time for a break</h2>
+          <p>You've been at this for {formatUsage(usageMs)}.</p>
+          <div class="buttons">
+            <button type="button" class="primary" onClick={onDone}>I'm done!</button>
+            <button
+              title="this action cannot be undone"
+              type="button"
+              class="secondary"
+              onClick={onContinue}
+              aria-disabled={!continueReady}
+              data-disabled={!continueReady}
+            >
+              Continue &gt;
+            </button>
+            {!state.breaktimeExtensionUsed && (
+              <button type="button" class="secondary" onClick={onExtend}>
+                extend for 2 minutes
+              </button>
+            )}
+          </div>
         </div>
-      </div>
+      </FullPageOverlay>
     </>
   );
 }

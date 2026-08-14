@@ -17,8 +17,15 @@ export async function enforceTabLimit(
 ): Promise<void> {
   const host = hostnameOf(url);
   if (!host) return;
-  const settings = await getSettings();
+  const [settings, state] = await Promise.all([getSettings(), getDayState()]);
   if (!isTracked(host, settings.trackedSites)) return;
+  if (
+    state.accessFlowPhase === "waiting" ||
+    state.accessFlowPhase === "waitingReady" ||
+    state.accessFlowPhase === "picking" ||
+    state.accessFlowPhase === "challenge" ||
+    state.accessFlowPhase === "popupLocked"
+  ) return;
 
   const tabs = await browser.tabs.query({});
   const trackedCount = tabs.filter((t) => {
@@ -29,7 +36,6 @@ export async function enforceTabLimit(
   if (trackedCount <= settings.tabLimit) return;
 
   await browser.tabs.remove(tabId).catch(() => null);
-  const state = await getDayState();
   if (!state.tabLimitWarning) {
     await setDayState({ ...state, tabLimitWarning: true });
   }

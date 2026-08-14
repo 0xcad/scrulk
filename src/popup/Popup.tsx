@@ -149,7 +149,7 @@ export function Popup() {
   };
 
   const onDone = async () => {
-    await browser.runtime.sendMessage({ type: "breaktime:done" });
+    await browser.runtime.sendMessage({ type: "popup:done" });
   };
 
   return (
@@ -226,7 +226,7 @@ export function Popup() {
         >
           open dashboard ↗
         </button>
-        {!state.surveyContinueAllowed && (
+        {!state.popupDoneToday && (
           <button type="button" onClick={onDone}>
             i'm done with tracked sites 🔓
           </button>

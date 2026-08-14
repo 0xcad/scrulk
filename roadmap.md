@@ -266,9 +266,6 @@ Focus/research mode: hide timer, intentionally more permissive?
 
 idea: on "hold to continue" button, show a percentage of times I've regretted scrolling for X amount of time? requires bringing survey back
 
-idea: get rid of camera on pause gateway. put camera on that tab that makes you write answers to questions. to do this, "lock" current tabs in a new UI. open a new tab where the camera + responses are. continuing there closes that tab, unlocks locked tabs. clicking on a button in a locked tab uses the browser permissions to put you on the camera/writing tab.
-* rationale: promote more reflection on your responses? and don't immediately open with camera, which induces essentially alert fatigue
-
 *wonderful* idea: A DNS, MITM proxy (with trusted root certificate) that just loads scroll unlock whenever you use it. must run a server then to store data in the backend. instead of browser extension pages, something like `scroll-unlock.local` could be used? or, best user-experience, the extension communicates with the locally running server. extension settings modify the server settings. if we get connection to the server (heartbeat), hide all shadow DOM and just let DNS injection handle everything.
 * Value: If I want to get around this, i can just open a different browser, open a private browsing window, and I'm stopped. i never fuck with my DNS settings. Editing my hosts file is super inconvenient. Also, you can get it on multiple devices in sync for cheap
 
@@ -280,6 +277,16 @@ Also: "Focus mode".
 * hides the timer. do show the sleep timer.
 * good idea! let user save tabs for later in focus mode (stash a tab). essentially like firefox "send tab to device". you send a tab out of focus mode, when you turn off focus mode you get it back later.
     * can stash a tab in the extension popup
+
+next:
+* buttons on pause gateway -- note 2 / 5/ 10, but 15 / 30, and some dynamic option to lower my screentime average
+* "widgets" / editable waiting screen
+* make the overlay dithered background
+* "time for a break" needs to block scrolling underneath
+* confirm: extend for 2 minutes needs to use the inset frame
+* confirm: I'm done with tracked sites work
+* confirm: "Welcome back" -- leaving a tracked site, and coming back
+    * and tweak language ofc
 
 
 ## Ideas I doubt I could personally implement, or perhaps could use

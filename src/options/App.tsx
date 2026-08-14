@@ -2,6 +2,7 @@ import { useState } from "preact/hooks";
 import { Nav, type Page } from "./components/Nav";
 import { Home } from "./pages/Home";
 import { Settings } from "./pages/Settings";
+import { Debug } from "./pages/Debug";
 
 export function App() {
   const [page, setPage] = useState<Page>("home");
@@ -18,6 +19,7 @@ export function App() {
       <main>
         {page === "home" && <Home />}
         {page === "settings" && <Settings />}
+        {page === "debug" && __SCRULK_DEBUG__ && <Debug />}
       </main>
     </div>
   );

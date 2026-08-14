@@ -23,21 +23,6 @@ export function Settings() {
       </section>
 
       <section>
-        <h2>Breaktime</h2>
-        <p>
-          After this many minutes of accumulated tracked usage, you'll get an
-          alert prompting you to take a break.
-        </p>
-        <NumberField
-          field="breaktimeMinutes"
-          label="Alert every"
-          min={1}
-          max={240}
-          hint="minutes"
-        />
-      </section>
-
-      <section>
         <h2>Tab limit</h2>
         <p>
           You can only open this many tabs of track websites at once.

@@ -50,6 +50,9 @@ function manifestFixups(): Plugin {
 }
 
 export default defineConfig({
+  define: {
+    __SCRULK_DEBUG__: JSON.stringify(process.env["SCRULK_DEBUG"] === "1"),
+  },
   plugins: [preact(), crx({ manifest }), manifestFixups()],
   build: {
     target: "es2022",

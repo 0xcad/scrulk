@@ -21,9 +21,14 @@ import {
   enforceExtensionNavigation,
   handleBreaktimeExtend,
   handleBreaktimeDone,
-  handleBreaktimeResume,
+  handleBreaktimeContinue,
+  handleChallengeComplete,
+  handleChooseAllowance,
   handleExtensionTabRemoved,
-  openSurveyTab,
+  handlePopupDone,
+  handleResumePrompt,
+  handleWaitContinue,
+  handleWaitingFocus,
 } from "./breaktime";
 import { enforceTabLimit } from "./tabLimit";
 import { dateKey, upsertDay } from "../shared/history";
@@ -31,17 +36,10 @@ import type { Message } from "../shared/messages";
 import { effectiveAllSitesMs, effectiveMs } from "../shared/types";
 import { currentWakeDayStart } from "../shared/wakeDay";
 import {
-  forgetTab,
+  ensureAccessPage,
   handleBeforeNavigate,
-  handleCommitted,
-  handleImDone,
-  handleSetContinue,
-  maybeHandleAlarm as maybeHandleGatewayAlarm,
-  startTimer as startGatewayTimer,
-  navigateTabBack,
-  syncDomainTabPresence,
+  syncTrackedTabPresence,
 } from "./gateway";
-import { onGatewayStateChange } from "../shared/storage";
 import {
   closeCameraHub,
   ensureCameraHub,
@@ -66,6 +64,8 @@ browser.runtime.onInstalled.addListener(async ({ reason }) => {
   await syncPeekFrameRule(current);
   await ensureDayResetAlarm(current.wakeUpTime);
   await recompute();
+  await syncTrackedTabPresence();
+  await recompute();
   await syncCameraHubForActiveTab();
 });
 
@@ -74,6 +74,8 @@ browser.runtime.onStartup.addListener(async () => {
   await refreshAllTabIcons(settings.trackedSites);
   await syncPeekFrameRule(settings);
   await ensureDayResetAlarm(settings.wakeUpTime);
+  await recompute();
+  await syncTrackedTabPresence();
   await recompute();
   await syncCameraHubForActiveTab();
 });
@@ -94,7 +96,7 @@ browser.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
   await updateIconForTab(tabId, tab.url, trackedSites);
   if (changeInfo.url) {
     if (await enforceExtensionNavigation(tabId, changeInfo.url)) {
-      await syncDomainTabPresence();
+      await syncTrackedTabPresence();
       await recompute();
       await syncCameraHubForActiveTab();
       return;
@@ -102,9 +104,7 @@ browser.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
     // A tab just navigated to a (possibly) tracked URL — only moment a fresh
     // tracked tab can push us over the limit.
     await enforceTabLimit(tabId, changeInfo.url);
-    // The set of tabs-on-each-tracked-domain may have changed; refresh
-    // gateway state so domains with zero remaining tabs get cleared.
-    await syncDomainTabPresence();
+    await syncTrackedTabPresence();
   }
   if (changeInfo.url || changeInfo.status === "complete") {
     await recompute();
@@ -114,18 +114,13 @@ browser.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
 
 browser.tabs.onRemoved.addListener(async (tabId) => {
   await handleExtensionTabRemoved(tabId);
-  await forgetTab(tabId);
-  await syncDomainTabPresence();
+  await syncTrackedTabPresence();
   await recompute();
   await syncCameraHubForActiveTab();
 });
 
 browser.webNavigation.onBeforeNavigate.addListener((details) => {
   void handleBeforeNavigate(details);
-});
-
-browser.webNavigation.onCommitted.addListener((details) => {
-  void handleCommitted(details);
 });
 
 browser.windows.onFocusChanged.addListener(async () => {
@@ -150,9 +145,12 @@ browser.alarms.onAlarm.addListener(async (alarm) => {
     await recompute();
     return;
   }
+  if (alarm.name === ALARM_NAMES.WAITING) {
+    await recompute();
+    return;
+  }
   if (alarm.name === BREAKTIME_ALARM) {
-    // recompute() will detect we've passed the threshold and flip
-    // breaktimeOpen, which content scripts on tracked tabs pick up.
+    // recompute() detects the exhausted allowance and opens the global break.
     await recompute();
     return;
   }
@@ -161,16 +159,31 @@ browser.alarms.onAlarm.addListener(async (alarm) => {
     await recompute();
     return;
   }
-  if (await maybeHandleGatewayAlarm(alarm.name)) {
-    await recompute();
-    return;
-  }
 });
 
 browser.runtime.onMessage.addListener((message: unknown, sender: browser.Runtime.MessageSender) => {
   const msg = message as Message;
-  if (msg.type === "breaktime:resume") {
-    return handleBreaktimeResume().then(() => recompute());
+  if (msg.type === "access:waitContinue") {
+    return handleWaitContinue().then(() => recompute());
+  }
+  if (msg.type === "access:setWaitingFocus") {
+    return handleWaitingFocus(msg.focused).then(() => recompute());
+  }
+  if (msg.type === "access:chooseAllowance") {
+    return handleChooseAllowance(
+      msg.minutes,
+      msg.destUrl,
+      sender?.tab?.id,
+    ).then(() => recompute());
+  }
+  if (msg.type === "access:resumeAllowance") {
+    return handleResumePrompt().then(() => recompute());
+  }
+  if (msg.type === "access:startChallenge") {
+    return handleBreaktimeContinue(sender.tab).then(() => recompute());
+  }
+  if (msg.type === "access:challengeComplete") {
+    return handleChallengeComplete().then(() => recompute());
   }
   if (msg.type === "breaktime:extend") {
     return handleBreaktimeExtend().then(() => recompute());
@@ -178,36 +191,14 @@ browser.runtime.onMessage.addListener((message: unknown, sender: browser.Runtime
   if (msg.type === "breaktime:done") {
     return handleBreaktimeDone().then(() => recompute());
   }
+  if (msg.type === "popup:done") {
+    return handlePopupDone().then(() => recompute());
+  }
   if (msg.type === "survey:submit") {
     return handleSurveySubmit(msg, sender?.tab?.id);
   }
-  if (msg.type === "survey:open") {
-    return handleSurveyOpen(msg);
-  }
-  if (msg.type === "survey:redirect") {
-    return handleSurveyRedirect(msg, sender?.tab?.id);
-  }
   if (msg.type === "survey:continue") {
     return handleSurveyContinue(sender?.tab?.id).then(() => recompute());
-  }
-  if (msg.type === "gateway:startTimer") {
-    return startGatewayTimer(
-      msg.domain,
-      msg.minutes,
-      msg.destUrl,
-      sender?.tab?.id,
-    ).then(() => recompute());
-  }
-  if (msg.type === "gateway:goBack") {
-    const tabId = sender?.tab?.id;
-    if (tabId !== undefined) return navigateTabBack(tabId);
-    return undefined;
-  }
-  if (msg.type === "gateway:imDone") {
-    return handleImDone(msg.domain).then(() => recompute());
-  }
-  if (msg.type === "gateway:setContinue") {
-    return handleSetContinue(msg.domain).then(() => recompute());
   }
   if (msg.type === "camera:enable") {
     return ensureCameraHub(true, sender.tab);
@@ -240,9 +231,6 @@ async function handleSurveySubmit(
   const patch: Partial<typeof state> = {};
   if (msg.date === currentDate) {
     patch.surveyFilledFor = msg.date;
-    // Re-editing the survey kicks off the redirect chain again until the
-    // user explicitly clicks "Continue" on the survey page.
-    patch.surveyContinueAllowed = false;
   }
   if (Object.keys(patch).length > 0) {
     await setDayState({ ...state, ...patch });
@@ -252,39 +240,19 @@ async function handleSurveySubmit(
   }
 }
 
-async function handleSurveyOpen(
-  msg: Extract<Message, { type: "survey:open" }>,
-): Promise<void> {
-  await openSurveyTab(msg.date);
-}
-
-async function handleSurveyRedirect(
-  msg: Extract<Message, { type: "survey:redirect" }>,
-  senderTabId: number | undefined,
-): Promise<void> {
-  await openSurveyTab(msg.date);
-  if (senderTabId !== undefined) {
-    await browser.tabs.remove(senderTabId).catch(() => null);
-  }
-}
-
 async function handleSurveyContinue(
   senderTabId: number | undefined,
 ): Promise<void> {
   const state = await getDayState();
-  if (
-    !state.surveyContinueAllowed ||
-    !state.breaktimeOpen ||
-    !state.breaktimeShownToday
-  ) {
-    await setDayState({
-      ...state,
-      surveyContinueAllowed: true,
-      breaktimeOpen: true,
-      breaktimeShownToday: true,
-    });
-  }
+  if (!state.popupDoneToday || state.surveyContinueAllowed) return;
+  await setDayState({
+    ...state,
+    surveyContinueAllowed: true,
+    accessFlowPhase: "picking",
+  });
   if (senderTabId !== undefined) {
+    const senderTab = await browser.tabs.get(senderTabId).catch(() => undefined);
+    await ensureAccessPage(senderTab);
     await browser.tabs.remove(senderTabId).catch(() => null);
   }
 }
@@ -297,15 +265,11 @@ onSettingsChange(async (next) => {
   await syncPeekFrameRule(next);
   await ensureDayResetAlarm(next.wakeUpTime);
   await recompute();
+  await syncTrackedTabPresence();
+  await recompute();
   await syncCameraHubForActiveTab();
 });
 
 onDayStateChange(() => {
   void syncCameraHubForActiveTab();
-});
-
-// Propagate gateway-state changes into the tracker so dayState.gatewayOpen
-// mirrors the "expired alert active" flag.
-onGatewayStateChange(() => {
-  void recompute();
 });

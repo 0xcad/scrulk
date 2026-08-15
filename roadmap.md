@@ -281,14 +281,9 @@ Also: "Focus mode".
 next:
 * buttons on pause gateway -- note 2 / 5/ 10, but 15 / 30, and some dynamic option to lower my screentime average
 * "widgets" / editable waiting screen
-* make the overlay dithered background
-* "time for a break" needs to block scrolling underneath
-* confirm: extend for 2 minutes needs to use the inset frame
 * confirm: I'm done with tracked sites works
 * confirm: camera appears on tracked sites only after a breaktime exercise is completed
 * confirm: breaktime works
-* confirm: "Welcome back" -- leaving a tracked site, and coming back
-    * and tweak language ofc
 
 
 ## Ideas I doubt I could personally implement, or perhaps could use

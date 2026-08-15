@@ -59,7 +59,7 @@ body {
 }
 
 .overlay-card {
-  width: min(380px, calc(100vw - 64px));
+  width: min(420px, calc(100% - 32px));
 }
 
 h1 {

@@ -14,7 +14,7 @@ export function RemainingTimeOverlay({ remainingMs }: { remainingMs: number }) {
       <style>{fullPageOverlayStyles + overlayBaseStyles}</style>
       <FullPageOverlay labelledBy="remaining-title">
         <div class="card">
-          <h2 id="remaining-title">Welcome back</h2>
+          <h2 id="remaining-title">Pause</h2>
           <p>You have {formatDuration(remainingMs)} of tracked-site time remaining.</p>
           <div class="buttons">
             <button type="button" class="primary" onClick={resume}>continue</button>

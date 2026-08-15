@@ -179,7 +179,7 @@ export function Gateway() {
 
       {dayState.accessFlowPhase === "waiting" && !active && (
         <FullPageOverlay labelledBy="inactive-title">
-          <div class="card overlay-card">
+          <div>
             <h1 id="inactive-title">Return to this tab</h1>
             <p>The waiting period only continues while this tab is active.</p>
           </div>
@@ -188,7 +188,7 @@ export function Gateway() {
       {dayState.accessFlowPhase === "waitingReady" && (
         <FullPageOverlay labelledBy="ready-title">
           <div class="card overlay-card">
-            <h1 id="ready-title">You're ready</h1>
+            <h1 id="ready-title">Proceed</h1>
             <button
               type="button"
               class="primary"

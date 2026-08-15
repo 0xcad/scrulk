@@ -60,3 +60,8 @@
   border-color: var(--primary);
   color: var(--primary);
 }
+
+.timer-arrow {
+  margin-left: 6px;
+  color: #27867a;
+}

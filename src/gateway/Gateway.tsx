@@ -2,6 +2,11 @@ import { useEffect, useRef, useState } from "preact/hooks";
 import browser from "webextension-polyfill";
 import { Challenge } from "../content/Challenge";
 import { FullPageOverlay, fullPageOverlayStyles } from "../shared/FullPageOverlay";
+import {
+  allowanceOptions,
+  completedTrackedAverageMs,
+} from "../shared/allowanceOptions";
+import { getAllDays } from "../shared/history";
 import type { Message } from "../shared/messages";
 import {
   getDayState,
@@ -17,7 +22,6 @@ import {
   type Settings,
 } from "../shared/types";
 
-const TIMER_OPTIONS = [2, 5, 10] as const;
 const DEFAULT_TITLE = "Scroll Unlock";
 const INACTIVE_TITLE = "Return to Scroll Unlock to continue waiting";
 
@@ -37,6 +41,7 @@ export function Gateway() {
     document.visibilityState === "visible" && document.hasFocus(),
   );
   const [showCamera, setShowCamera] = useState(false);
+  const [trackedAverageMs, setTrackedAverageMs] = useState<number | null>(null);
   const cameraRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
@@ -49,6 +54,26 @@ export function Gateway() {
       offState();
     };
   }, []);
+
+  useEffect(() => {
+    if (dayState.wakeDayStart <= 0) return;
+    let disposed = false;
+    setTrackedAverageMs(null);
+    void getAllDays()
+      .then((days) => {
+        if (!disposed) {
+          setTrackedAverageMs(
+            completedTrackedAverageMs(days, dayState.wakeDayStart),
+          );
+        }
+      })
+      .catch(() => {
+        if (!disposed) setTrackedAverageMs(null);
+      });
+    return () => {
+      disposed = true;
+    };
+  }, [dayState.wakeDayStart]);
 
   useEffect(() => {
     const sync = () => {
@@ -139,6 +164,7 @@ export function Gateway() {
     dayState,
     Date.now(),
   );
+  const timerOptions = allowanceOptions(trackedAverageMs);
 
   return (
     <div class="gateway-cards">
@@ -162,9 +188,19 @@ export function Gateway() {
             <p class="scrulk-card-copy">How much tracked-site time do you want to give yourself?</p>
             {usageStreak > 1 && <p class="scrulk-card-copy">You've used tracked sites <b>{usageStreak} days in a row.</b></p>}
             <div class="timers">
-              {TIMER_OPTIONS.map((minutes) => (
-                <button type="button" key={minutes} onClick={() => pick(minutes)}>
-                  {minutes} mins
+              {timerOptions.map((option) => (
+                <button
+                  type="button"
+                  key={option.minutes}
+                  onClick={() => pick(option.minutes)}
+                  aria-label={option.showDownArrow
+                    ? `${option.minutes} mins, below average`
+                    : undefined}
+                >
+                  {option.minutes} mins
+                  {option.showDownArrow && (
+                    <span class="timer-arrow" aria-hidden="true">↘</span>
+                  )}
                 </button>
               ))}
             </div>

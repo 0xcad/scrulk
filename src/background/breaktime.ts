@@ -1,6 +1,10 @@
 import browser from "webextension-polyfill";
+import {
+  completedTrackedAverageMs,
+  isAllowanceMinutesAllowed,
+} from "../shared/allowanceOptions";
 import { hostnameOf, isTracked } from "../shared/domain";
-import { dateKey } from "../shared/history";
+import { dateKey, getAllDays } from "../shared/history";
 import { getDayState, getSettings, setDayState } from "../shared/storage";
 import { effectiveMs, remainingAllowanceMs, type DayState } from "../shared/types";
 import { currentWakeDayStart } from "../shared/wakeDay";
@@ -83,9 +87,14 @@ export async function handleChooseAllowance(
   destUrl: string | undefined,
   senderTabId: number | undefined,
 ): Promise<void> {
-  if (![2, 5, 10].includes(minutes)) return;
   const state = await getDayState();
   if (state.accessFlowPhase !== "picking") return;
+  const trackedAverageMs = await getAllDays()
+    .then((days) => completedTrackedAverageMs(days, state.wakeDayStart))
+    .catch(() => null);
+  if (!isAllowanceMinutesAllowed(minutes, trackedAverageMs)) {
+    return;
+  }
   const now = Date.now();
   await setDayState({
     ...state,

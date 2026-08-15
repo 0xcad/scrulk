@@ -30,4 +30,8 @@ npm run check    # lint, tests, Chrome build, Firefox debug build
 ## Stack
 
 Manifest V3 · Preact · Vite · `@crxjs/vite-plugin` · TypeScript ·
-`webextension-polyfill`.
+`webextension-polyfill` · DGM.js.
+
+## License
+
+Scroll Unlock is licensed under the GNU General Public License, version 3.

@@ -1,8 +1,17 @@
-import { useEffect, useMemo, useRef, useState } from "preact/hooks";
-import { DrawingCanvas } from "./DrawingCanvas";
-import { toPixelGeometry } from "./geometry";
-import { MarkdownContent } from "./MarkdownContent";
-import { waitingQuestionsComplete, type WaitingScreen, type WaitingWidget } from "./model";
+import { utils, type Box, type Editor } from "@dgmjs/core";
+import { DGMEditorCore } from "@dgmjs/react";
+import { useEffect, useMemo, useState } from "preact/hooks";
+import {
+  createWaitingViewerOptions,
+  getWaitingQuestionPrompt,
+  getWaitingQuestionShapes,
+} from "./dgm";
+import {
+  cloneWaitingScreen,
+  WAITING_ANSWER_MIN_LENGTH,
+  waitingQuestionsComplete,
+  type WaitingScreen,
+} from "./model";
 
 interface Props {
   screen: WaitingScreen;
@@ -15,92 +24,159 @@ interface Answer {
   value: string;
 }
 
-export function WaitingScreenView({ screen, timerElapsed, onQuestionsComplete }: Props) {
-  const rootRef = useRef<HTMLDivElement>(null);
-  const [size, setSize] = useState({ width: 0, height: 0 });
-  const [answers, setAnswers] = useState<Record<string, Answer>>({});
+interface QuestionLayout {
+  id: string;
+  prompt: string;
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+  scale: number;
+  rotation: number;
+}
 
-  useEffect(() => {
-    const root = rootRef.current;
-    if (!root) return;
-    const update = () => setSize({ width: root.clientWidth, height: root.clientHeight });
-    const observer = new ResizeObserver(update);
-    observer.observe(root);
-    update();
-    return () => observer.disconnect();
-  }, []);
+export function WaitingScreenView({ screen, timerElapsed, onQuestionsComplete }: Props) {
+  const [questions, setQuestions] = useState<QuestionLayout[]>([]);
+  const [answers, setAnswers] = useState<Record<string, Answer>>({});
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [loaded, setLoaded] = useState(false);
+  const [editor, setEditor] = useState<Editor | null>(null);
+  const options = useMemo(createWaitingViewerOptions, []);
 
   useEffect(() => {
     setAnswers((current) => Object.fromEntries(
-      screen.widgets.flatMap((widget) => {
-        if (widget.type !== "question") return [];
-        const existing = current[widget.id];
-        return [[widget.id, existing?.question === widget.question
+      questions.map((question) => {
+        const existing = current[question.id];
+        return [question.id, existing?.question === question.prompt
           ? existing
-          : { question: widget.question, value: "" }]];
+          : { question: question.prompt, value: "" }];
       }),
     ));
-  }, [screen]);
+  }, [questions]);
 
+  const questionIds = useMemo(() => questions.map(({ id }) => id), [questions]);
   const questionsComplete = useMemo(() => waitingQuestionsComplete(
-    screen,
+    questionIds,
     Object.fromEntries(Object.entries(answers).map(([id, answer]) => [id, answer.value])),
-  ), [answers, screen]);
+  ), [answers, questionIds]);
 
   useEffect(() => {
-    if (timerElapsed && questionsComplete) onQuestionsComplete();
-  }, [onQuestionsComplete, questionsComplete, timerElapsed]);
+    if (loaded && timerElapsed && questionsComplete && !loadError) onQuestionsComplete();
+  }, [loadError, loaded, onQuestionsComplete, questionsComplete, timerElapsed]);
+
+  useEffect(() => {
+    if (!editor) return;
+    setLoaded(false);
+    loadViewerDocument(editor, screen, setQuestions, setLoadError, setLoaded);
+  }, [editor, screen]);
+
+  const handleMount = (nextEditor: Editor) => setEditor(nextEditor);
+
+  useEffect(() => {
+    if (!editor) return;
+    const observer = new ResizeObserver(() => {
+      requestAnimationFrame(() => layoutViewer(editor, setQuestions));
+    });
+    observer.observe(editor.parent);
+    return () => observer.disconnect();
+  }, [editor]);
 
   return (
-    <main ref={rootRef} class="waiting-screen" aria-label="Waiting screen">
-      {screen.widgets.map((widget) => (
-        <WaitingWidgetView
-          key={widget.id}
-          widget={widget}
-          viewport={size}
-          answer={answers[widget.id]?.value ?? ""}
-          onAnswer={(value) => setAnswers((current) => ({
-            ...current,
-            [widget.id]: { question: widget.type === "question" ? widget.question : "", value },
-          }))}
-        />
-      ))}
+    <main class="waiting-screen" aria-label="Waiting screen">
+      <DGMEditorCore
+        className="waiting-dgm-viewer"
+        options={options}
+        enabled={false}
+        showGrid={false}
+        snapToGrid={false}
+        snapToObjects={false}
+        onMount={handleMount}
+      />
+      {questions.map((question) => {
+        const answer = answers[question.id]?.value ?? "";
+        return (
+          <label
+            key={question.id}
+            class="waiting-question"
+            style={{
+              left: `${question.left}px`,
+              top: `${question.top}px`,
+              width: `${question.width}px`,
+              height: `${question.height}px`,
+              transform: `rotate(${question.rotation}deg) scale(${question.scale})`,
+            }}
+          >
+            <span>{question.prompt}</span>
+            <textarea
+              value={answer}
+              onInput={(event) => {
+                const value = (event.target as HTMLTextAreaElement).value;
+                setAnswers((current) => ({
+                  ...current,
+                  [question.id]: { question: question.prompt, value },
+                }));
+              }}
+            />
+            <small class={answer.length < WAITING_ANSWER_MIN_LENGTH ? "waiting-answer-short" : ""}>
+              {answer.length}/{WAITING_ANSWER_MIN_LENGTH}
+            </small>
+          </label>
+        );
+      })}
+      {loadError && <p class="waiting-viewer-error error" role="alert">{loadError}</p>}
     </main>
   );
 }
 
-function WaitingWidgetView({
-  widget,
-  viewport,
-  answer,
-  onAnswer,
-}: {
-  widget: WaitingWidget;
-  viewport: { width: number; height: number };
-  answer: string;
-  onAnswer: (value: string) => void;
-}) {
-  const pixel = toPixelGeometry(widget, viewport.width, viewport.height);
-  const style = {
-    left: `${pixel.left}px`,
-    top: `${pixel.top}px`,
-    width: `${pixel.width}px`,
-    height: `${pixel.height}px`,
-    transform: `rotate(${pixel.rotation}deg)`,
+function loadViewerDocument(
+  editor: Editor,
+  screen: WaitingScreen,
+  setQuestions: (questions: QuestionLayout[]) => void,
+  setLoadError: (error: string | null) => void,
+  setLoaded: (loaded: boolean) => void,
+): void {
+  try {
+    editor.loadFromJSON(cloneWaitingScreen(screen));
+    editor.update();
+    for (const shape of getWaitingQuestionShapes(editor)) shape.opacity = 0;
+    editor.update();
+    setLoadError(null);
+    layoutViewer(editor, setQuestions);
+    setLoaded(true);
+  } catch (error: unknown) {
+    setQuestions([]);
+    setLoaded(false);
+    setLoadError(`Could not load waiting screen data: ${errorMessage(error)}`);
+  }
+}
+
+function layoutViewer(
+  editor: Editor,
+  setQuestions: (questions: QuestionLayout[]) => void,
+): void {
+  editor.fit();
+  editor.fitToScreen(0.9, 1);
+  editor.repaint(false);
+  const scale = editor.getScale();
+  setQuestions(getWaitingQuestionShapes(editor).map((shape) => questionLayout(editor, shape, scale)));
+}
+
+function questionLayout(editor: Editor, shape: Box, scale: number): QuestionLayout {
+  const rect = shape.getRectInDCS(editor.canvas);
+  const [left = 0, top = 0] = rect[0] ?? [];
+  const [right = left, bottom = top] = rect[1] ?? [];
+  return {
+    id: shape.id,
+    prompt: getWaitingQuestionPrompt(shape),
+    left,
+    top,
+    width: right - left,
+    height: bottom - top,
+    scale,
+    rotation: utils.angleInCCS(editor.canvas, shape),
   };
-  return (
-    <section class={`waiting-widget waiting-widget--${widget.type}`} style={style}>
-      {widget.type === "text" && (
-        <div class={`waiting-font--${widget.fontFamily}`}><MarkdownContent markdown={widget.markdown} /></div>
-      )}
-      {widget.type === "question" && (
-        <label>
-          <span>{widget.question}</span>
-          <textarea value={answer} onInput={(event) => onAnswer((event.target as HTMLTextAreaElement).value)} />
-          <small class={answer.length < 20 ? "waiting-answer-short" : ""}>{answer.length}/20</small>
-        </label>
-      )}
-      {widget.type === "drawing" && <DrawingCanvas strokes={widget.strokes} />}
-    </section>
-  );
+}
+
+function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
 }

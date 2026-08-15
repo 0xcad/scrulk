@@ -2,6 +2,7 @@
   "name": "scrulk",
   "version": "0.1.0",
   "private": true,
+  "license": "GPL-3.0-only",
   "description": "Scroll Unlock — a friction-adding browser extension for tracked websites",
   "type": "module",
   "scripts": {
@@ -17,10 +18,9 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@milkdown/kit": "^7.22.1",
+    "@dgmjs/core": "1.5.5",
+    "@dgmjs/react": "1.5.2",
     "idb": "^8.0.3",
-    "mdast-util-from-markdown": "^2.0.3",
-    "moveable": "^0.53.0",
     "preact": "^10.22.0",
     "webextension-polyfill": "^0.12.0"
   },

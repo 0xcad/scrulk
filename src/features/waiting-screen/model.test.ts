@@ -1,109 +1,75 @@
+import { Doc, Page, Store, shapeInstantiator } from "@dgmjs/core";
 import { describe, expect, it } from "vitest";
 import {
   DEFAULT_WAITING_SCREEN,
   normalizeWaitingScreen,
+  WAITING_QUESTION_TAG,
+  WAITING_SCREEN_MAX_BYTES,
   waitingQuestionsComplete,
   waitingScreenBytes,
-  WAITING_SCREEN_MAX_BYTES,
 } from "./model";
-import type { WaitingTextWidget } from "./model";
 
 describe("waiting-screen model", () => {
-  it("provides the title and two default questions", () => {
-    expect(DEFAULT_WAITING_SCREEN.widgets.map((widget) => widget.type))
-      .toEqual(["text", "question", "question"]);
-    expect(DEFAULT_WAITING_SCREEN.widgets[0]).toMatchObject({ markdown: "# waiting" });
+  it("defines one default DGM page with the title and two questions", () => {
+    expect(DEFAULT_WAITING_SCREEN["type"]).toBe("Doc");
+    const pages = childrenOf(DEFAULT_WAITING_SCREEN);
+    expect(pages).toHaveLength(1);
+    expect(pages[0]?.["type"]).toBe("Page");
+
+    const shapes = childrenOf(pages[0] ?? {});
+    expect(shapes.find((shape) => shape["type"] === "Text")?.["text"]).toBe("waiting");
+    expect(shapes.filter(isQuestion).map((shape) => shape["text"])).toEqual([
+      "what do you want out of this?",
+      "if you could do anything, what would it be?",
+    ]);
   });
 
-  it("normalizes supported widgets and drops duplicate or malformed entries", () => {
-    const screen = normalizeWaitingScreen({ widgets: [
-      { ...DEFAULT_WAITING_SCREEN.widgets[0], fontFamily: "unknown", offsetX: 40 },
-      DEFAULT_WAITING_SCREEN.widgets[0],
-      { id: "bad", type: "question" },
-    ] });
-    expect(screen.widgets).toHaveLength(1);
-    expect(screen.widgets[0]).toMatchObject({ fontFamily: "sans", offsetX: 40 });
+  it("loads the default through DGM's document store", () => {
+    const store = new Store(shapeInstantiator);
+    store.fromJSON(DEFAULT_WAITING_SCREEN);
+    expect(store.root).toBeInstanceOf(Doc);
+    expect(store.root?.children).toHaveLength(1);
+    const page = store.root?.children[0];
+    expect(page).toBeInstanceOf(Page);
+    expect((page as Page).findAllByQuery(`#${WAITING_QUESTION_TAG}`)).toHaveLength(2);
   });
 
-  it("migrates legacy normalized geometry without changing centered pixel geometry", () => {
-    const widget = DEFAULT_WAITING_SCREEN.widgets[0] as WaitingTextWidget;
-    const legacy = normalizeWaitingScreen({
-      widgets: [{
-        id: widget.id,
-        type: widget.type,
-        markdown: widget.markdown,
-        fontFamily: widget.fontFamily,
-        x: 0.25,
-        y: 0.75,
-        width: 0.5,
-        height: 0.2,
-        rotation: 0,
-      }],
-    });
-    const pixels = normalizeWaitingScreen({
-      widgets: [{ ...widget, width: 640, height: 160 }],
-    });
+  it("uses the default only when stored data is absent or not an object", () => {
+    expect(normalizeWaitingScreen(undefined)).toEqual(DEFAULT_WAITING_SCREEN);
+    expect(normalizeWaitingScreen([])).toEqual(DEFAULT_WAITING_SCREEN);
 
-    expect(legacy.widgets[0]).toMatchObject({
-      offsetX: -250,
-      offsetY: 162.5,
-      width: 500,
-      height: 130,
-    });
-    expect(pixels.widgets[0]).toMatchObject({
-      offsetX: widget.offsetX,
-      offsetY: widget.offsetY,
-      width: 640,
-      height: 160,
-    });
+    const legacy = { widgets: [{ id: "old-data" }] };
+    expect(normalizeWaitingScreen(legacy)).toEqual(legacy);
+    expect(normalizeWaitingScreen(legacy)).not.toBe(legacy);
   });
 
-  it("converts legacy eraser paths into whole-stroke deletion", () => {
-    const base = {
-      id: "legacy-drawing",
-      type: "drawing",
-      x: 0.5,
-      y: 0.5,
-      width: 0.5,
-      height: 0.5,
-      rotation: 0,
-    };
-    const brush = {
-      tool: "brush",
-      color: "#111111",
-      size: 0.02,
-      points: [{ x: 0.1, y: 0.5 }, { x: 0.9, y: 0.5 }],
-    };
-    const eraser = {
-      tool: "eraser",
-      color: "#111111",
-      size: 0.02,
-      points: [{ x: 0.5, y: 0.4 }, { x: 0.5, y: 0.6 }],
-    };
-    const laterBrush = { ...brush, points: [{ x: 0.2, y: 0.5 }, { x: 0.3, y: 0.5 }] };
-    const screen = normalizeWaitingScreen({
-      widgets: [{ ...base, strokes: [brush, eraser, laterBrush] }],
-    });
-    expect(screen.widgets[0]).toMatchObject({ strokes: [laterBrush] });
-  });
-
-  it("counts raw answer characters and treats an empty question list as complete", () => {
-    const question = DEFAULT_WAITING_SCREEN.widgets[1]!;
-    expect(waitingQuestionsComplete(DEFAULT_WAITING_SCREEN, {
-      [question.id]: "                    ",
-      [DEFAULT_WAITING_SCREEN.widgets[2]!.id]: "12345678901234567890",
+  it("requires twenty characters for every question", () => {
+    const ids = ["one", "two"];
+    expect(waitingQuestionsComplete(ids, {
+      one: "12345678901234567890",
+      two: "1234567890123456789",
+    })).toBe(false);
+    expect(waitingQuestionsComplete(ids, {
+      one: "12345678901234567890",
+      two: "12345678901234567890",
     })).toBe(true);
-    expect(waitingQuestionsComplete({ widgets: [] }, {})).toBe(true);
-    expect(waitingQuestionsComplete(DEFAULT_WAITING_SCREEN, {})).toBe(false);
+    expect(waitingQuestionsComplete([], {})).toBe(true);
   });
 
-  it("measures serialized UTF-8 bytes against the screen cap", () => {
+  it("keeps the default below the storage limit", () => {
     expect(waitingScreenBytes(DEFAULT_WAITING_SCREEN)).toBeLessThan(WAITING_SCREEN_MAX_BYTES);
-    expect(waitingScreenBytes({ widgets: [{
-      ...DEFAULT_WAITING_SCREEN.widgets[0]!,
-      type: "text",
-      markdown: "🙂".repeat(WAITING_SCREEN_MAX_BYTES / 2),
-      fontFamily: "sans",
-    }] })).toBeGreaterThan(WAITING_SCREEN_MAX_BYTES);
   });
 });
+
+function childrenOf(value: Record<string, unknown>): Record<string, unknown>[] {
+  const children = value["children"];
+  return Array.isArray(children)
+    ? children.filter((child): child is Record<string, unknown> =>
+      child !== null && typeof child === "object" && !Array.isArray(child)
+    )
+    : [];
+}
+
+function isQuestion(shape: Record<string, unknown>): boolean {
+  return Array.isArray(shape["tags"]) && shape["tags"].includes(WAITING_QUESTION_TAG);
+}

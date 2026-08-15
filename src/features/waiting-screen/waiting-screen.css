@@ -6,60 +6,43 @@
   background: Canvas;
 }
 
-.waiting-widget,
-.waiting-editor-widget {
+.waiting-dgm-viewer,
+.waiting-dgm-editor {
   position: absolute;
+  inset: 0;
+}
+
+.waiting-dgm-viewer {
+  pointer-events: none;
+}
+
+.waiting-dgm-viewer canvas,
+.waiting-dgm-editor canvas {
+  display: block;
+}
+
+.waiting-question {
+  position: absolute;
+  z-index: 1;
   box-sizing: border-box;
-  transform-origin: center;
-}
-
-.waiting-widget--text,
-.waiting-editor-widget.waiting-widget--text {
-  overflow: auto;
-}
-
-.waiting-widget--text > div,
-.waiting-editor-widget.waiting-widget--text > div {
-  width: 100%;
-  height: 100%;
-}
-
-.waiting-widget--text :first-child,
-.waiting-editor-widget.waiting-widget--text :first-child {
-  margin-top: 0;
-}
-
-.waiting-widget--text :last-child,
-.waiting-editor-widget.waiting-widget--text :last-child {
-  margin-bottom: 0;
-}
-
-.waiting-widget--text ul,
-.waiting-widget--text ol,
-.waiting-editor-widget.waiting-widget--text ul,
-.waiting-editor-widget.waiting-widget--text ol {
-  padding-inline-start: 1.25rem;
-}
-
-.waiting-font--sans { font-family: system-ui, sans-serif; }
-.waiting-font--serif { font-family: Georgia, "Times New Roman", serif; }
-.waiting-font--monospace { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; }
-
-.waiting-widget--question label,
-.waiting-editor-widget.waiting-widget--question label {
   display: flex;
-  height: 100%;
   flex-direction: column;
   gap: 6px;
+  padding: 10px;
+  transform-origin: center;
+  border: 1px solid currentColor;
+  border-radius: 10px;
+  background: Canvas;
+  color: CanvasText;
 }
 
-.waiting-widget--question label > span,
-.waiting-editor-widget.waiting-widget--question label > span {
+.waiting-question > span {
+  flex: none;
   font-weight: 600;
+  overflow-wrap: anywhere;
 }
 
-.waiting-widget--question textarea,
-.waiting-editor-widget.waiting-widget--question textarea {
+.waiting-question textarea {
   box-sizing: border-box;
   min-height: 0;
   width: 100%;
@@ -72,11 +55,7 @@
   padding: 8px;
 }
 
-.waiting-editor-widget .waiting-question-editor {
-  height: 100%;
-}
-
-.waiting-widget--question small {
+.waiting-question small {
   align-self: flex-end;
   font-variant-numeric: tabular-nums;
   opacity: 0.65;
@@ -86,9 +65,202 @@
   color: #c0392b;
 }
 
-.waiting-widget--drawing canvas,
-.waiting-editor-widget.waiting-widget--drawing canvas {
-  display: block;
+.waiting-viewer-error,
+.waiting-editor-load-error {
+  position: absolute;
+  inset: 50% auto auto 50%;
+  z-index: 2;
+  width: min(560px, calc(100% - 32px));
+  margin: 0;
+  transform: translate(-50%, -50%);
+  text-align: center;
+}
+
+.waiting-editor-page {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  font-size: 14px;
+}
+
+.waiting-editor-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.waiting-design-canvas {
+  position: relative;
   width: 100%;
-  height: 100%;
+  height: min(68vh, 680px);
+  min-height: 420px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, currentColor 3%, Canvas);
+}
+
+.waiting-editor-toolbar {
+  position: absolute;
+  z-index: 3;
+  bottom: 16px;
+  left: 50%;
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  transform: translateX(-50%);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: Canvas;
+  box-shadow: 0 4px 16px color-mix(in srgb, CanvasText 18%, transparent);
+}
+
+.waiting-editor-tool {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  place-items: center;
+  border-color: transparent;
+  border-radius: 6px;
+  background: transparent;
+  font-size: 19px;
+  line-height: 1;
+  text-transform: none;
+}
+
+.waiting-editor-tool[aria-pressed="true"] {
+  border-color: color-mix(in srgb, var(--primary) 55%, transparent);
+  background: color-mix(in srgb, var(--primary) 15%, Canvas);
+}
+
+.waiting-editor-palette {
+  position: absolute;
+  z-index: 3;
+  top: 16px;
+  left: 16px;
+  box-sizing: border-box;
+  width: 180px;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: Canvas;
+  box-shadow: 0 4px 16px color-mix(in srgb, CanvasText 14%, transparent);
+}
+
+.waiting-editor-palette fieldset {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  margin: 0;
+  padding: 8px 0 10px;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.waiting-editor-palette fieldset:first-child {
+  padding-top: 0;
+}
+
+.waiting-editor-palette fieldset:last-child {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+.waiting-editor-palette legend {
+  padding: 0;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  opacity: 0.65;
+}
+
+.waiting-palette-button-row {
+  display: flex;
+  gap: 4px;
+}
+
+.waiting-palette-button-row button {
+  min-width: 0;
+  flex: 1;
+  padding: 4px 6px;
+  border-color: var(--border);
+  border-radius: 5px;
+  font-size: 12px;
+}
+
+.waiting-palette-button-row button[aria-pressed="true"] {
+  border-color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 12%, Canvas);
+}
+
+.waiting-palette-control {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12px;
+  text-transform: lowercase;
+}
+
+.waiting-palette-control select {
+  min-width: 0;
+  padding: 3px 4px;
+  border: 1px solid var(--border);
+  background: Canvas;
+  color: CanvasText;
+  font: inherit;
+}
+
+.waiting-palette-control input[type="color"] {
+  width: 42px;
+  height: 28px;
+  padding: 2px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: Canvas;
+  cursor: pointer;
+}
+
+.waiting-palette-range {
+  display: grid;
+  grid-template-columns: auto 1fr 2ch;
+}
+
+.waiting-palette-range input {
+  min-width: 0;
+  width: 100%;
+}
+
+.waiting-palette-range output {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.waiting-editor-actions {
+  justify-content: flex-end;
+}
+
+@media (max-width: 600px) {
+  .waiting-design-canvas {
+    min-height: 360px;
+  }
+
+  .waiting-editor-toolbar {
+    bottom: 8px;
+    gap: 1px;
+    padding: 3px;
+  }
+
+  .waiting-editor-tool {
+    width: 34px;
+    height: 34px;
+    font-size: 17px;
+  }
+
+  .waiting-editor-palette {
+    top: 8px;
+    left: 8px;
+  }
 }

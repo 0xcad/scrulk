@@ -13,7 +13,8 @@ const enabled = {
   cameraOverlayPermission: "granted" as const,
   trackedSites: ["tracked.example"],
 };
-const afterBreaktime = { breaktimeShownToday: true };
+const afterChallenge = { breaktimeChallengeCompletedToday: true };
+const beforeChallenge = { breaktimeChallengeCompletedToday: false };
 
 describe("camera overlay sizing", () => {
   it("preserves 4:3 and enforces the current size as its minimum", () => {
@@ -34,35 +35,33 @@ describe("camera overlay sizing", () => {
 });
 
 describe("shouldShowCameraOverlay", () => {
-  it("shows only on tracked pages after today's first breaktime", () => {
+  it("shows only on tracked pages after today's first completed challenge", () => {
     expect(
-      shouldShowCameraOverlay("tracked.example", enabled, afterBreaktime),
+      shouldShowCameraOverlay("tracked.example", enabled, afterChallenge),
     ).toBe(true);
-    expect(shouldShowCameraOverlay(null, enabled, afterBreaktime)).toBe(false);
+    expect(shouldShowCameraOverlay(null, enabled, afterChallenge)).toBe(false);
     expect(
-      shouldShowCameraOverlay("tracked.example", enabled, {
-        breaktimeShownToday: false,
-      }),
+      shouldShowCameraOverlay("tracked.example", enabled, beforeChallenge),
     ).toBe(false);
     expect(
       shouldShowCameraOverlay(
         "tracked.example",
         { ...enabled, cameraOverlayEnabled: false },
-        afterBreaktime,
+        afterChallenge,
       ),
     ).toBe(false);
   });
 });
 
 describe("shouldKeepCameraHub", () => {
-  it("keeps the helper for an active tracked page after breaktime", () => {
+  it("keeps the helper for an active tracked page after challenge completion", () => {
     expect(
       shouldKeepCameraHub(
         "https://sub.tracked.example/feed",
         HUB_URL,
         true,
         enabled,
-        afterBreaktime,
+        afterChallenge,
       ),
     ).toBe(true);
   });
@@ -74,7 +73,7 @@ describe("shouldKeepCameraHub", () => {
         HUB_URL,
         true,
         enabled,
-        afterBreaktime,
+        afterChallenge,
       ),
     ).toBe(true);
   });
@@ -86,7 +85,7 @@ describe("shouldKeepCameraHub", () => {
         HUB_URL,
         false,
         { ...enabled, cameraOverlayPermission: "denied" },
-        { breaktimeShownToday: false },
+        beforeChallenge,
       ),
     ).toBe(true);
   });
@@ -98,19 +97,19 @@ describe("shouldKeepCameraHub", () => {
         HUB_URL,
         false,
         enabled,
-        afterBreaktime,
+        afterChallenge,
       ),
     ).toBe(false);
   });
 
-  it("closes before breaktime or when an untracked tab is active", () => {
+  it("closes before challenge completion or when an untracked tab is active", () => {
     expect(
       shouldKeepCameraHub(
         "https://tracked.example/",
         HUB_URL,
         true,
         enabled,
-        { breaktimeShownToday: false },
+        beforeChallenge,
       ),
     ).toBe(false);
     expect(
@@ -119,7 +118,7 @@ describe("shouldKeepCameraHub", () => {
         HUB_URL,
         true,
         enabled,
-        afterBreaktime,
+        afterChallenge,
       ),
     ).toBe(false);
   });
@@ -131,7 +130,7 @@ describe("shouldKeepCameraHub", () => {
         HUB_URL,
         true,
         { ...enabled, cameraOverlayEnabled: false },
-        afterBreaktime,
+        afterChallenge,
       ),
     ).toBe(false);
   });

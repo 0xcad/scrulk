@@ -208,6 +208,8 @@ or changing a `DayState` field, update this list and `DEFAULT_DAY_STATE`.**
 - `tabLimitWarning`: tab-limit rejection pending display in the popup.
 - `surveyFilledFor`: wake-day key of the submitted survey, or null.
 - `breaktimeShownToday`: this wake-day has shown at least one break alert.
+- `breaktimeChallengeCompletedToday`: this wake-day has completed at least one
+  breaktime challenge.
 - `popupDoneToday`: popup-originated tracked-site lock was used this wake-day.
 - `surveyContinueAllowed`: that popup lock was explicitly overridden.
 

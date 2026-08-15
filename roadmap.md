@@ -279,11 +279,9 @@ Also: "Focus mode".
     * can stash a tab in the extension popup
 
 next:
-* buttons on pause gateway -- note 2 / 5/ 10, but 15 / 30, and some dynamic option to lower my screentime average
+* buttons on pause gateway -- not 2 / 5/ 10, but 15 / 30, and some dynamic option to lower my screentime average
 * "widgets" / editable waiting screen
 * confirm: I'm done with tracked sites works
-* confirm: camera appears on tracked sites only after a breaktime exercise is completed
-* confirm: breaktime works
 
 
 ## Ideas I doubt I could personally implement, or perhaps could use

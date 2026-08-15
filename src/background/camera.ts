@@ -73,7 +73,7 @@ export async function ensureCameraHubForOverlay(
     !activeTab ||
     activeTab.id !== sourceTab?.id ||
     !settings.cameraOverlayEnabled ||
-    !state.breaktimeShownToday
+    !state.breaktimeChallengeCompletedToday
   ) {
     return;
   }

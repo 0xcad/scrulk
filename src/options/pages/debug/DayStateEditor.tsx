@@ -140,6 +140,11 @@ const FIELD_CONFIGS = {
     label: "breaktimeShownToday",
     hint: "Whether a break alert has appeared this wake-day.",
   },
+  breaktimeChallengeCompletedToday: {
+    kind: "boolean",
+    label: "breaktimeChallengeCompletedToday",
+    hint: "Whether a breaktime challenge has been completed this wake-day.",
+  },
   popupDoneToday: {
     kind: "boolean",
     label: "popupDoneToday",

@@ -127,6 +127,8 @@ export interface DayState {
   surveyFilledFor: string | null;
   /** True once the breaktime alert has been shown at least once this wake-day. */
   breaktimeShownToday: boolean;
+  /** True once a breaktime challenge has been completed this wake-day. */
+  breaktimeChallengeCompletedToday: boolean;
   /** The popup's explicit "done with tracked sites" action was used today. */
   popupDoneToday: boolean;
   /**
@@ -157,6 +159,7 @@ export const DEFAULT_DAY_STATE: DayState = {
   tabLimitWarning: false,
   surveyFilledFor: null,
   breaktimeShownToday: false,
+  breaktimeChallengeCompletedToday: false,
   popupDoneToday: false,
   surveyContinueAllowed: false,
 };

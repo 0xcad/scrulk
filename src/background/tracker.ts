@@ -315,6 +315,8 @@ function stateEqual(a: DayState, b: DayState): boolean {
     a.tabLimitWarning === b.tabLimitWarning &&
     a.surveyFilledFor === b.surveyFilledFor &&
     a.breaktimeShownToday === b.breaktimeShownToday &&
+    a.breaktimeChallengeCompletedToday ===
+      b.breaktimeChallengeCompletedToday &&
     a.popupDoneToday === b.popupDoneToday &&
     a.surveyContinueAllowed === b.surveyContinueAllowed
   );
@@ -373,6 +375,7 @@ export async function rolloverDay(
     tabLimitWarning: false,
     surveyFilledFor: null,
     breaktimeShownToday: false,
+    breaktimeChallengeCompletedToday: false,
     popupDoneToday: false,
     surveyContinueAllowed: false,
   };

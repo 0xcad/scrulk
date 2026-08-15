@@ -131,6 +131,7 @@ export async function handleChallengeComplete(): Promise<void> {
   await setDayState({
     ...state,
     accessFlowPhase: "picking",
+    breaktimeChallengeCompletedToday: true,
     allowanceMs: null,
     allowanceStartTotalMs: null,
     breakOpenedAt: null,

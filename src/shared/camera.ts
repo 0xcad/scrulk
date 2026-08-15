@@ -14,7 +14,7 @@ type CameraHubSettings = Pick<
   "cameraOverlayEnabled" | "cameraOverlayPermission" | "trackedSites"
 >;
 
-type CameraDayState = Pick<DayState, "breaktimeShownToday">;
+type CameraDayState = Pick<DayState, "breaktimeChallengeCompletedToday">;
 
 export function cameraSizeForWidth(
   requestedWidth: number,
@@ -54,7 +54,7 @@ export function shouldShowCameraOverlay(
   return (
     matchedDomain !== null &&
     settings.cameraOverlayEnabled &&
-    state.breaktimeShownToday
+    state.breaktimeChallengeCompletedToday
   );
 }
 
@@ -73,9 +73,9 @@ export function shouldKeepCameraHub(
   if (!settings.cameraOverlayEnabled) return false;
   if (activeTabUrl === cameraHubUrl) {
     if (settings.cameraOverlayPermission !== "granted") return true;
-    return state.breaktimeShownToday && hasTrackedTab;
+    return state.breaktimeChallengeCompletedToday && hasTrackedTab;
   }
-  if (!state.breaktimeShownToday) return false;
+  if (!state.breaktimeChallengeCompletedToday) return false;
 
   const host = hostnameOf(activeTabUrl);
   return host !== null && isTracked(host, settings.trackedSites);

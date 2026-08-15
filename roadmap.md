@@ -284,7 +284,9 @@ next:
 * make the overlay dithered background
 * "time for a break" needs to block scrolling underneath
 * confirm: extend for 2 minutes needs to use the inset frame
-* confirm: I'm done with tracked sites work
+* confirm: I'm done with tracked sites works
+* confirm: camera appears on tracked sites only after a breaktime exercise is completed
+* confirm: breaktime works
 * confirm: "Welcome back" -- leaving a tracked site, and coming back
     * and tweak language ofc
 

@@ -14,6 +14,7 @@ export type Message =
   | { type: "survey:continue" }
   | { type: "camera:enable" }
   | { type: "camera:ensure" }
-  | { type: "camera:disable" };
+  | { type: "camera:disable" }
+  | { type: "debug:resetDay" };
 
 export type MessageType = Message["type"];

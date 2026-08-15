@@ -18,6 +18,7 @@ import {
   effectiveWaitingMs,
   isUsageStreakDay,
   remainingAllowanceMs,
+  DEFAULT_DAY_STATE,
   type DayState,
 } from "../shared/types";
 import { scheduleBreaktimeAlarm } from "./breaktime";
@@ -171,6 +172,16 @@ export async function recompute(): Promise<void> {
   await syncActivityCheckAlarm(next);
   await syncWaitingAlarm(next, settings.waitingMinutes);
   await scheduleBreaktimeAlarm(next);
+}
+
+/** Discard the current debug state without archiving it or changing streaks. */
+export async function resetDayStateForDebug(): Promise<void> {
+  const settings = await getSettings();
+  await setDayState({
+    ...DEFAULT_DAY_STATE,
+    wakeDayStart: currentWakeDayStart(Date.now(), settings.wakeUpTime),
+  });
+  await recompute();
 }
 
 async function syncActivityCheckAlarm(state: DayState): Promise<void> {

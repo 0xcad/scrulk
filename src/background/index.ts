@@ -13,6 +13,7 @@ import {
   ensureDayResetAlarm,
   handleDayResetAlarm,
   recompute,
+  resetDayStateForDebug,
 } from "./tracker";
 import {
   BREAKTIME_ALARM,
@@ -212,6 +213,9 @@ browser.runtime.onMessage.addListener((message: unknown, sender: browser.Runtime
   }
   if (msg.type === "camera:disable") {
     return closeCameraHub();
+  }
+  if (msg.type === "debug:resetDay" && __SCRULK_DEBUG__) {
+    return resetDayStateForDebug();
   }
   return undefined;
 });

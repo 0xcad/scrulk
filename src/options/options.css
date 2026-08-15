@@ -153,6 +153,12 @@ label.row small {
   border: 1px solid var(--border);
 }
 
+.debug-reset-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 .debug-state-field {
   display: grid;
   grid-template-columns: minmax(180px, 1fr) minmax(220px, 1.3fr);

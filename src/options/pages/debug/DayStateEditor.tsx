@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from "preact/hooks";
+import browser from "webextension-polyfill";
+import type { Message } from "../../../shared/messages";
 import {
   getDayState,
   onDayStateChange,
@@ -157,6 +159,9 @@ export function DayStateEditor() {
   const [state, setState] = useState<DayState | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [errors, setErrors] = useState<FieldErrors>({});
+  const [resetting, setResetting] = useState(false);
+  const [resetStatus, setResetStatus] = useState<string | null>(null);
+  const [resetError, setResetError] = useState<string | null>(null);
   const commitQueue = useRef<Promise<void>>(Promise.resolve());
 
   useEffect(() => {
@@ -200,6 +205,29 @@ export function DayStateEditor() {
     return commitQueue.current;
   };
 
+  const resetDay = () => {
+    const confirmed = window.confirm(
+      "Reset the current DayState? Today's usage and access-flow data will be discarded.",
+    );
+    if (!confirmed) return;
+
+    setResetting(true);
+    setResetStatus(null);
+    setResetError(null);
+    commitQueue.current = commitQueue.current.then(async () => {
+      try {
+        const message: Message = { type: "debug:resetDay" };
+        await browser.runtime.sendMessage(message);
+        setErrors({});
+        setResetStatus("DayState reset.");
+      } catch (error: unknown) {
+        setResetError(`Could not reset DayState: ${errorMessage(error)}`);
+      } finally {
+        setResetting(false);
+      }
+    });
+  };
+
   return (
     <section>
       <h2>Current DayState</h2>
@@ -207,6 +235,15 @@ export function DayStateEditor() {
         Values update live. Radios and the phase selector save immediately;
         other fields save on blur or Enter.
       </p>
+      <div class="debug-reset-row">
+        <button type="button" disabled={resetting || state === null} onClick={resetDay}>
+          {resetting ? "resetting…" : "reset day"}
+        </button>
+        <span aria-live="polite">
+          {resetStatus && <small>{resetStatus}</small>}
+          {resetError && <small class="error">{resetError}</small>}
+        </span>
+      </div>
       {loadError && <p class="error">Could not load DayState: {loadError}</p>}
       {!state && !loadError && <p>Loading…</p>}
       {state && (

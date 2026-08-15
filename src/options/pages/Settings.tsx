@@ -1,10 +1,8 @@
 import { useEffect, useState } from "preact/hooks";
-import browser from "webextension-polyfill";
 import { TrackedSitesList } from "../components/TrackedSitesList";
 import { NumberField } from "../components/NumberField";
 import { getSettings, onSettingsChange, setSettings } from "../../shared/storage";
-import type { CameraOverlayPermission } from "../../shared/types";
-import type { Message } from "../../shared/messages";
+import { CameraSettingsField } from "../../features/camera/CameraSettingsField";
 
 export function Settings() {
   return (
@@ -25,7 +23,7 @@ export function Settings() {
       <section>
         <h2 class="scrulk-section-title dashboard-section-title">Tab limit</h2>
         <p>
-          You can only open this many tabs of track websites at once.
+          You can only open this many tabs of tracked websites at once.
         </p>
         <NumberField
           field="tabLimit"
@@ -60,7 +58,7 @@ export function Settings() {
           camera stream. Firefox keeps a Scroll Unlock helper tab open while
           the camera is in use.
         </p>
-        <CameraOverlayField />
+        <CameraSettingsField />
       </section>
 
     </>
@@ -90,74 +88,6 @@ function PeekEnabledField() {
         }}
       />
     </label>
-  );
-}
-
-function CameraOverlayField() {
-  const [enabled, setEnabled] = useState<boolean | null>(null);
-  const [permission, setPermission] = useState<CameraOverlayPermission>("unknown");
-  const [busy, setBusy] = useState(false);
-
-  useEffect(() => {
-    void getSettings().then((s) => {
-      setEnabled(s.cameraOverlayEnabled);
-      setPermission(s.cameraOverlayPermission);
-    });
-    return onSettingsChange((s) => {
-      setEnabled(s.cameraOverlayEnabled);
-      setPermission(s.cameraOverlayPermission);
-    });
-  }, []);
-
-  const openCameraHub = async () => {
-    setBusy(true);
-    try {
-      const message: Message = { type: "camera:enable" };
-      await browser.runtime.sendMessage(message);
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  if (enabled === null) return <p>Loading…</p>;
-
-  const status = permission === "denied"
-    ? "Camera access is unavailable. Check Firefox’s camera permission for Scroll Unlock, then retry."
-    : permission === "granted"
-      ? "Camera access is ready. The preview appears only on tracked websites."
-      : "Camera access has not been requested yet.";
-
-  return (
-    <div class="camera-setting">
-      <label class="row">
-        <span>Show camera overlay</span>
-        <input
-          type="checkbox"
-          checked={enabled}
-          disabled={busy}
-          onChange={(e) => {
-            const next = (e.target as HTMLInputElement).checked;
-            setEnabled(next);
-            void (async () => {
-              await setSettings({
-                cameraOverlayEnabled: next,
-                ...(next ? {} : { cameraOverlayPermission: "unknown" }),
-              });
-              const message: Message = {
-                type: next ? "camera:enable" : "camera:disable",
-              };
-              await browser.runtime.sendMessage(message);
-            })();
-          }}
-        />
-      </label>
-      <small class={permission === "denied" ? "error" : undefined}>{status}</small>
-      {enabled && permission === "denied" && (
-        <button type="button" disabled={busy} onClick={() => void openCameraHub()}>
-          {busy ? "opening…" : "retry camera access"}
-        </button>
-      )}
-    </div>
   );
 }
 

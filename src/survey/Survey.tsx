@@ -1,9 +1,8 @@
 import { useEffect, useState } from "preact/hooks";
-import browser from "webextension-polyfill";
 import { dateKey, getDay } from "../shared/history";
-import type { Message } from "../shared/messages";
+import { sendCommand } from "../shared/messages";
 import { getDayState, getSettings, onDayStateChange, onSettingsChange } from "../shared/storage";
-import { DEFAULT_DAY_STATE, type DayState, effectiveAllSitesMs, effectiveMs } from "../shared/types";
+import { DEFAULT_DAY_STATE, type DayState, effectiveAllSitesMs, effectiveMs } from "../shared/dayState";
 import { currentWakeDayStart, formatDuration } from "../shared/wakeDay";
 
 function readDateFromUrl(): string | null {
@@ -77,15 +76,13 @@ export function Survey() {
     e.preventDefault();
     if (date === null || submitting) return;
     setSubmitting(true);
-    const msg: Message = { type: "survey:submit", date, notes };
-    await browser.runtime.sendMessage(msg).catch(() => null);
+    await sendCommand({ type: "survey:submit", date, notes }).catch(() => null);
     // Background closes the tab; this fallback covers manual page testing.
     window.close();
   };
 
   const onContinue = async () => {
-    const msg: Message = { type: "survey:continue" };
-    await browser.runtime.sendMessage(msg).catch(() => null);
+    await sendCommand({ type: "survey:continue" }).catch(() => null);
     window.close();
   };
 

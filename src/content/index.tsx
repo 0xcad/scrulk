@@ -1,8 +1,11 @@
 import { render } from "preact";
 import { findMatchingDomain } from "../shared/domain";
 import { getSettings, onSettingsChange } from "../shared/storage";
-import { installExtensionLinkLock } from "./ExtensionLinkLock";
-import { PEEK_CLOSE_MESSAGE, PEEK_FRAME_NAME } from "./PeekOverlay";
+import { installExtensionLinkLock } from "../features/peek/content/ExtensionLinkLock";
+import {
+  PEEK_CLOSE_MESSAGE,
+  PEEK_FRAME_NAME,
+} from "../features/peek/content/PeekOverlay";
 import { Root } from "./Root";
 
 const HOST_ID = "scrulk-root";

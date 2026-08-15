@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { DEFAULT_DAY_STATE } from "../shared/types";
+import { DEFAULT_DAY_STATE } from "../shared/dayState";
 
 const storage = vi.hoisted(() => ({
   getDayState: vi.fn(),
@@ -25,8 +25,8 @@ vi.mock("./gateway", () => ({
   isAccessPageUrl: vi.fn(() => false),
 }));
 
-import { handleChallengeComplete } from "./breaktime";
-import { rolloverDay } from "./tracker";
+import { handleChallengeComplete } from "../features/access-flow/background/breaktime";
+import { rolloverDay } from "../features/tracking/background/tracker";
 
 describe("breaktime challenge completion", () => {
   beforeEach(() => {

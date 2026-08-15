@@ -1,26 +1,15 @@
 import browser from "webextension-polyfill";
+import { DAY_STATE_KEY, type DayState } from "./dayState";
+import { SETTINGS_KEY, type Settings } from "./settings";
 import {
-  DAY_STATE_KEY,
-  DEFAULT_DAY_STATE,
-  DEFAULT_SETTINGS,
-  SETTINGS_KEY,
-  type DayState,
-  type Settings,
-} from "./types";
+  normalizeDayState,
+  normalizeSettings,
+  type StoredSettings,
+} from "./storageNormalization";
 
 export async function getSettings(): Promise<Settings> {
   const stored = await browser.storage.local.get(SETTINGS_KEY);
-  const raw = stored[SETTINGS_KEY] as
-    | (Partial<Settings> & { wakeUpHour?: number; breaktimeMinutes?: number })
-    | undefined;
-  const cleanRaw = { ...(raw ?? {}) };
-  delete cleanRaw.breaktimeMinutes;
-  const merged = { ...DEFAULT_SETTINGS, ...cleanRaw };
-  // Migration: pre-minute-precision storage used `wakeUpHour: number`.
-  if (raw?.wakeUpHour !== undefined && raw.wakeUpTime === undefined) {
-    merged.wakeUpTime = `${String(raw.wakeUpHour).padStart(2, "0")}:00`;
-  }
-  return merged;
+  return normalizeSettings(stored[SETTINGS_KEY] as StoredSettings | undefined);
 }
 
 export async function setSettings(patch: Partial<Settings>): Promise<Settings> {
@@ -33,7 +22,7 @@ export async function setSettings(patch: Partial<Settings>): Promise<Settings> {
 export async function getDayState(): Promise<DayState> {
   const stored = await browser.storage.local.get(DAY_STATE_KEY);
   const raw = stored[DAY_STATE_KEY] as Partial<DayState> | undefined;
-  return { ...DEFAULT_DAY_STATE, ...(raw ?? {}) };
+  return normalizeDayState(raw);
 }
 
 export async function setDayState(next: DayState): Promise<void> {
@@ -50,8 +39,8 @@ export function onSettingsChange(cb: (next: Settings) => void): Unsubscribe {
     if (area !== "local") return;
     const change = changes[SETTINGS_KEY];
     if (!change) return;
-    const raw = change.newValue as Partial<Settings> | undefined;
-    cb({ ...DEFAULT_SETTINGS, ...(raw ?? {}) });
+    const raw = change.newValue as StoredSettings | undefined;
+    cb(normalizeSettings(raw));
   };
   browser.storage.onChanged.addListener(listener);
   return () => browser.storage.onChanged.removeListener(listener);
@@ -66,7 +55,7 @@ export function onDayStateChange(cb: (next: DayState) => void): Unsubscribe {
     const change = changes[DAY_STATE_KEY];
     if (!change) return;
     const raw = change.newValue as Partial<DayState> | undefined;
-    cb({ ...DEFAULT_DAY_STATE, ...(raw ?? {}) });
+    cb(normalizeDayState(raw));
   };
   browser.storage.onChanged.addListener(listener);
   return () => browser.storage.onChanged.removeListener(listener);

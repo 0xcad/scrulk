@@ -1,7 +1,7 @@
 import { useEffect, useState } from "preact/hooks";
 import { normalizeDomain } from "../../shared/domain";
 import { getSettings, onSettingsChange, setSettings } from "../../shared/storage";
-import type { Settings } from "../../shared/types";
+import type { Settings } from "../../shared/settings";
 
 export function TrackedSitesList() {
   const [settings, setLocal] = useState<Settings | null>(null);

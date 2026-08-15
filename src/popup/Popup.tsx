@@ -6,11 +6,11 @@ import {
   getSettings,
   onDayStateChange,
   onSettingsChange,
-  setDayState,
   setSettings,
 } from "../shared/storage";
-import type { DayState, Settings } from "../shared/types";
-import { DEFAULT_DAY_STATE, effectiveAllSitesMs, effectiveMs, liveUsageStreakCount } from "../shared/types";
+import { sendCommand } from "../shared/messages";
+import { DEFAULT_DAY_STATE, effectiveAllSitesMs, effectiveMs, liveUsageStreakCount, type DayState } from "../shared/dayState";
+import type { Settings } from "../shared/settings";
 import { formatDuration } from "../shared/wakeDay";
 
 function formatWakeTime(t: string): string {
@@ -89,7 +89,7 @@ export function Popup() {
       // Acknowledge the warning the moment the user opens the popup; we
       // keep showing it for this popup-mount via local React state.
       if (s.tabLimitWarning) {
-        void setDayState({ ...s, tabLimitWarning: false });
+        void sendCommand({ type: "popup:acknowledgeTabLimitWarning" });
       }
     });
     const offSettings = onSettingsChange(setLocal);
@@ -149,7 +149,7 @@ export function Popup() {
   };
 
   const onDone = async () => {
-    await browser.runtime.sendMessage({ type: "popup:done" });
+    await sendCommand({ type: "popup:done" });
   };
 
   return (

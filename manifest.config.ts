@@ -1,4 +1,5 @@
 import { defineManifest } from "@crxjs/vite-plugin";
+import { EXTENSION_PAGES } from "./src/shared/extensionPages";
 
 export default defineManifest({
   manifest_version: 3,
@@ -56,8 +57,8 @@ export default defineManifest({
   web_accessible_resources: [
     {
       resources: [
-        "src/survey/index.html",
-        "src/gateway/index.html",
+        EXTENSION_PAGES.survey,
+        EXTENSION_PAGES.gateway,
       ],
       matches: ["<all_urls>"],
     },
@@ -72,8 +73,8 @@ export default defineManifest({
 
   background: {
     // Chrome uses service_worker. Firefox MV3 only honors background.scripts;
-    // the `scripts` key is injected post-build by the firefoxBackgroundScripts
-    // Vite plugin (crxjs strips unknown keys here).
+    // the `scripts` key is injected by the post-build manifest fixup because
+    // crxjs strips unknown keys here.
     service_worker: "src/background/index.ts",
     type: "module",
   },

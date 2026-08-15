@@ -9,15 +9,15 @@ and a sleep-time countdown.
 
 ```sh
 npm install
-npm run dev    # Vite + crxjs HMR
-npm run build  # → dist/
-npm test       # vitest
+npm run dev      # Vite + crxjs HMR
+npm run build    # Chrome build → dist/
+npm run check    # lint, tests, Chrome build, Firefox debug build
 ```
 
 ## Load the extension
 
 **Firefox** (115+):
-1. `npm run build`
+1. `npm run build:firefox`
 2. Open `about:debugging#/runtime/this-firefox`
 3. *Load Temporary Add-on…* → select `dist/manifest.json`
 

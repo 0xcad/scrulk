@@ -4,6 +4,7 @@ import { crx } from "@crxjs/vite-plugin";
 import { readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import manifest from "./manifest.config";
+import { EXTENSION_PAGES } from "./src/shared/extensionPages";
 
 /**
  * Post-build manifest fixups:
@@ -64,9 +65,9 @@ export default defineConfig({
     // it as an extra HTML input so Vite/crxjs bundles its scripts and CSS.
     rollupOptions: {
       input: {
-        survey: resolve(__dirname, "src/survey/index.html"),
-        gateway: resolve(__dirname, "src/gateway/index.html"),
-        camera: resolve(__dirname, "src/camera/index.html"),
+        survey: resolve(__dirname, EXTENSION_PAGES.survey),
+        gateway: resolve(__dirname, EXTENSION_PAGES.gateway),
+        camera: resolve(__dirname, EXTENSION_PAGES.camera),
       },
     },
   },

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "preact/hooks";
 import { getSettings, onSettingsChange, setSettings } from "../../shared/storage";
-import type { Settings } from "../../shared/types";
+import type { Settings } from "../../shared/settings";
 
 type NumericKeys = {
   [K in keyof Settings]: Settings[K] extends number ? K : never;

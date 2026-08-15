@@ -1,156 +1,24 @@
 import { useEffect, useRef, useState } from "preact/hooks";
-import browser from "webextension-polyfill";
-import type { Message } from "../../../shared/messages";
+import {
+  sendCommand,
+  sendDayStateFieldCommand,
+} from "../../../shared/messages";
 import {
   getDayState,
   onDayStateChange,
-  setDayState,
 } from "../../../shared/storage";
-import type { AccessFlowPhase, DayState } from "../../../shared/types";
+import {
+  DAY_STATE_FIELDS,
+  type DayState,
+  type DayStateField,
+  type DayStateFieldDefinition,
+} from "../../../shared/dayState";
 import {
   ACCESS_FLOW_PHASES,
   parseExtensionTabs,
   parseInteger,
   parseNullableString,
 } from "./validation";
-
-type DayStateField = keyof DayState;
-
-/** Keep editor controls exhaustive and compatible with their DayState values. */
-type FieldConfigFor<K extends DayStateField> = { hint: string } & (
-  K extends "accessFlowPhase"
-    ? DayState[K] extends AccessFlowPhase
-      ? { kind: "phase" }
-      : never
-    : K extends "breaktimeExtensionTabs"
-      ? DayState[K] extends Record<string, string>
-        ? { kind: "extensionTabs" }
-        : never
-      : DayState[K] extends boolean
-        ? { kind: "boolean" }
-        : DayState[K] extends number
-          ? { kind: "number"; nullable: false }
-          : DayState[K] extends number | null
-            ? { kind: "number"; nullable: true }
-            : DayState[K] extends string | null
-              ? { kind: "string"; nullable: true }
-              : never
-);
-
-type FieldConfigs = {
-  [K in DayStateField]: FieldConfigFor<K>;
-};
-
-type FieldConfig = FieldConfigs[DayStateField];
-
-const FIELD_CONFIGS = {
-  wakeDayStart: {
-    kind: "number",
-    nullable: false,
-    hint: "Epoch milliseconds for the current wake-day boundary.",
-  },
-  totalMs: {
-    kind: "number",
-    nullable: false,
-    hint: "Closed tracked-usage segments, in milliseconds.",
-  },
-  activeSince: {
-    kind: "number",
-    nullable: true,
-    hint: "Epoch milliseconds for the open tracked segment, or blank for null.",
-  },
-  allSitesMs: {
-    kind: "number",
-    nullable: false,
-    hint: "Closed all-sites usage segments, in milliseconds.",
-  },
-  allSitesActiveSince: {
-    kind: "number",
-    nullable: true,
-    hint: "Epoch milliseconds for the open all-sites segment, or blank for null.",
-  },
-  activityCheckpointAt: {
-    kind: "number",
-    nullable: true,
-    hint: "Latest activity checkpoint in epoch milliseconds, or blank for null.",
-  },
-  accessFlowPhase: {
-    kind: "phase",
-    hint: "Global tracked-site access phase.",
-  },
-  waitingMs: {
-    kind: "number",
-    nullable: false,
-    hint: "Closed focused-wait segments, in milliseconds.",
-  },
-  waitingActiveSince: {
-    kind: "number",
-    nullable: true,
-    hint: "Epoch milliseconds for the open waiting segment, or blank for null.",
-  },
-  waitingCheckpointAt: {
-    kind: "number",
-    nullable: true,
-    hint: "Latest waiting checkpoint in epoch milliseconds, or blank for null.",
-  },
-  waitingPageFocused: {
-    kind: "boolean",
-    hint: "Whether the waiting extension page last reported focus.",
-  },
-  allowanceMs: {
-    kind: "number",
-    nullable: true,
-    hint: "Chosen tracked-usage allowance in milliseconds, or blank for null.",
-  },
-  allowanceStartTotalMs: {
-    kind: "number",
-    nullable: true,
-    hint: "Tracked-total allowance baseline, or blank for null.",
-  },
-  breakOpenedAt: {
-    kind: "number",
-    nullable: true,
-    hint: "Break prompt start in epoch milliseconds, or blank for null.",
-  },
-  breaktimeExtensionExpiresAt: {
-    kind: "number",
-    nullable: true,
-    hint: "Extension deadline in epoch milliseconds, or blank for null.",
-  },
-  breaktimeExtensionUsed: {
-    kind: "boolean",
-    hint: "Whether the current break cycle used its extension.",
-  },
-  breaktimeExtensionTabs: {
-    kind: "extensionTabs",
-    hint: "JSON object mapping eligible tab IDs to their original URLs.",
-  },
-  tabLimitWarning: {
-    kind: "boolean",
-    hint: "Whether a tab-limit rejection is waiting for the popup.",
-  },
-  surveyFilledFor: {
-    kind: "string",
-    nullable: true,
-    hint: "Submitted wake-day key, or blank for null.",
-  },
-  breaktimeShownToday: {
-    kind: "boolean",
-    hint: "Whether a break alert has appeared this wake-day.",
-  },
-  breaktimeChallengeCompletedToday: {
-    kind: "boolean",
-    hint: "Whether a breaktime challenge has been completed this wake-day.",
-  },
-  popupDoneToday: {
-    kind: "boolean",
-    hint: "Whether the popup-originated lock was used this wake-day.",
-  },
-  surveyContinueAllowed: {
-    kind: "boolean",
-    hint: "Whether the popup-originated lock was overridden.",
-  },
-} satisfies FieldConfigs;
 
 type FieldErrors = Partial<Record<DayStateField, string>>;
 
@@ -192,7 +60,7 @@ export function DayStateEditor() {
       try {
         const latest = await getDayState();
         const next = { ...latest, [field]: value };
-        await setDayState(next);
+        await sendDayStateFieldCommand(field, value);
         setState(next);
       } catch (error: unknown) {
         setErrors((current) => ({
@@ -215,8 +83,7 @@ export function DayStateEditor() {
     setResetError(null);
     commitQueue.current = commitQueue.current.then(async () => {
       try {
-        const message: Message = { type: "debug:resetDay" };
-        await browser.runtime.sendMessage(message);
+        await sendCommand({ type: "debug:resetDay" });
         setErrors({});
         setResetStatus("DayState reset.");
       } catch (error: unknown) {
@@ -247,7 +114,10 @@ export function DayStateEditor() {
       {!state && !loadError && <p>Loading…</p>}
       {state && (
         <div class="debug-state-editor">
-          {(Object.entries(FIELD_CONFIGS) as Array<[DayStateField, FieldConfig]>).map(
+          {(Object.entries(DAY_STATE_FIELDS) as Array<[
+            DayStateField,
+            DayStateFieldDefinition,
+          ]>).map(
             ([field, config]) => (
               <FieldEditor
                 key={field}
@@ -268,7 +138,7 @@ export function DayStateEditor() {
 
 interface FieldEditorProps {
   field: DayStateField;
-  config: FieldConfig;
+  config: DayStateFieldDefinition;
   value: DayState[DayStateField];
   error: string | undefined;
   onCommit: <K extends DayStateField>(field: K, value: DayState[K]) => Promise<void>;

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "preact/hooks";
 import themeStyles from "../shared/theme.css?inline";
-import { shouldShowCameraOverlay } from "../shared/camera";
+import { shouldShowCameraOverlay } from "../features/camera/camera";
 import {
   getDayState,
   getSettings,
@@ -9,39 +9,25 @@ import {
 } from "../shared/storage";
 import {
   DEFAULT_DAY_STATE,
-  DEFAULT_SETTINGS,
   type DayState,
-  type Settings,
   remainingAllowanceMs,
-} from "../shared/types";
-import { BreaktimeOverlay } from "./BreaktimeOverlay";
-import { CameraOverlay } from "./CameraOverlay";
-import { DimOverlay } from "./DimOverlay";
-import { ExtensionFrame } from "./ExtensionFrame";
-import { ExtensionLinkLock } from "./ExtensionLinkLock";
-import { PeekOverlay } from "./PeekOverlay";
+} from "../shared/dayState";
+import { DEFAULT_SETTINGS, type Settings } from "../shared/settings";
+import { BreaktimeOverlay } from "../features/access-flow/content/BreaktimeOverlay";
+import { CameraOverlay } from "../features/camera/CameraOverlay";
+import { DimOverlay } from "../features/access-flow/content/DimOverlay";
+import { ExtensionFrame } from "../features/access-flow/content/ExtensionFrame";
+import { ExtensionLinkLock } from "../features/peek/content/ExtensionLinkLock";
+import { PeekOverlay } from "../features/peek/content/PeekOverlay";
 import { SleepClock } from "./SleepClock";
-import { UsageClock } from "./UsageClock";
-import { RemainingTimeOverlay } from "./RemainingTimeOverlay";
-import { AccessInProgressOverlay } from "./AccessInProgressOverlay";
+import { UsageClock } from "../features/tracking/content/UsageClock";
+import { RemainingTimeOverlay } from "../features/access-flow/content/RemainingTimeOverlay";
+import { AccessInProgressOverlay } from "../features/access-flow/content/AccessInProgressOverlay";
 
 interface Props {
   matchedDomain: string | null;
 }
 
-/**
- * Top-level renderer inside the Shadow DOM root. The shadow root is mounted
- * on every page (universal content script); this component decides which
- * overlays to show:
- *   - `UsageClock`: only on tracked sites.
- *   - `SleepClock`: every site, but only inside the 10h-before-wakeup window.
- *   - `PeekOverlay`: only on untracked sites when Peek is enabled.
- *   - `ExtensionFrame`: tracked sites during the two-minute extension or
- *     after the popup lock is overridden.
- *   - `BreaktimeOverlay`: all tracked sites while the global allowance break
- *     is open.
- *   - `RemainingTimeOverlay`: pauses a resumed allowance until acknowledged.
- */
 export function Root({ matchedDomain }: Props) {
   const [state, setState] = useState<DayState>(DEFAULT_DAY_STATE);
   const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS);

@@ -279,6 +279,8 @@ Also: "Focus mode".
     * can stash a tab in the extension popup
 
 next:
+* on dynamic buttons: modify this button so that it's:
+    * max(90% of average site usage - current day's tracked time, 2 mins)
 * "widgets" / editable waiting screen
 * confirm: I'm done with tracked sites works
 

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "preact/hooks";
 import { getSettings, onSettingsChange, setSettings } from "../shared/storage";
-import type { ClockPosition } from "../shared/types";
+import type { ClockPosition } from "../shared/uiTypes";
 import { formatDuration, nextWakeUpAt } from "../shared/wakeDay";
 
 const VISIBILITY_WINDOW_MS = 10 * 60 * 60 * 1000;

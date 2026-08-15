@@ -6,8 +6,8 @@ import {
   onDayStateChange,
   onSettingsChange,
 } from "../../shared/storage";
-import { DEFAULT_DAY_STATE, effectiveAllSitesMs, effectiveMs, liveUsageStreakCount } from "../../shared/types";
-import type { DayState, Settings } from "../../shared/types";
+import { DEFAULT_DAY_STATE, effectiveAllSitesMs, effectiveMs, liveUsageStreakCount, type DayState } from "../../shared/dayState";
+import type { Settings } from "../../shared/settings";
 import { formatDuration, formatUptime } from "../../shared/wakeDay";
 import { CalendarPanel } from "../components/CalendarPanel";
 export function Home() {

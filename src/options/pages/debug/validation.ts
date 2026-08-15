@@ -1,15 +1,4 @@
-import type { AccessFlowPhase } from "../../../shared/types";
-
-export const ACCESS_FLOW_PHASES = [
-  "waiting",
-  "waitingReady",
-  "picking",
-  "browsing",
-  "resumePrompt",
-  "break",
-  "challenge",
-  "popupLocked",
-] as const satisfies readonly AccessFlowPhase[];
+export { ACCESS_FLOW_PHASES } from "../../../shared/dayState";
 
 export type ParseResult<T> =
   | { ok: true; value: T }

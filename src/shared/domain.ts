@@ -1,7 +1,7 @@
 /**
  * Hostname utilities. All tracked-site matching in the extension MUST go
  * through `isTracked` so behavior stays consistent across background, popup,
- * and (future) content scripts.
+ * and content scripts.
  */
 
 export function hostnameOf(url: string | undefined): string | null {

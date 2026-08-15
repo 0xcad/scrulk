@@ -37,6 +37,7 @@ import { effectiveAllSitesMs, effectiveMs } from "../shared/types";
 import { currentWakeDayStart } from "../shared/wakeDay";
 import {
   ensureAccessPage,
+  focusChallengePage,
   handleBeforeNavigate,
   syncTrackedTabPresence,
 } from "./gateway";
@@ -181,6 +182,9 @@ browser.runtime.onMessage.addListener((message: unknown, sender: browser.Runtime
   }
   if (msg.type === "access:startChallenge") {
     return handleBreaktimeContinue(sender.tab).then(() => recompute());
+  }
+  if (msg.type === "access:focusPage") {
+    return focusChallengePage(sender.tab);
   }
   if (msg.type === "access:challengeComplete") {
     return handleChallengeComplete().then(() => recompute());

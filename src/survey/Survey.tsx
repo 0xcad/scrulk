@@ -141,7 +141,7 @@ export function Survey() {
       </form>
 
       {isToday && dayState.popupDoneToday && !dayState.surveyContinueAllowed && (
-        <button type="button" class="continue-link" onClick={onContinue}>
+        <button type="button" class="secondary continue-link" onClick={onContinue}>
           Continue to tracked sites
         </button>
       )}

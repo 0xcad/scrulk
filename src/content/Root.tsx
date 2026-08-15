@@ -91,7 +91,7 @@ export function Root({ matchedDomain }: Props) {
       )}
       {matchedDomain !== null &&
         (state.accessFlowPhase === "challenge" || state.accessFlowPhase === "picking") && (
-          <AccessInProgressOverlay />
+          <AccessInProgressOverlay challengeActive={state.accessFlowPhase === "challenge"} />
         )}
     </>
   );

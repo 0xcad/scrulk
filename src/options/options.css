@@ -1,4 +1,5 @@
 @import "../shared/theme.css";
+@import "../shared/buttons.css";
 
 :root {
   color-scheme: light dark;
@@ -40,10 +41,7 @@ nav {
 }
 
 nav button {
-  font: inherit;
   background: transparent;
-  color: inherit;
-  cursor: pointer;
   border-color: currentColor;
 }
 
@@ -94,18 +92,8 @@ input[type="text"] {
   color: inherit;
 }
 
-button {
-  font: inherit;
-  padding: 4px 14px;
-  border: 1px solid currentColor;
-  background: transparent;
-  color: inherit;
-  cursor: pointer;
-  text-transform: lowercase;
-}
-
-button:hover {
-  background: color-mix(in srgb, currentColor 8%, transparent);
+form button {
+  padding-block: 4px;
 }
 
 ul.tracked-sites {

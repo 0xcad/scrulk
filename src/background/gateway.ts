@@ -105,6 +105,16 @@ export async function ensureAccessPage(
   });
 }
 
+/** Focus the extension-owned hold challenge without allowing stale content
+ * pages to reopen the access flow after it has advanced. */
+export async function focusChallengePage(
+  sourceTab?: browser.Tabs.Tab,
+): Promise<void> {
+  const state = await getDayState();
+  if (state.accessFlowPhase !== "challenge") return;
+  await ensureAccessPage(sourceTab);
+}
+
 /** Move an interrupted allowance to the acknowledgement prompt once all
  * tracked tabs have gone away. A never-used allowance starts normally. */
 export async function syncTrackedTabPresence(): Promise<void> {

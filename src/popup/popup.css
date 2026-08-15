@@ -1,4 +1,5 @@
 @import "../shared/theme.css";
+@import "../shared/buttons.css";
 
 :root {
   color-scheme: light dark;
@@ -69,19 +70,7 @@ p {
 }
 
 button {
-  font: inherit;
-  cursor: pointer;
   padding: 6px 10px;
-  border: 1px solid currentColor;
-  background: transparent;
-  color: inherit;
-  transition: 0.2s;
-}
-
-button:hover {
-  background: color-mix(in srgb, currentColor 8%, transparent);
-  background: CanvasText;
-  color: Canvas;
 }
 
 nav {

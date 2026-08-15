@@ -6,7 +6,7 @@ import {
   onDayStateChange,
   setDayState,
 } from "../../../shared/storage";
-import type { DayState } from "../../../shared/types";
+import type { AccessFlowPhase, DayState } from "../../../shared/types";
 import {
   ACCESS_FLOW_PHASES,
   parseExtensionTabs,
@@ -14,150 +14,144 @@ import {
   parseNullableString,
 } from "./validation";
 
-type FieldConfig = {
-  label: string;
-  hint: string;
-} & (
-  | { kind: "boolean" }
-  | { kind: "number"; nullable: boolean }
-  | { kind: "string"; nullable: true }
-  | { kind: "phase" }
-  | { kind: "extensionTabs" }
+type DayStateField = keyof DayState;
+
+/** Keep editor controls exhaustive and compatible with their DayState values. */
+type FieldConfigFor<K extends DayStateField> = { hint: string } & (
+  K extends "accessFlowPhase"
+    ? DayState[K] extends AccessFlowPhase
+      ? { kind: "phase" }
+      : never
+    : K extends "breaktimeExtensionTabs"
+      ? DayState[K] extends Record<string, string>
+        ? { kind: "extensionTabs" }
+        : never
+      : DayState[K] extends boolean
+        ? { kind: "boolean" }
+        : DayState[K] extends number
+          ? { kind: "number"; nullable: false }
+          : DayState[K] extends number | null
+            ? { kind: "number"; nullable: true }
+            : DayState[K] extends string | null
+              ? { kind: "string"; nullable: true }
+              : never
 );
+
+type FieldConfigs = {
+  [K in DayStateField]: FieldConfigFor<K>;
+};
+
+type FieldConfig = FieldConfigs[DayStateField];
 
 const FIELD_CONFIGS = {
   wakeDayStart: {
     kind: "number",
     nullable: false,
-    label: "wakeDayStart",
     hint: "Epoch milliseconds for the current wake-day boundary.",
   },
   totalMs: {
     kind: "number",
     nullable: false,
-    label: "totalMs",
     hint: "Closed tracked-usage segments, in milliseconds.",
   },
   activeSince: {
     kind: "number",
     nullable: true,
-    label: "activeSince",
     hint: "Epoch milliseconds for the open tracked segment, or blank for null.",
   },
   allSitesMs: {
     kind: "number",
     nullable: false,
-    label: "allSitesMs",
     hint: "Closed all-sites usage segments, in milliseconds.",
   },
   allSitesActiveSince: {
     kind: "number",
     nullable: true,
-    label: "allSitesActiveSince",
     hint: "Epoch milliseconds for the open all-sites segment, or blank for null.",
   },
   activityCheckpointAt: {
     kind: "number",
     nullable: true,
-    label: "activityCheckpointAt",
     hint: "Latest activity checkpoint in epoch milliseconds, or blank for null.",
   },
   accessFlowPhase: {
     kind: "phase",
-    label: "accessFlowPhase",
     hint: "Global tracked-site access phase.",
   },
   waitingMs: {
     kind: "number",
     nullable: false,
-    label: "waitingMs",
     hint: "Closed focused-wait segments, in milliseconds.",
   },
   waitingActiveSince: {
     kind: "number",
     nullable: true,
-    label: "waitingActiveSince",
     hint: "Epoch milliseconds for the open waiting segment, or blank for null.",
   },
   waitingCheckpointAt: {
     kind: "number",
     nullable: true,
-    label: "waitingCheckpointAt",
     hint: "Latest waiting checkpoint in epoch milliseconds, or blank for null.",
   },
   waitingPageFocused: {
     kind: "boolean",
-    label: "waitingPageFocused",
     hint: "Whether the waiting extension page last reported focus.",
   },
   allowanceMs: {
     kind: "number",
     nullable: true,
-    label: "allowanceMs",
     hint: "Chosen tracked-usage allowance in milliseconds, or blank for null.",
   },
   allowanceStartTotalMs: {
     kind: "number",
     nullable: true,
-    label: "allowanceStartTotalMs",
     hint: "Tracked-total allowance baseline, or blank for null.",
   },
   breakOpenedAt: {
     kind: "number",
     nullable: true,
-    label: "breakOpenedAt",
     hint: "Break prompt start in epoch milliseconds, or blank for null.",
   },
   breaktimeExtensionExpiresAt: {
     kind: "number",
     nullable: true,
-    label: "breaktimeExtensionExpiresAt",
     hint: "Extension deadline in epoch milliseconds, or blank for null.",
   },
   breaktimeExtensionUsed: {
     kind: "boolean",
-    label: "breaktimeExtensionUsed",
     hint: "Whether the current break cycle used its extension.",
   },
   breaktimeExtensionTabs: {
     kind: "extensionTabs",
-    label: "breaktimeExtensionTabs",
     hint: "JSON object mapping eligible tab IDs to their original URLs.",
   },
   tabLimitWarning: {
     kind: "boolean",
-    label: "tabLimitWarning",
     hint: "Whether a tab-limit rejection is waiting for the popup.",
   },
   surveyFilledFor: {
     kind: "string",
     nullable: true,
-    label: "surveyFilledFor",
     hint: "Submitted wake-day key, or blank for null.",
   },
   breaktimeShownToday: {
     kind: "boolean",
-    label: "breaktimeShownToday",
     hint: "Whether a break alert has appeared this wake-day.",
   },
   breaktimeChallengeCompletedToday: {
     kind: "boolean",
-    label: "breaktimeChallengeCompletedToday",
     hint: "Whether a breaktime challenge has been completed this wake-day.",
   },
   popupDoneToday: {
     kind: "boolean",
-    label: "popupDoneToday",
     hint: "Whether the popup-originated lock was used this wake-day.",
   },
   surveyContinueAllowed: {
     kind: "boolean",
-    label: "surveyContinueAllowed",
     hint: "Whether the popup-originated lock was overridden.",
   },
-} satisfies Record<keyof DayState, FieldConfig>;
+} satisfies FieldConfigs;
 
-type DayStateField = keyof DayState;
 type FieldErrors = Partial<Record<DayStateField, string>>;
 
 export function DayStateEditor() {
@@ -349,7 +343,7 @@ function FieldEditor({
   return (
     <div class="debug-state-field">
       <label class="debug-state-label" for={`day-state-${field}`}>
-        <code>{config.label}</code>
+        <code>{field}</code>
       </label>
       <div class="debug-state-control">{control}</div>
       <small>{config.hint}</small>

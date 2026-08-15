@@ -21,7 +21,10 @@ export function completedTrackedAverageMs(
 }
 
 /** Build the sorted picker choices, merging a dynamic/fixed duplicate. */
-export function allowanceOptions(averageMs: number | null): AllowanceOption[] {
+export function allowanceOptions(
+  averageMs: number | null,
+  currentTrackedMs: number,
+): AllowanceOption[] {
   const options = new Map<number, AllowanceOption>(
     FIXED_ALLOWANCE_MINUTES.map((minutes) => [
       minutes,
@@ -33,7 +36,7 @@ export function allowanceOptions(averageMs: number | null): AllowanceOption[] {
     const averageMinutes = averageMs / 60_000;
     const dynamicMinutes = Math.max(
       MIN_DYNAMIC_MINUTES,
-      Math.round(averageMinutes * 0.9),
+      Math.round((averageMs * 0.9 - currentTrackedMs) / 60_000),
     );
     options.set(dynamicMinutes, {
       minutes: dynamicMinutes,
@@ -47,6 +50,9 @@ export function allowanceOptions(averageMs: number | null): AllowanceOption[] {
 export function isAllowanceMinutesAllowed(
   minutes: number,
   averageMs: number | null,
+  currentTrackedMs: number,
 ): boolean {
-  return allowanceOptions(averageMs).some((option) => option.minutes === minutes);
+  return allowanceOptions(averageMs, currentTrackedMs).some(
+    (option) => option.minutes === minutes,
+  );
 }

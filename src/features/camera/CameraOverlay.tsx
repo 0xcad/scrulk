@@ -10,7 +10,6 @@ import {
   CAMERA_ASPECT_RATIO,
   CAMERA_MIN_SIZE,
   cameraSizeForWidth,
-  resizedCameraSize,
 } from "./camera";
 import { getSettings, setSettings } from "../../shared/storage";
 import type {
@@ -23,6 +22,7 @@ const DEFAULT_POS: ClockPosition = { x: 16, y: 64 };
 const WATCHDOG_INTERVAL_MS = 2_000;
 const STALLED_AFTER_MS = 6_000;
 const CAMERA_BORDER_PX = 4;
+const CAMERA_SIZE_SAVE_DELAY_MS = 250;
 
 type InboundVideoStats = {
   type?: string;
@@ -44,8 +44,11 @@ interface Props {
 export function CameraOverlay({ permission }: Props) {
   const [pos, setPos] = useState<ClockPosition>(DEFAULT_POS);
   const [size, setSize] = useState<CameraOverlaySize>(CAMERA_MIN_SIZE);
+  const [sizeLoaded, setSizeLoaded] = useState(false);
   const [ready, setReady] = useState(false);
+  const cameraRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const persistedSizeRef = useRef<CameraOverlaySize>(CAMERA_MIN_SIZE);
   const dragRef = useRef<{
     dx: number;
     dy: number;
@@ -55,25 +58,57 @@ export function CameraOverlay({ permission }: Props) {
     startY: number;
     moved: boolean;
   } | null>(null);
-  const resizeRef = useRef<{
-    startX: number;
-    startY: number;
-    startWidth: number;
-    size: CameraOverlaySize;
-  } | null>(null);
-
   useEffect(() => {
     void getSettings().then((settings) => {
       const savedPos = settings.cameraOverlayPosition ?? DEFAULT_POS;
-      setPos(savedPos);
-      setSize(
-        cameraSizeForWidth(
-          settings.cameraOverlaySize?.width ?? CAMERA_MIN_SIZE.width,
-          maxCameraWidth(savedPos),
-        ),
+      const savedSize = cameraSizeForWidth(
+        settings.cameraOverlaySize?.width ?? CAMERA_MIN_SIZE.width,
+        maxCameraWidth(savedPos),
       );
+      setPos(savedPos);
+      setSize(savedSize);
+      persistedSizeRef.current = savedSize;
+      setSizeLoaded(true);
     });
   }, []);
+
+  useEffect(() => {
+    const camera = cameraRef.current;
+    if (!camera || !sizeLoaded) return;
+
+    let pendingSize: CameraOverlaySize | null = null;
+    let saveTimer: ReturnType<typeof setTimeout> | null = null;
+    const savePendingSize = () => {
+      if (pendingSize === null) return;
+      const next = pendingSize;
+      pendingSize = null;
+      persistedSizeRef.current = next;
+      void setSettings({ cameraOverlaySize: next });
+    };
+    const observer = new ResizeObserver(([entry]) => {
+      if (!entry) return;
+      const next = cameraSizeForWidth(entry.contentRect.width);
+      if (cameraSizesEqual(next, persistedSizeRef.current)) {
+        pendingSize = null;
+        if (saveTimer !== null) clearTimeout(saveTimer);
+        saveTimer = null;
+        return;
+      }
+      pendingSize = next;
+      if (saveTimer !== null) clearTimeout(saveTimer);
+      saveTimer = setTimeout(() => {
+        saveTimer = null;
+        savePendingSize();
+      }, CAMERA_SIZE_SAVE_DELAY_MS);
+    });
+    observer.observe(camera);
+
+    return () => {
+      observer.disconnect();
+      if (saveTimer !== null) clearTimeout(saveTimer);
+      savePendingSize();
+    };
+  }, [sizeLoaded]);
 
   const openCameraHub = () => {
     void sendCommand({ type: "camera:enable" }).catch(() => null);
@@ -308,11 +343,12 @@ export function CameraOverlay({ permission }: Props) {
   const onPointerDown = (event: PointerEvent) => {
     const target = event.currentTarget as HTMLElement;
     target.setPointerCapture(event.pointerId);
+    const camera = cameraRef.current;
     dragRef.current = {
       dx: event.clientX - pos.x,
       dy: event.clientY - pos.y,
-      w: target.offsetWidth,
-      h: target.offsetHeight,
+      w: camera?.offsetWidth ?? target.offsetWidth,
+      h: camera?.offsetHeight ?? target.offsetHeight,
       startX: event.clientX,
       startY: event.clientY,
       moved: false,
@@ -340,61 +376,19 @@ export function CameraOverlay({ permission }: Props) {
     if (!drag.moved && !ready) openCameraHub();
   };
 
-  const onResizePointerDown = (event: PointerEvent) => {
-    event.stopPropagation();
-    const target = event.currentTarget as HTMLElement;
-    target.setPointerCapture(event.pointerId);
-    resizeRef.current = {
-      startX: event.clientX,
-      startY: event.clientY,
-      startWidth: size.width,
-      size,
-    };
-  };
-
-  const onResizePointerMove = (event: PointerEvent) => {
-    event.stopPropagation();
-    const resize = resizeRef.current;
-    if (!resize) return;
-    const next = resizedCameraSize(
-      resize.startWidth,
-      event.clientX - resize.startX,
-      event.clientY - resize.startY,
-      maxCameraWidth(pos),
-    );
-    resize.size = next;
-    setSize(next);
-  };
-
-  const onResizePointerUp = (event: PointerEvent) => {
-    event.stopPropagation();
-    const resize = resizeRef.current;
-    if (!resize) return;
-    resizeRef.current = null;
-    void setSettings({ cameraOverlaySize: resize.size });
-  };
-
-  const resizeByKeyboard = (delta: number) => {
-    const next = cameraSizeForWidth(
-      size.width + delta,
-      maxCameraWidth(pos),
-    );
-    setSize(next);
-    void setSettings({ cameraOverlaySize: next });
-  };
-
   const unavailable = permission === "denied";
 
   return (
     <>
       <style>{cameraStyles}</style>
       <div
+        ref={cameraRef}
         class={`camera${ready ? " ready" : ""}`}
         style={{
           left: `${pos.x}px`,
           top: `${pos.y}px`,
           width: `${size.width}px`,
-          height: `${size.height}px`,
+          maxWidth: `${maxCameraWidth(pos)}px`,
         }}
         title={
           unavailable
@@ -403,55 +397,33 @@ export function CameraOverlay({ permission }: Props) {
               ? "Scroll Unlock camera preview (drag to move)"
               : "Camera connecting (click to reopen helper tab)"
         }
-        onPointerDown={onPointerDown}
-        onPointerMove={onPointerMove}
-        onPointerUp={onPointerUp}
-        onPointerCancel={() => { dragRef.current = null; }}
       >
-        <video
-          ref={videoRef}
-          autoplay
-          muted
-          playsInline
-          aria-label="Your camera preview"
-          onPlaying={() => setReady(true)}
-          onWaiting={() => setReady(false)}
-          onStalled={() => setReady(false)}
-        />
-        {!ready && (
-          <span class={unavailable ? "connecting error" : "connecting"}>
-            {unavailable
-              ? "camera access unavailable — click to retry"
-              : "connecting…"}
-          </span>
-        )}
-        <span class="indicator" aria-label="Camera active" />
-        <button
-          type="button"
-          class="resize-handle"
-          aria-label="Resize camera preview"
-          title="Resize camera preview"
-          onPointerDown={onResizePointerDown}
-          onPointerMove={onResizePointerMove}
-          onPointerUp={onResizePointerUp}
-          onPointerCancel={(event) => {
-            event.stopPropagation();
-            resizeRef.current = null;
-          }}
-          onKeyDown={(event) => {
-            event.stopPropagation();
-            if (event.key === "ArrowRight" || event.key === "ArrowDown") {
-              event.preventDefault();
-              resizeByKeyboard(16);
-            } else if (
-              event.key === "ArrowLeft" ||
-              event.key === "ArrowUp"
-            ) {
-              event.preventDefault();
-              resizeByKeyboard(-16);
-            }
-          }}
-        />
+        <div
+          class="camera-content"
+          onPointerDown={onPointerDown}
+          onPointerMove={onPointerMove}
+          onPointerUp={onPointerUp}
+          onPointerCancel={() => { dragRef.current = null; }}
+        >
+          <video
+            ref={videoRef}
+            autoplay
+            muted
+            playsInline
+            aria-label="Your camera preview"
+            onPlaying={() => setReady(true)}
+            onWaiting={() => setReady(false)}
+            onStalled={() => setReady(false)}
+          />
+          {!ready && (
+            <span class={unavailable ? "connecting error" : "connecting"}>
+              {unavailable
+                ? "camera access unavailable — click to retry"
+                : "connecting…"}
+            </span>
+          )}
+          <span class="indicator" aria-label="Camera active" />
+        </div>
       </div>
     </>
   );
@@ -459,6 +431,13 @@ export function CameraOverlay({ permission }: Props) {
 
 function clamp(n: number, lo: number, hi: number): number {
   return Math.max(lo, Math.min(hi, n));
+}
+
+function cameraSizesEqual(
+  left: CameraOverlaySize,
+  right: CameraOverlaySize,
+): boolean {
+  return left.width === right.width && left.height === right.height;
 }
 
 function maxCameraWidth(pos: ClockPosition): number {

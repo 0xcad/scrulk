@@ -34,20 +34,6 @@ export function cameraSizeForWidth(
   return { width, height: width / CAMERA_ASPECT_RATIO };
 }
 
-export function resizedCameraSize(
-  startWidth: number,
-  deltaX: number,
-  deltaY: number,
-  maxWidth: number,
-): CameraOverlaySize {
-  const verticalWidthDelta = deltaY * CAMERA_ASPECT_RATIO;
-  const widthDelta =
-    Math.abs(deltaX) >= Math.abs(verticalWidthDelta)
-      ? deltaX
-      : verticalWidthDelta;
-  return cameraSizeForWidth(startWidth + widthDelta, maxWidth);
-}
-
 export function shouldShowCameraOverlay(
   matchedDomain: string | null,
   settings: CameraOverlaySettings,

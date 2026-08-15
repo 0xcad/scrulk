@@ -15,6 +15,7 @@ import {
 } from "../../../shared/storage";
 import {
   DEFAULT_DAY_STATE,
+  effectiveMs,
   liveUsageStreakCount,
   type DayState,
 } from "../../../shared/dayState";
@@ -158,7 +159,10 @@ export function Gateway() {
     dayState,
     Date.now(),
   );
-  const timerOptions = allowanceOptions(trackedAverageMs);
+  const timerOptions = allowanceOptions(
+    trackedAverageMs,
+    effectiveMs(dayState, Date.now()),
+  );
 
   return (
     <div class="gateway-cards">

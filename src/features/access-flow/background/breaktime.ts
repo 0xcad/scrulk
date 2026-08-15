@@ -85,13 +85,17 @@ export async function handleChooseAllowance(
 ): Promise<void> {
   const state = await getDayState();
   if (state.accessFlowPhase !== "picking") return;
+  const now = Date.now();
   const trackedAverageMs = await getAllDays()
     .then((days) => completedTrackedAverageMs(days, state.wakeDayStart))
     .catch(() => null);
-  if (!isAllowanceMinutesAllowed(minutes, trackedAverageMs)) {
+  if (!isAllowanceMinutesAllowed(
+    minutes,
+    trackedAverageMs,
+    effectiveMs(state, now),
+  )) {
     return;
   }
-  const now = Date.now();
   await setDayState(reduceAccessFlow(state, {
     type: "allowanceChosen",
     allowanceMs: minutes * 60_000,

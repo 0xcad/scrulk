@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 import {
   CAMERA_MIN_SIZE,
   cameraSizeForWidth,
-  resizedCameraSize,
   shouldKeepCameraHub,
   shouldShowCameraOverlay,
 } from "./camera";
@@ -20,17 +19,6 @@ describe("camera overlay sizing", () => {
   it("preserves 4:3 and enforces the current size as its minimum", () => {
     expect(cameraSizeForWidth(80)).toEqual(CAMERA_MIN_SIZE);
     expect(cameraSizeForWidth(320)).toEqual({ width: 320, height: 240 });
-  });
-
-  it("uses the dominant resize axis and respects the viewport maximum", () => {
-    expect(resizedCameraSize(160, 20, 100, 400)).toEqual({
-      width: 293,
-      height: 219.75,
-    });
-    expect(resizedCameraSize(300, 500, 0, 360)).toEqual({
-      width: 360,
-      height: 270,
-    });
   });
 });
 

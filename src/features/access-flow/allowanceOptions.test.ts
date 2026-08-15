@@ -39,28 +39,28 @@ describe("completedTrackedAverageMs", () => {
 });
 
 describe("allowanceOptions", () => {
-  it("shows the expected options for a 30-minute average", () => {
-    expect(allowanceOptions(30 * MINUTE)).toEqual([
+  it("subtracts today's tracked usage from 90% of the average", () => {
+    expect(allowanceOptions(30 * MINUTE, 5 * MINUTE)).toEqual([
       { minutes: 15, showDownArrow: false },
-      { minutes: 27, showDownArrow: true },
+      { minutes: 22, showDownArrow: true },
       { minutes: 30, showDownArrow: false },
     ]);
   });
 
   it("shows only fixed options without history", () => {
-    expect(allowanceOptions(null)).toEqual([
+    expect(allowanceOptions(null, 20 * MINUTE)).toEqual([
       { minutes: 15, showDownArrow: false },
       { minutes: 30, showDownArrow: false },
     ]);
   });
 
-  it("rounds to the nearest minute before sorting", () => {
-    expect(allowanceOptions(29.5 * MINUTE)).toEqual([
+  it("rounds the remaining time to the nearest minute before sorting", () => {
+    expect(allowanceOptions(30 * MINUTE, 2.4 * MINUTE)).toEqual([
       { minutes: 15, showDownArrow: false },
-      { minutes: 27, showDownArrow: true },
+      { minutes: 25, showDownArrow: true },
       { minutes: 30, showDownArrow: false },
     ]);
-    expect(allowanceOptions(50 * MINUTE)).toEqual([
+    expect(allowanceOptions(50 * MINUTE, 0)).toEqual([
       { minutes: 15, showDownArrow: false },
       { minutes: 30, showDownArrow: false },
       { minutes: 45, showDownArrow: true },
@@ -68,15 +68,20 @@ describe("allowanceOptions", () => {
   });
 
   it("clamps the dynamic option to two minutes and hides a misleading arrow", () => {
-    expect(allowanceOptions(1.5 * MINUTE)).toEqual([
+    expect(allowanceOptions(1.5 * MINUTE, 1 * MINUTE)).toEqual([
       { minutes: 2, showDownArrow: false },
+      { minutes: 15, showDownArrow: false },
+      { minutes: 30, showDownArrow: false },
+    ]);
+    expect(allowanceOptions(30 * MINUTE, 40 * MINUTE)).toEqual([
+      { minutes: 2, showDownArrow: true },
       { minutes: 15, showDownArrow: false },
       { minutes: 30, showDownArrow: false },
     ]);
   });
 
   it("hides the arrow when the displayed option is not below the exact average", () => {
-    expect(allowanceOptions(5 * MINUTE)).toEqual([
+    expect(allowanceOptions(5 * MINUTE, 0)).toEqual([
       { minutes: 5, showDownArrow: false },
       { minutes: 15, showDownArrow: false },
       { minutes: 30, showDownArrow: false },
@@ -84,22 +89,22 @@ describe("allowanceOptions", () => {
   });
 
   it("merges a dynamic option that matches a fixed option", () => {
-    expect(allowanceOptions((15 / 0.9) * MINUTE)).toEqual([
+    expect(allowanceOptions((15 / 0.9) * MINUTE, 0)).toEqual([
       { minutes: 15, showDownArrow: true },
       { minutes: 30, showDownArrow: false },
     ]);
-    expect(allowanceOptions((30 / 0.9) * MINUTE)).toEqual([
+    expect(allowanceOptions((30 / 0.9) * MINUTE, 0)).toEqual([
       { minutes: 15, showDownArrow: false },
       { minutes: 30, showDownArrow: true },
     ]);
   });
 
   it("allows only fixed choices and the current dynamic choice", () => {
-    expect(isAllowanceMinutesAllowed(15, 30 * MINUTE)).toBe(true);
-    expect(isAllowanceMinutesAllowed(27, 30 * MINUTE)).toBe(true);
-    expect(isAllowanceMinutesAllowed(30, 30 * MINUTE)).toBe(true);
-    expect(isAllowanceMinutesAllowed(10, 30 * MINUTE)).toBe(false);
-    expect(isAllowanceMinutesAllowed(27, null)).toBe(false);
-    expect(isAllowanceMinutesAllowed(27, 40 * MINUTE)).toBe(false);
+    expect(isAllowanceMinutesAllowed(15, 30 * MINUTE, 5 * MINUTE)).toBe(true);
+    expect(isAllowanceMinutesAllowed(22, 30 * MINUTE, 5 * MINUTE)).toBe(true);
+    expect(isAllowanceMinutesAllowed(30, 30 * MINUTE, 5 * MINUTE)).toBe(true);
+    expect(isAllowanceMinutesAllowed(10, 30 * MINUTE, 5 * MINUTE)).toBe(false);
+    expect(isAllowanceMinutesAllowed(22, null, 5 * MINUTE)).toBe(false);
+    expect(isAllowanceMinutesAllowed(22, 40 * MINUTE, 5 * MINUTE)).toBe(false);
   });
 });

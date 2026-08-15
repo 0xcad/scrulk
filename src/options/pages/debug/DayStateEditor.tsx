@@ -230,7 +230,7 @@ export function DayStateEditor() {
 
   return (
     <section>
-      <h2>Current DayState</h2>
+      <h2 class="scrulk-section-title dashboard-section-title">Current DayState</h2>
       <p>
         Values update live. Radios and the phase selector save immediately;
         other fields save on blur or Enter.

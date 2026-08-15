@@ -1,18 +1,15 @@
 @import "../shared/theme.css";
+@import "../shared/surfaces.css";
 @import "../shared/buttons.css";
 
-:root {
-  color-scheme: light dark;
-  font-family: system-ui, sans-serif;
-}
-
-body {
-  margin: 0;
-  min-width: 280px;
+.popup-page {
+  width: 280px;
   font-size: 14px;
 }
 
-main {
+.popup-shell {
+  box-sizing: border-box;
+  width: 100%;
   padding: 12px 14px;
   display: flex;
   flex-direction: column;
@@ -20,18 +17,9 @@ main {
   border-bottom: 4px solid currentColor;
 }
 
-h1 {
-  font-family: monospace;
+.popup-title {
   font-size: 13px;
-  font-weight: 600;
-  margin: 0;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
   opacity: 0.7;
-}
-
-p {
-  margin: 0;
 }
 
 .host {
@@ -98,10 +86,7 @@ p {
 }
 
 .usage-label {
-  font-family: monospace;
   font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
   opacity: 0.6;
 }
 
@@ -154,14 +139,11 @@ p {
   gap: 4px;
 }
 
-.settings-heading {
-  font-family: monospace;
+.popup-section-title {
   font-size: 10px;
-  font-weight: 600;
-  text-transform: uppercase;
   letter-spacing: 0.06em;
   opacity: 0.5;
-  margin: 0 0 2px;
+  margin-bottom: 2px;
 }
 
 .setting-row {

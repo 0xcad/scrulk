@@ -10,12 +10,12 @@ export function Settings() {
   return (
     <>
       <section>
-        <h2>Tracked websites</h2>
+        <h2 class="scrulk-section-title dashboard-section-title">Tracked websites</h2>
         <TrackedSitesList />
       </section>
 
       <section>
-        <h2>Wake up time</h2>
+        <h2 class="scrulk-section-title dashboard-section-title">Wake up time</h2>
         <p>
           What time do you usually have to wake up? Daily usage resets when you need to wake up, not midnight.
         </p>
@@ -23,7 +23,7 @@ export function Settings() {
       </section>
 
       <section>
-        <h2>Tab limit</h2>
+        <h2 class="scrulk-section-title dashboard-section-title">Tab limit</h2>
         <p>
           You can only open this many tabs of track websites at once.
         </p>
@@ -36,7 +36,7 @@ export function Settings() {
       </section>
 
       <section>
-        <h2>Peek previews</h2>
+        <h2 class="scrulk-section-title dashboard-section-title">Peek previews</h2>
         <p>
           Open tracked links clicked on untracked websites in a temporary
           preview without starting tracked time or applying restrictions.
@@ -45,7 +45,7 @@ export function Settings() {
       </section>
 
       <section>
-        <h2>Always show timer</h2>
+        <h2 class="scrulk-section-title dashboard-section-title">Always show timer</h2>
         <p>
           Show your total time on all websites, even when the current site is not tracked.
         </p>
@@ -53,7 +53,7 @@ export function Settings() {
       </section>
 
       <section>
-        <h2>Camera overlay</h2>
+        <h2 class="scrulk-section-title dashboard-section-title">Camera overlay</h2>
         <p>
           Show a small mirrored view of yourself on tracked websites. Scroll
           Unlock requests video-only access; the website never receives your

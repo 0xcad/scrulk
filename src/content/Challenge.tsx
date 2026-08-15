@@ -55,7 +55,7 @@ export function Challenge({ onComplete, holdMs = DEFAULT_HOLD_MS }: Props) {
 
   return (
     <>
-      <h2>Hold to continue...</h2>
+      <h2 class="scrulk-card-title">Hold to continue...</h2>
       <button
         type="button"
         class="hold"
@@ -66,7 +66,7 @@ export function Challenge({ onComplete, holdMs = DEFAULT_HOLD_MS }: Props) {
       >
        hold to continue
       </button>
-      <p>
+      <p class="scrulk-card-copy">
         <small>Press and hold to continue. Just stop and think some more.</small>
       </p>
     </>

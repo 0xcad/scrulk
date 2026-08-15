@@ -13,11 +13,11 @@ export function AccessInProgressOverlay({ challengeActive }: { challengeActive: 
     <>
       <style>{fullPageOverlayStyles + overlayBaseStyles}</style>
       <FullPageOverlay labelledBy="access-progress-title">
-        <div class="card">
-          <h2 id="access-progress-title">Continue in Other Tab</h2>
-          <p>Complete the active extension tab before returning here.</p>
+        <div class="scrulk-card content-card">
+          <h2 class="scrulk-card-title" id="access-progress-title">Continue in Other Tab</h2>
+          <p class="scrulk-card-copy">Complete the active extension tab before returning here.</p>
           {challengeActive && (
-            <div class="buttons">
+            <div class="scrulk-card-actions">
               <button type="button" class="secondary" onClick={focusChallenge}>
                 open hold challenge
               </button>

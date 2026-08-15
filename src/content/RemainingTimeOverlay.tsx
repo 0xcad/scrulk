@@ -13,10 +13,10 @@ export function RemainingTimeOverlay({ remainingMs }: { remainingMs: number }) {
     <>
       <style>{fullPageOverlayStyles + overlayBaseStyles}</style>
       <FullPageOverlay labelledBy="remaining-title">
-        <div class="card">
-          <h2 id="remaining-title">Pause</h2>
-          <p>You have {formatDuration(remainingMs)} of tracked-site time remaining.</p>
-          <div class="buttons">
+        <div class="scrulk-card content-card">
+          <h2 class="scrulk-card-title" id="remaining-title">Pause</h2>
+          <p class="scrulk-card-copy">You have {formatDuration(remainingMs)} of tracked-site time remaining.</p>
+          <div class="scrulk-card-actions">
             <button type="button" class="primary" onClick={resume}>continue</button>
           </div>
         </div>

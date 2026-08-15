@@ -72,7 +72,7 @@ export function Home() {
 
   return (
     <section>
-      <h2>Today</h2>
+      <h2 class="scrulk-section-title dashboard-section-title">Today</h2>
       {settings.alwaysShowTimer ? (
         <div class="today-times">
           <div class="today-time-row primary">
@@ -97,7 +97,7 @@ export function Home() {
         <p class="streak-today">{usageStreak}-day tracked-site usage streak</p>
       )}
 
-      <h2>Summary</h2>
+      <h2 class="scrulk-section-title dashboard-section-title">Summary</h2>
       <dl>
         <dt>Tracked sites</dt>
         <dd>{settings.trackedSites.length}</dd>
@@ -132,7 +132,7 @@ export function Home() {
         </dd>
       </dl>
 
-      <h2>Calendar</h2>
+      <h2 class="scrulk-section-title dashboard-section-title">Calendar</h2>
       <CalendarPanel
         days={days}
         selectedDate={selectedDate ?? dateKey(state.wakeDayStart || Date.now())}

@@ -1,15 +1,17 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" class="scrulk-page-root">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Scroll Unlock camera helper</title>
+    <link rel="stylesheet" href="../shared/theme.css" />
+    <link rel="stylesheet" href="../shared/surfaces.css" />
+    <link rel="stylesheet" href="../shared/buttons.css" />
     <style>
-      :root { color-scheme: light dark; font-family: system-ui, sans-serif; }
-      body { margin: 0; padding: 18px; background: Canvas; color: CanvasText; }
-      main { display: grid; gap: 12px; }
-      h1 { margin: 0; font: 700 16px/1.2 monospace; text-transform: uppercase; }
-      p { margin: 0; font-size: 13px; line-height: 1.4; }
+      .camera-page { padding: 18px; background: Canvas; color: CanvasText; }
+      .camera-shell { display: grid; gap: 12px; }
+      .camera-title { font-size: 16px; line-height: 1.2; }
+      .camera-copy { margin: 0; font-size: 13px; line-height: 1.4; }
       video {
         display: block;
         width: 100%;
@@ -21,22 +23,17 @@
       }
       button {
         justify-self: start;
-        font: inherit;
         padding: 5px 12px;
-        border: 1px solid currentColor;
-        background: transparent;
-        color: inherit;
-        cursor: pointer;
       }
       [hidden] { display: none; }
     </style>
   </head>
-  <body>
-    <main>
-      <h1>Scroll Unlock camera</h1>
+  <body class="scrulk-page-body camera-page">
+    <main class="camera-shell">
+      <h1 class="scrulk-card-title camera-title">Scroll Unlock camera</h1>
       <video autoplay muted playsinline aria-label="Your camera preview"></video>
-      <p data-status>Starting camera…</p>
-      <p>This extension tab owns the camera permission. Tracked websites never request it.</p>
+      <p class="camera-copy" data-status>Starting camera…</p>
+      <p class="camera-copy">This extension tab owns the camera permission. Tracked websites never request it.</p>
       <button type="button" data-retry hidden>retry camera access</button>
     </main>
     <script type="module" src="./main.ts"></script>

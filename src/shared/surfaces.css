@@ -1,0 +1,82 @@
+.scrulk-page-root {
+  color-scheme: light dark;
+  font-family: system-ui, sans-serif;
+}
+
+.scrulk-page-body {
+  margin: 0;
+}
+
+.scrulk-centered-page {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  background: color-mix(in srgb, currentColor 4%, transparent);
+}
+
+.scrulk-centered-page > #root {
+  width: 100%;
+}
+
+.scrulk-card {
+  box-sizing: border-box;
+  background: Canvas;
+  border: 1px dashed;
+  display: flex;
+  flex-direction: column;
+}
+
+.scrulk-page-title,
+.scrulk-card-title,
+.scrulk-kicker,
+.scrulk-section-title {
+  margin: 0;
+  font-family: monospace;
+}
+
+.scrulk-page-title {
+  font-size: 22px;
+}
+
+.scrulk-card-title {
+  font-size: 18px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.scrulk-kicker,
+.scrulk-section-title,
+.scrulk-label {
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.scrulk-kicker,
+.scrulk-section-title {
+  font-weight: 600;
+}
+
+.scrulk-label {
+  font-family: monospace;
+}
+
+.scrulk-page-subtitle {
+  margin: 4px 0 0;
+  opacity: 0.7;
+  font-size: 14px;
+}
+
+.scrulk-card-copy {
+  margin: 0;
+  opacity: 0.85;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.scrulk-card-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  justify-content: center;
+  margin-top: 8px;
+}

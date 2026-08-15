@@ -113,8 +113,8 @@ export function Popup() {
 
   if (!settings) {
     return (
-      <main>
-        <h1>Scroll Unlock</h1>
+      <main class="popup-shell">
+        <h1 class="scrulk-kicker popup-title">Scroll Unlock</h1>
         <p>Loading…</p>
       </main>
     );
@@ -153,8 +153,8 @@ export function Popup() {
   };
 
   return (
-    <main>
-      <h1>Scroll Unlock</h1>
+    <main class="popup-shell">
+      <h1 class="scrulk-kicker popup-title">Scroll Unlock</h1>
 
       {(warnSeen || cameraAccessWarning) && (
         <div class="warning" role="alert">
@@ -181,7 +181,7 @@ export function Popup() {
         </>
       ) : (
         <section class="usage">
-          <span class="usage-label">Today</span>
+          <span class="scrulk-label usage-label">Today</span>
           <span class="usage-time">{display}</span>
           <small>
             {usageStreak > 1
@@ -215,7 +215,7 @@ export function Popup() {
       )}
 
       <section class="settings-section">
-        <h2 class="settings-heading">Settings</h2>
+        <h2 class="scrulk-section-title popup-section-title">Settings</h2>
         <WakeUpRow value={settings.wakeUpTime} />
       </section>
 

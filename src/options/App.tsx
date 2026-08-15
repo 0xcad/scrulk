@@ -10,8 +10,8 @@ export function App() {
   return (
     <div class="layout">
       <header>
-        <h1>Scroll Unlock</h1>
-        <p>What do you want to do with your time?</p>
+        <h1 class="scrulk-page-title">Scroll Unlock</h1>
+        <p class="scrulk-page-subtitle">What do you want to do with your time?</p>
       </header>
 
       <Nav page={page} onChange={setPage} />

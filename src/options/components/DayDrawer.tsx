@@ -73,7 +73,7 @@ export function DayDrawer({ days, selectedDate, onSelect, showAllSitesTime }: Pr
         >
           ←
         </button>
-        <h3>{formatLong(record.date)}</h3>
+        <h3 class="day-drawer-title">{formatLong(record.date)}</h3>
         <button
           type="button"
           disabled={!next}

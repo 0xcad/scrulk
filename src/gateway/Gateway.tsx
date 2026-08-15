@@ -144,23 +144,23 @@ export function Gateway() {
     <div class="gateway-cards">
       <style>{fullPageOverlayStyles}</style>
       {dayState.accessFlowPhase === "challenge" && (
-        <section class={`card camera-card${showCamera ? "" : " camera-card--hidden"}`}>
+        <section class={`scrulk-card flow-card camera-card${showCamera ? "" : " camera-card--hidden"}`}>
           <video ref={cameraRef} autoplay muted playsinline aria-label="Your camera preview" />
         </section>
       )}
 
-      <main class="card">
+      <main class="scrulk-card flow-card">
         {(dayState.accessFlowPhase === "waiting" || dayState.accessFlowPhase === "waitingReady") && (
           <>
-            <h1>Wait</h1>
-            <p>Keep this tab active. Take a moment before opening tracked sites.</p>
+            <h1 class="scrulk-card-title">Wait</h1>
+            <p class="scrulk-card-copy">Keep this tab active. Take a moment before opening tracked sites.</p>
           </>
         )}
         {dayState.accessFlowPhase === "picking" && (
           <>
-            <h1>Pause</h1>
-            <p>How much tracked-site time do you want to give yourself?</p>
-            {usageStreak > 1 && <p>You've used tracked sites <b>{usageStreak} days in a row.</b></p>}
+            <h1 class="scrulk-card-title">Pause</h1>
+            <p class="scrulk-card-copy">How much tracked-site time do you want to give yourself?</p>
+            {usageStreak > 1 && <p class="scrulk-card-copy">You've used tracked sites <b>{usageStreak} days in a row.</b></p>}
             <div class="timers">
               {TIMER_OPTIONS.map((minutes) => (
                 <button type="button" key={minutes} onClick={() => pick(minutes)}>
@@ -180,15 +180,15 @@ export function Gateway() {
       {dayState.accessFlowPhase === "waiting" && !active && (
         <FullPageOverlay labelledBy="inactive-title">
           <div>
-            <h1 id="inactive-title">Return to this tab</h1>
-            <p>The waiting period only continues while this tab is active.</p>
+            <h1 class="scrulk-card-title" id="inactive-title">Return to this tab</h1>
+            <p class="scrulk-card-copy">The waiting period only continues while this tab is active.</p>
           </div>
         </FullPageOverlay>
       )}
       {dayState.accessFlowPhase === "waitingReady" && (
         <FullPageOverlay labelledBy="ready-title">
-          <div class="card overlay-card">
-            <h1 id="ready-title">Proceed</h1>
+          <div class="scrulk-card flow-card overlay-card">
+            <h1 class="scrulk-card-title" id="ready-title">Proceed</h1>
             <button
               type="button"
               class="primary"

@@ -27,7 +27,7 @@ export function MonthStats({ days, viewMonth, showAllSitesTime }: Props) {
 
   return (
     <div class="month-stats">
-      <h4>{monthName}</h4>
+      <h4 class="month-stats-title">{monthName}</h4>
       {avg === null ? (
         <p class="month-stats-empty">No data</p>
       ) : (

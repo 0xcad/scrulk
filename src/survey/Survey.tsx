@@ -100,28 +100,28 @@ export function Survey() {
     : recordAllSitesMs;
 
   return (
-    <main>
+    <main class="scrulk-card survey-card">
       <header>
-        <h1>How was {formatDateLong(date)}?</h1>
-        <p class="subtitle">A quick reflection on time spent.</p>
+        <h1 class="scrulk-page-title">How was {formatDateLong(date)}?</h1>
+        <p class="scrulk-page-subtitle survey-subtitle">A quick reflection on time spent.</p>
       </header>
 
       {alwaysShowTimer && allSitesUsageMs !== null && (
         <div class="usage">
-          <span class="usage-label">Time on all sites</span>
+          <span class="scrulk-label usage-label">Time on all sites</span>
           <span class="usage-value">{formatDuration(allSitesUsageMs)}</span>
         </div>
       )}
 
       {usageMs !== null && (
         <div class="usage">
-          <span class="usage-label">Time on tracked sites</span>
+          <span class="scrulk-label usage-label">Time on tracked sites</span>
           <span class="usage-value">{formatDuration(usageMs)}</span>
         </div>
       )}
 
       <form onSubmit={onSubmit}>
-        <label for="notes">Notes (optional)</label>
+        <label class="scrulk-label survey-label" for="notes">Notes (optional)</label>
         <textarea
           id="notes"
           value={notes}

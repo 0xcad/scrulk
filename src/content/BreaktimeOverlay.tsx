@@ -64,11 +64,11 @@ export function BreaktimeOverlay() {
     <>
       <style>{fullPageOverlayStyles + overlayBaseStyles}</style>
       <FullPageOverlay labelledBy="bt-title">
-        <div class="card">
+        <div class="scrulk-card content-card">
             {/*<img src={windowImg} class="window" alt="" />*/}
-          <h2 id="bt-title">Time for a break</h2>
-          <p>You've been at this for {formatUsage(usageMs)}.</p>
-          <div class="buttons">
+          <h2 class="scrulk-card-title" id="bt-title">Time for a break</h2>
+          <p class="scrulk-card-copy">You've been at this for {formatUsage(usageMs)}.</p>
+          <div class="scrulk-card-actions">
             <button type="button" class="primary" onClick={onDone}>I'm done!</button>
             <button
               title="this action cannot be undone"

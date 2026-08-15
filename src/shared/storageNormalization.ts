@@ -1,5 +1,6 @@
 import { DEFAULT_DAY_STATE, type DayState } from "./dayState";
 import { DEFAULT_SETTINGS, type Settings } from "./settings";
+import { normalizeWaitingScreen } from "../features/waiting-screen/model";
 
 export type StoredSettings = Partial<Settings> & {
   wakeUpHour?: number;
@@ -14,6 +15,7 @@ export function normalizeSettings(raw: StoredSettings | undefined): Settings {
   if (raw?.wakeUpHour !== undefined && raw.wakeUpTime === undefined) {
     merged.wakeUpTime = `${String(raw.wakeUpHour).padStart(2, "0")}:00`;
   }
+  merged.waitingScreen = normalizeWaitingScreen(raw?.waitingScreen);
   return merged;
 }
 

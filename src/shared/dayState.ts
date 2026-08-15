@@ -1,6 +1,7 @@
 export const STREAK_THRESHOLD_MS = 20_000;
 
 export const ACCESS_FLOW_PHASES = [
+  "waitingConfirmation",
   "waiting",
   "waitingReady",
   "picking",
@@ -118,7 +119,7 @@ export const DAY_STATE_FIELDS = {
     "Latest activity checkpoint in epoch milliseconds, or blank for null.",
   ),
   accessFlowPhase: phaseField(
-    "waiting",
+    "waitingConfirmation",
     "Global tracked-site access phase.",
   ),
   waitingMs: numberField(
@@ -136,6 +137,10 @@ export const DAY_STATE_FIELDS = {
   waitingPageFocused: booleanField(
     false,
     "Whether the waiting extension page last reported focus.",
+  ),
+  waitingTimerElapsed: booleanField(
+    false,
+    "Whether the focused waiting requirement has elapsed this wake-day.",
   ),
   allowanceMs: nullableNumberField(
     null,

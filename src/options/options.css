@@ -1,6 +1,7 @@
 @import "../shared/theme.css";
 @import "../shared/surfaces.css";
 @import "../shared/buttons.css";
+@import "../features/waiting-screen/waiting-screen.css";
 
 :root {
   --border: color-mix(in srgb, currentColor 15%, transparent);
@@ -19,6 +20,138 @@
   display: flex;
   flex-direction: column;
   gap: 24px;
+}
+
+.layout--waiting {
+  max-width: 1120px;
+}
+
+.waiting-editor-page {
+  gap: 12px;
+  font-size: 14px;
+}
+
+.waiting-editor-toolbar,
+.waiting-editor-actions,
+.waiting-drawing-tools {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.waiting-font-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.waiting-font-control select {
+  font: inherit;
+  padding: 4px 8px;
+}
+
+.waiting-design-canvas {
+  position: relative;
+  width: 100%;
+  height: min(68vh, 680px);
+  min-height: 420px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, currentColor 3%, Canvas);
+}
+
+.waiting-editor-widget {
+  overflow: hidden;
+  border: 1px solid currentColor;
+  padding: 8px;
+  cursor: move;
+}
+
+.waiting-editor-widget--selected {
+  border-color: var(--primary);
+}
+
+.waiting-editor-widget .waiting-markdown-editor,
+.waiting-editor-widget .waiting-question-editor {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  resize: none;
+  background: Canvas;
+  color: CanvasText;
+  font: inherit;
+  cursor: text;
+}
+
+.waiting-markdown-editor .ProseMirror {
+  box-sizing: border-box;
+  min-height: 100%;
+  padding: 8px;
+  outline: none;
+}
+
+.moveable-control-box {
+  z-index: 20 !important;
+}
+
+.waiting-editor-actions {
+  justify-content: flex-end;
+}
+
+.waiting-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: color-mix(in srgb, black 55%, transparent);
+}
+
+.waiting-drawing-modal {
+  box-sizing: border-box;
+  display: flex;
+  width: min(960px, 100%);
+  height: min(760px, 100%);
+  flex-direction: column;
+  gap: 12px;
+  padding: 18px;
+  border: 1px solid currentColor;
+  background: Canvas;
+}
+
+.waiting-drawing-modal header,
+.waiting-drawing-modal footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.waiting-drawing-surface {
+  display: block;
+  min-height: 0;
+  width: 100%;
+  flex: 1;
+  border: 1px solid var(--border);
+  background: white;
+  touch-action: none;
+  cursor: crosshair;
+}
+
+.waiting-drawing-tools button[aria-pressed="true"] {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+@media (max-width: 600px) {
+  .waiting-design-canvas { min-height: 360px; }
+  .waiting-drawing-modal header { align-items: flex-start; flex-direction: column; }
 }
 
 nav {

@@ -10,10 +10,12 @@ import {
   handleBreaktimeExtend,
   handleChallengeComplete,
   handleChooseAllowance,
+  handleConfirmWaiting,
   handlePopupDone,
   handleResumePrompt,
   handleWaitContinue,
   handleWaitingFocus,
+  handleQuestionsComplete,
 } from "../features/access-flow/background/breaktime";
 import {
   closeCameraHub,
@@ -45,6 +47,9 @@ const withRecompute = async (operation: () => Promise<unknown>): Promise<void> =
 };
 
 const COMMAND_HANDLERS = {
+  "access:confirmWaiting": () => withRecompute(handleConfirmWaiting),
+  "access:declineWaiting": (_message, sender) => closeSenderTab(sender.tab?.id),
+  "access:questionsComplete": () => withRecompute(handleQuestionsComplete),
   "access:waitContinue": () => withRecompute(handleWaitContinue),
   "access:setWaitingFocus": (message) =>
     withRecompute(() => handleWaitingFocus(message.focused)),
@@ -74,6 +79,10 @@ const COMMAND_HANDLERS = {
     if (__SCRULK_DEBUG__) return setDebugDayStateField(message);
   },
 } satisfies CommandHandlers;
+
+async function closeSenderTab(tabId: number | undefined): Promise<void> {
+  if (tabId !== undefined) await browser.tabs.remove(tabId).catch(() => null);
+}
 
 export function isCommand(value: unknown): value is Message {
   if (value === null || typeof value !== "object" || !("type" in value)) return false;

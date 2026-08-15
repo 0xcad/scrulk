@@ -118,6 +118,7 @@ export async function recompute(): Promise<void> {
   const inputs = await readActivity();
   const waitingActive =
     state.accessFlowPhase === "waiting" &&
+    !state.waitingTimerElapsed &&
     state.waitingPageFocused &&
     inputs.windowFocused &&
     isAccessPageUrl(inputs.activeTabUrl);
@@ -204,7 +205,11 @@ async function syncActivityCheckAlarm(state: DayState): Promise<void> {
 }
 
 async function syncWaitingAlarm(state: DayState, waitingMinutes: number): Promise<void> {
-  if (state.accessFlowPhase !== "waiting" || state.waitingActiveSince === null) {
+  if (
+    state.accessFlowPhase !== "waiting" ||
+    state.waitingTimerElapsed ||
+    state.waitingActiveSince === null
+  ) {
     await browser.alarms.clear(ALARM_NAMES.waiting).catch(() => null);
     return;
   }
@@ -249,11 +254,12 @@ export async function rolloverDay(
     allSitesMs: 0,
     allSitesActiveSince: null,
     activityCheckpointAt: null,
-    accessFlowPhase: "waiting",
+    accessFlowPhase: "waitingConfirmation",
     waitingMs: 0,
     waitingActiveSince: null,
     waitingCheckpointAt: null,
     waitingPageFocused: false,
+    waitingTimerElapsed: false,
     allowanceMs: null,
     allowanceStartTotalMs: null,
     breakOpenedAt: null,

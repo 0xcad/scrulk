@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "preact/hooks";
+import { useCallback, useEffect, useRef, useState } from "preact/hooks";
 import { Challenge } from "../content/Challenge";
 import { FullPageOverlay, fullPageOverlayStyles } from "../../../shared/FullPageOverlay";
 import {
@@ -20,6 +20,7 @@ import {
   type DayState,
 } from "../../../shared/dayState";
 import { DEFAULT_SETTINGS, type Settings } from "../../../shared/settings";
+import { WaitingScreenView } from "../../waiting-screen/WaitingScreenView";
 
 const DEFAULT_TITLE = "Scroll Unlock";
 const INACTIVE_TITLE = "Return to Scroll Unlock to continue waiting";
@@ -164,6 +165,58 @@ export function Gateway() {
     effectiveMs(dayState, Date.now()),
   );
 
+  const questionsComplete = useCallback(() => {
+    void sendCommand({ type: "access:questionsComplete" });
+  }, []);
+
+  if (dayState.accessFlowPhase === "waitingConfirmation") {
+    return (
+      <main class="scrulk-card flow-card gateway-confirmation">
+        <h1 class="scrulk-card-title">Wait?</h1>
+        <p class="scrulk-card-copy">Do you want to enter the waiting screen?</p>
+        <div class="scrulk-card-actions">
+          <button type="button" class="secondary" onClick={() => void sendCommand({ type: "access:declineWaiting" })}>go back</button>
+          <button type="button" class="primary" onClick={() => void sendCommand({ type: "access:confirmWaiting" })}>continue</button>
+        </div>
+      </main>
+    );
+  }
+
+  if (dayState.accessFlowPhase === "waiting" || dayState.accessFlowPhase === "waitingReady") {
+    return (
+      <div class="gateway-waiting-root">
+        <style>{fullPageOverlayStyles}</style>
+        <WaitingScreenView
+          screen={settings.waitingScreen}
+          timerElapsed={dayState.waitingTimerElapsed}
+          onQuestionsComplete={questionsComplete}
+        />
+        {dayState.accessFlowPhase === "waiting" && !active && (
+          <FullPageOverlay labelledBy="inactive-title">
+            <div>
+              <h1 class="scrulk-card-title" id="inactive-title">Return to this tab</h1>
+              <p class="scrulk-card-copy">The waiting period only continues while this tab is active.</p>
+            </div>
+          </FullPageOverlay>
+        )}
+        {dayState.accessFlowPhase === "waitingReady" && (
+          <FullPageOverlay labelledBy="ready-title">
+            <div class="scrulk-card flow-card overlay-card">
+              <h1 class="scrulk-card-title" id="ready-title">Proceed</h1>
+              <button
+                type="button"
+                class="primary"
+                onClick={() => void sendCommand({ type: "access:waitContinue" })}
+              >
+                continue
+              </button>
+            </div>
+          </FullPageOverlay>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div class="gateway-cards">
       <style>{fullPageOverlayStyles}</style>
@@ -174,12 +227,6 @@ export function Gateway() {
       )}
 
       <main class="scrulk-card flow-card">
-        {(dayState.accessFlowPhase === "waiting" || dayState.accessFlowPhase === "waitingReady") && (
-          <>
-            <h1 class="scrulk-card-title">Wait</h1>
-            <p class="scrulk-card-copy">Keep this tab active. Take a moment before opening tracked sites.</p>
-          </>
-        )}
         {dayState.accessFlowPhase === "picking" && (
           <>
             <h1 class="scrulk-card-title">Pause</h1>
@@ -210,29 +257,6 @@ export function Gateway() {
           />
         )}
       </main>
-
-      {dayState.accessFlowPhase === "waiting" && !active && (
-        <FullPageOverlay labelledBy="inactive-title">
-          <div>
-            <h1 class="scrulk-card-title" id="inactive-title">Return to this tab</h1>
-            <p class="scrulk-card-copy">The waiting period only continues while this tab is active.</p>
-          </div>
-        </FullPageOverlay>
-      )}
-      {dayState.accessFlowPhase === "waitingReady" && (
-        <FullPageOverlay labelledBy="ready-title">
-          <div class="scrulk-card flow-card overlay-card">
-            <h1 class="scrulk-card-title" id="ready-title">Proceed</h1>
-            <button
-              type="button"
-              class="primary"
-              onClick={() => void sendCommand({ type: "access:waitContinue" })}
-            >
-              continue
-            </button>
-          </div>
-        </FullPageOverlay>
-      )}
     </div>
   );
 }

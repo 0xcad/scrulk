@@ -7,6 +7,7 @@ import {
 } from "./transitions";
 
 const phases: AccessFlowPhase[] = [
+  "waitingConfirmation",
   "waiting",
   "waitingReady",
   "picking",
@@ -18,6 +19,23 @@ const phases: AccessFlowPhase[] = [
 ];
 
 describe("reduceAccessFlow", () => {
+  it("requires confirmation, elapsed time, and completed questions in order", () => {
+    const waiting = reduceAccessFlow(DEFAULT_DAY_STATE, { type: "waitingConfirmed" });
+    expect(waiting.accessFlowPhase).toBe("waiting");
+    expect(waiting.waitingTimerElapsed).toBe(false);
+
+    expect(reduceAccessFlow(waiting, { type: "waitingQuestionsCompleted" }))
+      .toBe(waiting);
+    const elapsed = reduceAccessFlow(waiting, { type: "waitingElapsed" });
+    expect(elapsed).toMatchObject({
+      accessFlowPhase: "waiting",
+      waitingTimerElapsed: true,
+      waitingPageFocused: false,
+    });
+    expect(reduceAccessFlow(elapsed, { type: "waitingQuestionsCompleted" }).accessFlowPhase)
+      .toBe("waitingReady");
+  });
+
   it.each([
     ["waitCompleted", "waitingReady", "picking"],
     ["allowanceResumed", "resumePrompt", "browsing"],

@@ -32,6 +32,7 @@ describe("DayState debug validation", () => {
 
   it("lists every access flow phase", () => {
     expect(ACCESS_FLOW_PHASES).toEqual([
+      "waitingConfirmation",
       "waiting",
       "waitingReady",
       "picking",

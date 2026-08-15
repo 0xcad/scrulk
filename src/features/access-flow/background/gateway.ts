@@ -70,6 +70,7 @@ export async function handleBeforeNavigate(
   }
 
   if (
+    state.accessFlowPhase === "waitingConfirmation" ||
     state.accessFlowPhase === "waiting" ||
     state.accessFlowPhase === "waitingReady" ||
     state.accessFlowPhase === "picking" ||

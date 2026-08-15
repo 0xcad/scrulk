@@ -1,6 +1,7 @@
 @import "../shared/theme.css";
 @import "../shared/surfaces.css";
 @import "../shared/buttons.css";
+@import "../features/waiting-screen/waiting-screen.css";
 
 :root {
   --border: color-mix(in srgb, currentColor 25%, transparent);
@@ -13,6 +14,16 @@
   flex-direction: column;
   align-items: center;
   gap: 14px;
+}
+
+.gateway-confirmation {
+  width: min(420px, calc(100% - 32px));
+  margin-inline: auto;
+}
+
+.gateway-waiting-root {
+  width: 100%;
+  min-height: 100vh;
 }
 
 .flow-card {

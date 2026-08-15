@@ -12,7 +12,10 @@ describe("storage normalization", () => {
   it("fills newly added DayState fields without changing stored values", () => {
     const state = normalizeDayState({ totalMs: 123 });
     expect(state.totalMs).toBe(123);
-    expect(state.accessFlowPhase).toBe("waiting");
+    expect(state.accessFlowPhase).toBe("waitingConfirmation");
     expect(state.breaktimeExtensionTabs).toEqual({});
+    expect(state.waitingTimerElapsed).toBe(false);
+    expect(normalizeDayState({ accessFlowPhase: "waiting" }).accessFlowPhase)
+      .toBe("waiting");
   });
 });

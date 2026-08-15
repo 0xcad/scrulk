@@ -1,4 +1,8 @@
 import type { CameraOverlaySize, ClockPosition } from "./uiTypes";
+import {
+  DEFAULT_WAITING_SCREEN,
+  type WaitingScreen,
+} from "../features/waiting-screen/model";
 
 export interface Settings {
   trackedSites: string[];
@@ -19,6 +23,7 @@ export interface Settings {
   cameraOverlayPosition: ClockPosition | null;
   cameraOverlaySize: CameraOverlaySize | null;
   usageStreak: number;
+  waitingScreen: WaitingScreen;
 }
 
 export type CameraOverlayPermission = "unknown" | "granted" | "denied";
@@ -41,6 +46,7 @@ export const DEFAULT_SETTINGS: Settings = {
   cameraOverlayPosition: null,
   cameraOverlaySize: null,
   usageStreak: 0,
+  waitingScreen: DEFAULT_WAITING_SCREEN,
 };
 
 export type SettingScope = "settings" | "debug" | "internal" | "component";
@@ -64,6 +70,7 @@ export const SETTINGS_SCOPES = {
   cameraOverlayPosition: "component",
   cameraOverlaySize: "component",
   usageStreak: "internal",
+  waitingScreen: "component",
 } as const satisfies Record<keyof Settings, SettingScope>;
 
 export const SETTINGS_KEY = "settings" as const;

@@ -35,9 +35,10 @@ describe("all-sites timer defaults", () => {
 });
 
 describe("global access flow", () => {
-  it("defaults to a five-minute initial wait", () => {
+  it("defaults to confirmation before the five-minute initial wait", () => {
     expect(DEFAULT_SETTINGS.waitingMinutes).toBe(5);
-    expect(DEFAULT_DAY_STATE.accessFlowPhase).toBe("waiting");
+    expect(DEFAULT_DAY_STATE.accessFlowPhase).toBe("waitingConfirmation");
+    expect(DEFAULT_DAY_STATE.waitingTimerElapsed).toBe(false);
   });
 
   it("accumulates only the open waiting segment", () => {

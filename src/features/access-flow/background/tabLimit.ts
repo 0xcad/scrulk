@@ -20,6 +20,7 @@ export async function enforceTabLimit(
   const [settings, state] = await Promise.all([getSettings(), getDayState()]);
   if (!isTracked(host, settings.trackedSites)) return;
   if (
+    state.accessFlowPhase === "waitingConfirmation" ||
     state.accessFlowPhase === "waiting" ||
     state.accessFlowPhase === "waitingReady" ||
     state.accessFlowPhase === "picking" ||

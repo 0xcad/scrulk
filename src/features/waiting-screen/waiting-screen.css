@@ -1,0 +1,83 @@
+.waiting-screen {
+  position: relative;
+  width: 100%;
+  height: 100vh;
+  overflow: hidden;
+  background: Canvas;
+}
+
+.waiting-widget,
+.waiting-editor-widget {
+  position: absolute;
+  box-sizing: border-box;
+  transform-origin: center;
+}
+
+.waiting-widget--text,
+.waiting-editor-widget.waiting-widget--text {
+  overflow: auto;
+}
+
+.waiting-widget--text > div,
+.waiting-editor-widget.waiting-widget--text > div {
+  width: 100%;
+  height: 100%;
+}
+
+.waiting-widget--text :first-child,
+.waiting-editor-widget.waiting-widget--text :first-child {
+  margin-top: 0;
+}
+
+.waiting-widget--text :last-child,
+.waiting-editor-widget.waiting-widget--text :last-child {
+  margin-bottom: 0;
+}
+
+.waiting-font--sans { font-family: system-ui, sans-serif; }
+.waiting-font--serif { font-family: Georgia, "Times New Roman", serif; }
+.waiting-font--monospace { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; }
+
+.waiting-widget--question label,
+.waiting-editor-widget.waiting-widget--question label {
+  display: flex;
+  height: 100%;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.waiting-widget--question label > span,
+.waiting-editor-widget.waiting-widget--question label > span {
+  font-weight: 600;
+}
+
+.waiting-widget--question textarea,
+.waiting-editor-widget.waiting-widget--question textarea {
+  box-sizing: border-box;
+  min-height: 0;
+  width: 100%;
+  flex: 1;
+  resize: none;
+  border: 1px solid currentColor;
+  background: Canvas;
+  color: CanvasText;
+  font: inherit;
+  padding: 8px;
+}
+
+.waiting-widget--question small {
+  align-self: flex-end;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.65;
+}
+
+.waiting-answer-short {
+  color: #c0392b;
+}
+
+.waiting-widget--drawing canvas,
+.waiting-editor-widget.waiting-widget--drawing canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}

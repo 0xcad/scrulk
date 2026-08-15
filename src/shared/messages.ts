@@ -11,6 +11,9 @@ export type DebugSetDayStateField = {
 
 /** Typed commands between extension/content pages and the background. */
 export type Message =
+  | { type: "access:confirmWaiting" }
+  | { type: "access:declineWaiting" }
+  | { type: "access:questionsComplete" }
   | { type: "access:waitContinue" }
   | { type: "access:setWaitingFocus"; focused: boolean }
   | { type: "access:chooseAllowance"; minutes: number; destUrl?: string }

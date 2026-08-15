@@ -15,6 +15,19 @@ import { reduceAccessFlow } from "../transitions";
 
 const EXTENSION_MS = 2 * 60_000;
 
+export async function handleConfirmWaiting(): Promise<void> {
+  const state = await getDayState();
+  await persistTransition(state, reduceAccessFlow(state, { type: "waitingConfirmed" }));
+}
+
+export async function handleQuestionsComplete(): Promise<void> {
+  const state = await getDayState();
+  await persistTransition(
+    state,
+    reduceAccessFlow(state, { type: "waitingQuestionsCompleted" }),
+  );
+}
+
 export async function openSurveyTab(date: string): Promise<void> {
   const url = browser.runtime.getURL(
     `${EXTENSION_PAGES.survey}?date=${encodeURIComponent(date)}`,

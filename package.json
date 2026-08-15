@@ -17,7 +17,10 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@milkdown/kit": "^7.22.1",
     "idb": "^8.0.3",
+    "mdast-util-from-markdown": "^2.0.3",
+    "moveable": "^0.53.0",
     "preact": "^10.22.0",
     "webextension-polyfill": "^0.12.0"
   },

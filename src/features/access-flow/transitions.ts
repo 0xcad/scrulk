@@ -5,7 +5,9 @@ import {
 } from "../../shared/dayState";
 
 export type AccessFlowEvent =
+  | { type: "waitingConfirmed" }
   | { type: "waitingElapsed" }
+  | { type: "waitingQuestionsCompleted" }
   | { type: "waitCompleted" }
   | { type: "waitingFocusChanged"; focused: boolean }
   | { type: "allowanceChosen"; allowanceMs: number; startTotalMs: number }
@@ -42,19 +44,30 @@ export function reduceAccessFlow(
   event: AccessFlowEvent,
 ): DayState {
   switch (event.type) {
+    case "waitingConfirmed":
+      if (state.accessFlowPhase !== "waitingConfirmation") return state;
+      return {
+        ...state,
+        accessFlowPhase: "waiting",
+        waitingTimerElapsed: false,
+      };
     case "waitingElapsed":
       if (state.accessFlowPhase !== "waiting") return state;
       return {
         ...state,
-        accessFlowPhase: "waitingReady",
+        waitingTimerElapsed: true,
         waitingPageFocused: false,
       };
+    case "waitingQuestionsCompleted":
+      if (state.accessFlowPhase !== "waiting" || !state.waitingTimerElapsed) return state;
+      return { ...state, accessFlowPhase: "waitingReady", waitingPageFocused: false };
     case "waitCompleted":
       if (state.accessFlowPhase !== "waitingReady") return state;
       return { ...state, accessFlowPhase: "picking", waitingPageFocused: false };
     case "waitingFocusChanged":
       if (
         state.accessFlowPhase !== "waiting" ||
+        state.waitingTimerElapsed ||
         state.waitingPageFocused === event.focused
       ) return state;
       return { ...state, waitingPageFocused: event.focused };

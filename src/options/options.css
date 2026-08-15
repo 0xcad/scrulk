@@ -40,6 +40,10 @@
   gap: 8px;
 }
 
+.waiting-preview-button {
+  margin-left: auto;
+}
+
 .waiting-font-control {
   display: flex;
   align-items: center;
@@ -63,29 +67,40 @@
 
 .waiting-editor-widget {
   overflow: hidden;
-  border: 1px solid currentColor;
   padding: 8px;
-  cursor: move;
+  border: 0;
+  cursor: grab;
+  user-select: none;
 }
 
-.waiting-editor-widget--selected {
-  border-color: var(--primary);
+.waiting-editor-widget.waiting-widget--drawing {
+  padding: 0;
 }
 
-.waiting-editor-widget .waiting-markdown-editor,
-.waiting-editor-widget .waiting-question-editor {
-  position: absolute;
-  inset: 0;
-  z-index: 2;
-  box-sizing: border-box;
+.waiting-empty-drawing {
+  display: grid;
   width: 100%;
   height: 100%;
-  overflow: auto;
-  resize: none;
-  background: Canvas;
-  color: CanvasText;
-  font: inherit;
+  place-items: center;
+  opacity: 0.55;
+}
+
+.waiting-editor-widget--dragging,
+.waiting-editor-widget--dragging * {
+  cursor: grabbing !important;
+}
+
+.waiting-editor-widget > * {
+  pointer-events: none;
+}
+
+.waiting-editor-widget--editing {
   cursor: text;
+  user-select: text;
+}
+
+.waiting-editor-widget--editing > * {
+  pointer-events: auto;
 }
 
 .waiting-markdown-editor .ProseMirror {
@@ -93,10 +108,19 @@
   min-height: 100%;
   padding: 8px;
   outline: none;
+  user-select: text;
 }
 
 .moveable-control-box {
   z-index: 20 !important;
+}
+
+.moveable-control-box .moveable-line {
+  background: var(--primary) !important;
+}
+
+.moveable-control-box .moveable-control {
+  border-color: var(--primary) !important;
 }
 
 .waiting-editor-actions {
@@ -109,15 +133,17 @@
   z-index: 100;
   display: grid;
   place-items: center;
-  padding: 24px;
+  padding: 16px;
+  box-sizing: border-box;
   background: color-mix(in srgb, black 55%, transparent);
 }
 
-.waiting-drawing-modal {
+.waiting-drawing-modal,
+.waiting-content-modal {
   box-sizing: border-box;
   display: flex;
   width: min(960px, 100%);
-  height: min(760px, 100%);
+  max-height: calc(100dvh - 32px);
   flex-direction: column;
   gap: 12px;
   padding: 18px;
@@ -125,12 +151,48 @@
   background: Canvas;
 }
 
+.waiting-drawing-modal {
+  height: min(720px, calc(100dvh - 32px));
+  overflow: auto;
+}
+
+.waiting-content-modal {
+  height: min(620px, calc(100dvh - 32px));
+  overflow: hidden;
+}
+
 .waiting-drawing-modal header,
-.waiting-drawing-modal footer {
+.waiting-drawing-modal footer,
+.waiting-content-modal header,
+.waiting-content-modal footer {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
+}
+
+.waiting-drawing-modal header,
+.waiting-content-modal header {
+  flex-wrap: wrap;
+}
+
+.waiting-content-modal-body {
+  min-height: 0;
+  flex: 1;
+  overflow: auto;
+  border: 1px solid var(--border);
+}
+
+.waiting-content-modal-body > textarea,
+.waiting-content-modal-body > .waiting-markdown-editor {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 100%;
+  border: 0;
+  background: Canvas;
+  color: CanvasText;
+  font: inherit;
+  resize: none;
 }
 
 .waiting-drawing-surface {
@@ -149,9 +211,26 @@
   color: var(--primary);
 }
 
+.waiting-preview {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  overflow: hidden;
+  background: Canvas;
+}
+
+.waiting-preview-exit {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 101;
+  background: Canvas;
+}
+
 @media (max-width: 600px) {
   .waiting-design-canvas { min-height: 360px; }
-  .waiting-drawing-modal header { align-items: flex-start; flex-direction: column; }
+  .waiting-drawing-modal header,
+  .waiting-content-modal header { align-items: flex-start; flex-direction: column; }
 }
 
 nav {

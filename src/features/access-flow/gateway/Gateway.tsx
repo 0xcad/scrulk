@@ -175,8 +175,8 @@ export function Gateway() {
         <h1 class="scrulk-card-title">Wait?</h1>
         <p class="scrulk-card-copy">Do you want to enter the waiting screen?</p>
         <div class="scrulk-card-actions">
-          <button type="button" class="secondary" onClick={() => void sendCommand({ type: "access:declineWaiting" })}>go back</button>
-          <button type="button" class="primary" onClick={() => void sendCommand({ type: "access:confirmWaiting" })}>continue</button>
+          <button type="button" class="primary" onClick={() => void sendCommand({ type: "access:declineWaiting" })}>go back</button>
+          <button type="button" class="secondary" onClick={() => void sendCommand({ type: "access:confirmWaiting" })}>continue &gt;</button>
         </div>
       </main>
     );

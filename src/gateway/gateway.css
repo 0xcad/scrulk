@@ -27,13 +27,13 @@
 }
 
 .flow-card {
-  width: 100%;
   padding: 32px 40px;
   text-align: center;
   gap: 14px;
 }
 
 .camera-card {
+  width: 100%;
   padding: 0;
   overflow: hidden;
   aspect-ratio: 4 / 3;

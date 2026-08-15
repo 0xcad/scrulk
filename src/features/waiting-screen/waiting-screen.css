@@ -34,6 +34,13 @@
   margin-bottom: 0;
 }
 
+.waiting-widget--text ul,
+.waiting-widget--text ol,
+.waiting-editor-widget.waiting-widget--text ul,
+.waiting-editor-widget.waiting-widget--text ol {
+  padding-inline-start: 1.25rem;
+}
+
 .waiting-font--sans { font-family: system-ui, sans-serif; }
 .waiting-font--serif { font-family: Georgia, "Times New Roman", serif; }
 .waiting-font--monospace { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; }
@@ -63,6 +70,10 @@
   color: CanvasText;
   font: inherit;
   padding: 8px;
+}
+
+.waiting-editor-widget .waiting-question-editor {
+  height: 100%;
 }
 
 .waiting-widget--question small {

@@ -2,22 +2,36 @@ import { describe, expect, it } from "vitest";
 import { fromPixelGeometry, safeGeometry, toPixelGeometry } from "./geometry";
 
 describe("waiting widget geometry", () => {
-  it("keeps rotated widgets completely inside wide and tall viewports", () => {
+  it("keeps the same pixel spacing between widgets across viewport sizes", () => {
+    const left = { offsetX: -175, offsetY: 40, width: 100, height: 80, rotation: 0 };
+    const right = { offsetX: 125, offsetY: 40, width: 100, height: 80, rotation: 0 };
+
     for (const [width, height] of [[1200, 500], [400, 1000]] as const) {
-      const safe = safeGeometry({ x: -1, y: 2, width: 0.8, height: 0.7, rotation: 45 }, width, height);
-      const radians = safe.rotation * Math.PI / 180;
-      const extentX = (Math.abs(Math.cos(radians)) * safe.width * width + Math.abs(Math.sin(radians)) * safe.height * height) / 2;
-      const extentY = (Math.abs(Math.sin(radians)) * safe.width * width + Math.abs(Math.cos(radians)) * safe.height * height) / 2;
-      expect(safe.x * width - extentX).toBeGreaterThanOrEqual(-0.0001);
-      expect(safe.x * width + extentX).toBeLessThanOrEqual(width + 0.0001);
-      expect(safe.y * height - extentY).toBeGreaterThanOrEqual(-0.0001);
-      expect(safe.y * height + extentY).toBeLessThanOrEqual(height + 0.0001);
+      const leftPixel = toPixelGeometry(left, width, height);
+      const rightPixel = toPixelGeometry(right, width, height);
+      const leftCenter = leftPixel.left + leftPixel.width / 2;
+      const rightCenter = rightPixel.left + rightPixel.width / 2;
+
+      expect(rightCenter - leftCenter).toBe(300);
+      expect(leftPixel.top + leftPixel.height / 2).toBe(height / 2 + 40);
     }
   });
 
-  it("round-trips safe pixel geometry", () => {
-    const original = { x: 0.5, y: 0.4, width: 0.3, height: 0.2, rotation: 12 };
+  it("round-trips centered pixel geometry", () => {
+    const original = { offsetX: 80, offsetY: -60, width: 300, height: 120, rotation: 12 };
     const pixel = toPixelGeometry(original, 1000, 600);
     expect(fromPixelGeometry(pixel, 1000, 600)).toEqual(original);
+  });
+
+  it("keeps dimensions fixed and allows widgets to be completely offscreen", () => {
+    const original = { offsetX: 600, offsetY: 0, width: 600, height: 300, rotation: 0 };
+    const narrow = toPixelGeometry(original, 300, 500);
+
+    expect(narrow).toMatchObject({ width: 600, height: 300 });
+    expect(narrow.left).toBeGreaterThanOrEqual(300);
+    expect(safeGeometry(original)).toEqual(original);
+
+    const wideAgain = toPixelGeometry(original, 1000, 500);
+    expect(wideAgain).toMatchObject({ width: 600, height: 300 });
   });
 });

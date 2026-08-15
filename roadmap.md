@@ -92,8 +92,8 @@ Also: "Focus mode".
     * can stash a tab in the extension popup
 
 next:
-* make the floating camera use css resize instead of whatever custom resize command is provided
-* "widgets" / editable waiting screen
+* stop using modal editor for text, should be in-place
+    * TODO: open-source excalidraw?
 * confirm: I'm done with tracked sites works
 
 

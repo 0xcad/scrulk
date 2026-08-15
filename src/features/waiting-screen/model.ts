@@ -1,3 +1,5 @@
+import { resolveLegacyErasers } from "./drawing";
+
 export const WAITING_SCREEN_MAX_BYTES = 4 * 1024 * 1024;
 
 export const WAITING_FONT_FAMILIES = [
@@ -9,9 +11,9 @@ export const WAITING_FONT_FAMILIES = [
 export type WaitingFontFamily = (typeof WAITING_FONT_FAMILIES)[number];
 
 export interface WidgetGeometry {
-  /** Normalized center point and dimensions relative to the viewport. */
-  x: number;
-  y: number;
+  /** Pixel offset from the viewport center; dimensions are also CSS pixels. */
+  offsetX: number;
+  offsetY: number;
   width: number;
   height: number;
   rotation: number;
@@ -60,10 +62,13 @@ export interface WaitingScreen {
 }
 
 export const WAITING_WIDGET_MINIMUMS = {
-  text: { width: 0.1, height: 0.06 },
-  question: { width: 0.25, height: 0.18 },
-  drawing: { width: 0.1, height: 0.1 },
+  text: { width: 100, height: 40 },
+  question: { width: 250, height: 120 },
+  drawing: { width: 20, height: 20 },
 } as const;
+
+/** Reference viewport used only to migrate the previously normalized sizes. */
+export const WAITING_LEGACY_VIEWPORT = { width: 1000, height: 650 } as const;
 
 export const DEFAULT_WAITING_SCREEN: WaitingScreen = {
   widgets: [
@@ -72,39 +77,39 @@ export const DEFAULT_WAITING_SCREEN: WaitingScreen = {
       type: "text",
       markdown: "# waiting",
       fontFamily: "monospace",
-      x: 0.5,
-      y: 0.18,
-      width: 0.5,
-      height: 0.14,
+      offsetX: 0,
+      offsetY: -208,
+      width: 500,
+      height: 91,
       rotation: 0,
     },
     {
       id: "default-question-intent",
       type: "question",
       question: "what do you want out of this?",
-      x: 0.5,
-      y: 0.48,
-      width: 0.56,
-      height: 0.2,
+      offsetX: 0,
+      offsetY: -13,
+      width: 560,
+      height: 130,
       rotation: 0,
     },
     {
       id: "default-question-possibility",
       type: "question",
       question: "if you could do anything, what would it be?",
-      x: 0.5,
-      y: 0.73,
-      width: 0.56,
-      height: 0.2,
+      offsetX: 0,
+      offsetY: 149.5,
+      width: 560,
+      height: 130,
       rotation: 0,
     },
   ],
 };
 
 const DEFAULT_GEOMETRY: Record<WaitingWidget["type"], WidgetGeometry> = {
-  text: { x: 0.5, y: 0.35, width: 0.4, height: 0.16, rotation: 0 },
-  question: { x: 0.5, y: 0.5, width: 0.56, height: 0.2, rotation: 0 },
-  drawing: { x: 0.5, y: 0.5, width: 0.35, height: 0.35, rotation: 0 },
+  text: { offsetX: 0, offsetY: -97.5, width: 400, height: 104, rotation: 0 },
+  question: { offsetX: 0, offsetY: 0, width: 560, height: 130, rotation: 0 },
+  drawing: { offsetX: 0, offsetY: 0, width: 350, height: 228, rotation: 0 },
 };
 
 export function createWaitingWidget(type: WaitingWidget["type"]): WaitingWidget {
@@ -172,7 +177,9 @@ function normalizeWidget(raw: unknown): WaitingWidget | null {
     return {
       id: raw.id,
       type: "drawing",
-      strokes: raw.strokes.map(normalizeStroke).filter((stroke): stroke is DrawingStroke => stroke !== null),
+      strokes: resolveLegacyErasers(
+        raw.strokes.map(normalizeStroke).filter((stroke): stroke is DrawingStroke => stroke !== null),
+      ),
       ...withMinimum("drawing", geometry),
     };
   }
@@ -189,15 +196,44 @@ function withMinimum(type: WaitingWidget["type"], geometry: WidgetGeometry): Wid
 }
 
 function normalizeGeometry(raw: Record<string, unknown>): WidgetGeometry | null {
-  const values = [raw.x, raw.y, raw.width, raw.height, raw.rotation];
-  if (!values.every((value) => typeof value === "number" && Number.isFinite(value))) return null;
+  const hasCenteredOffsets = isFiniteNumber(raw.offsetX) && isFiniteNumber(raw.offsetY);
+  const hasLegacyPosition = isFiniteNumber(raw.x) && isFiniteNumber(raw.y);
+  if ((!hasCenteredOffsets && !hasLegacyPosition) ||
+    !isFiniteNumber(raw.width) || !isFiniteNumber(raw.height) || !isFiniteNumber(raw.rotation)) return null;
+  const rawWidth = raw.width as number;
+  const rawHeight = raw.height as number;
+  const legacyNormalizedSize = rawWidth > 0 && rawWidth <= 1 && rawHeight > 0 && rawHeight <= 1;
   return {
-    x: clamp(raw.x as number, 0, 1),
-    y: clamp(raw.y as number, 0, 1),
-    width: clamp(raw.width as number, 0.02, 1),
-    height: clamp(raw.height as number, 0.02, 1),
+    offsetX: clamp(
+      hasCenteredOffsets
+        ? raw.offsetX as number
+        : (clamp(raw.x as number, 0, 1) - 0.5) * WAITING_LEGACY_VIEWPORT.width,
+      -10_000,
+      10_000,
+    ),
+    offsetY: clamp(
+      hasCenteredOffsets
+        ? raw.offsetY as number
+        : (clamp(raw.y as number, 0, 1) - 0.5) * WAITING_LEGACY_VIEWPORT.height,
+      -10_000,
+      10_000,
+    ),
+    width: clamp(
+      legacyNormalizedSize ? rawWidth * WAITING_LEGACY_VIEWPORT.width : rawWidth,
+      1,
+      10_000,
+    ),
+    height: clamp(
+      legacyNormalizedSize ? rawHeight * WAITING_LEGACY_VIEWPORT.height : rawHeight,
+      1,
+      10_000,
+    ),
     rotation: normalizeRotation(raw.rotation as number),
   };
+}
+
+function isFiniteNumber(value: unknown): value is number {
+  return typeof value === "number" && Number.isFinite(value);
 }
 
 function normalizeStroke(raw: unknown): DrawingStroke | null {
@@ -213,7 +249,7 @@ function normalizeStroke(raw: unknown): DrawingStroke | null {
   return {
     tool: raw.tool,
     color: /^#[0-9a-f]{6}$/i.test(raw.color) ? raw.color : "#111111",
-    size: clamp(raw.size, 0.001, 0.2),
+    size: clamp(raw.size, 0.001, 1),
     points,
   };
 }

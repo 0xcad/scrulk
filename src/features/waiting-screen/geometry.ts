@@ -10,35 +10,11 @@ export interface PixelGeometry {
 
 export function safeGeometry(
   geometry: WidgetGeometry,
-  viewportWidth: number,
-  viewportHeight: number,
 ): WidgetGeometry {
-  if (viewportWidth <= 0 || viewportHeight <= 0) return geometry;
-  let width = Math.min(1, Math.max(0.02, geometry.width));
-  let height = Math.min(1, Math.max(0.02, geometry.height));
-  const radians = geometry.rotation * Math.PI / 180;
-  const cos = Math.abs(Math.cos(radians));
-  const sin = Math.abs(Math.sin(radians));
-  const extent = () => ({
-    x: (cos * width * viewportWidth + sin * height * viewportHeight) / 2,
-    y: (sin * width * viewportWidth + cos * height * viewportHeight) / 2,
-  });
-  let half = extent();
-  const scale = Math.min(
-    1,
-    viewportWidth / (half.x * 2 || viewportWidth),
-    viewportHeight / (half.y * 2 || viewportHeight),
-  );
-  width *= scale;
-  height *= scale;
-  half = extent();
-  const centerX = clamp(geometry.x * viewportWidth, half.x, viewportWidth - half.x);
-  const centerY = clamp(geometry.y * viewportHeight, half.y, viewportHeight - half.y);
   return {
-    x: centerX / viewportWidth,
-    y: centerY / viewportHeight,
-    width,
-    height,
+    ...geometry,
+    width: Math.max(1, geometry.width),
+    height: Math.max(1, geometry.height),
     rotation: geometry.rotation,
   };
 }
@@ -48,12 +24,12 @@ export function toPixelGeometry(
   viewportWidth: number,
   viewportHeight: number,
 ): PixelGeometry {
-  const safe = safeGeometry(geometry, viewportWidth, viewportHeight);
-  const width = safe.width * viewportWidth;
-  const height = safe.height * viewportHeight;
+  const safe = safeGeometry(geometry);
+  const width = safe.width;
+  const height = safe.height;
   return {
-    left: safe.x * viewportWidth - width / 2,
-    top: safe.y * viewportHeight - height / 2,
+    left: viewportWidth / 2 + safe.offsetX - width / 2,
+    top: viewportHeight / 2 + safe.offsetY - height / 2,
     width,
     height,
     rotation: safe.rotation,
@@ -66,15 +42,10 @@ export function fromPixelGeometry(
   viewportHeight: number,
 ): WidgetGeometry {
   return safeGeometry({
-    x: (pixel.left + pixel.width / 2) / viewportWidth,
-    y: (pixel.top + pixel.height / 2) / viewportHeight,
-    width: pixel.width / viewportWidth,
-    height: pixel.height / viewportHeight,
+    offsetX: pixel.left + pixel.width / 2 - viewportWidth / 2,
+    offsetY: pixel.top + pixel.height / 2 - viewportHeight / 2,
+    width: pixel.width,
+    height: pixel.height,
     rotation: pixel.rotation,
-  }, viewportWidth, viewportHeight);
-}
-
-function clamp(value: number, min: number, max: number): number {
-  if (min > max) return (min + max) / 2;
-  return Math.min(max, Math.max(min, value));
+  });
 }

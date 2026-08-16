@@ -37,7 +37,7 @@ export const DEFAULT_WAITING_SCREEN: WaitingScreen = {
         defaultQuestion(
           "default-question-possibility",
           385,
-          "if you could do anything, what would it be?",
+          "if you could be doing anything right now, what would it be?",
         ),
       ],
       name: "Waiting",

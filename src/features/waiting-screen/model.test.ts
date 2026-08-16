@@ -20,7 +20,7 @@ describe("waiting-screen model", () => {
     expect(shapes.find((shape) => shape["type"] === "Text")?.["text"]).toBe("waiting");
     expect(shapes.filter(isQuestion).map((shape) => shape["text"])).toEqual([
       "what do you want out of this?",
-      "if you could do anything, what would it be?",
+      "if you could be doing anything right now, what would it be?",
     ]);
   });
 

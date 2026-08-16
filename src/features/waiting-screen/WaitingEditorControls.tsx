@@ -1,13 +1,13 @@
 import {
   FillStyle,
   HorzAlign,
+  type Box,
   type Freehand,
   type Rectangle,
   type Shape,
   type ShapeProps,
-  type Text,
 } from "@dgmjs/core";
-import type { WaitingToolId } from "./dgm";
+import { waitingToolShortcut, type WaitingToolId } from "./dgm";
 import {
   paletteKinds,
   paletteTargets,
@@ -39,20 +39,25 @@ interface ToolbarProps {
 export function WaitingEditorToolbar({ activeTool, disabled, onActivate }: ToolbarProps) {
   return (
     <div class="waiting-editor-toolbar" role="toolbar" aria-label="Waiting screen tools">
-      {TOOL_ITEMS.map(({ id, emoji, label }) => (
-        <button
-          type="button"
-          key={id}
-          class="waiting-editor-tool"
-          title={label}
-          aria-label={label}
-          aria-pressed={activeTool === id}
-          disabled={disabled}
-          onClick={() => onActivate(id)}
-        >
-          <span aria-hidden="true">{emoji}</span>
-        </button>
-      ))}
+      {TOOL_ITEMS.map(({ id, emoji, label }) => {
+        const shortcut = waitingToolShortcut(id);
+        return (
+          <button
+            type="button"
+            key={id}
+            class="waiting-editor-tool"
+            title={`${label} (${shortcut})`}
+            aria-label={`${label}, shortcut ${shortcut}`}
+            aria-keyshortcuts={shortcut}
+            aria-pressed={activeTool === id}
+            disabled={disabled}
+            onClick={() => onActivate(id)}
+          >
+            <span aria-hidden="true">{emoji}</span>
+            <small aria-hidden="true">{shortcut}</small>
+          </button>
+        );
+      })}
     </div>
   );
 }
@@ -75,7 +80,7 @@ export function WaitingEditorPalette({
 
   const selectedValue = (kind: PaletteKind) => paletteTargets(kind, selections)[0];
   const rectangle = selectedValue("rectangle") as Rectangle | undefined;
-  const text = selectedValue("text") as Text | undefined;
+  const text = selectedValue("text") as Box | undefined;
   const freehand = selectedValue("freehand") as Freehand | undefined;
 
   return (

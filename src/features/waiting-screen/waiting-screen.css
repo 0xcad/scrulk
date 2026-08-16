@@ -30,16 +30,14 @@
   gap: 6px;
   padding: 10px;
   transform-origin: center;
-  border: 1px solid currentColor;
-  border-radius: 10px;
   background: Canvas;
   color: CanvasText;
 }
 
-.waiting-question > span {
+.waiting-question-prompt {
   flex: none;
-  font-weight: 600;
   overflow-wrap: anywhere;
+  opacity: 0.7;
 }
 
 .waiting-question textarea {
@@ -48,9 +46,6 @@
   width: 100%;
   flex: 1;
   resize: none;
-  border: 1px solid currentColor;
-  background: Canvas;
-  color: CanvasText;
   font: inherit;
   padding: 8px;
 }
@@ -116,6 +111,7 @@
 }
 
 .waiting-editor-tool {
+  position: relative;
   display: grid;
   width: 38px;
   height: 38px;
@@ -129,9 +125,69 @@
   text-transform: none;
 }
 
+.waiting-editor-tool small {
+  position: absolute;
+  right: 3px;
+  bottom: 2px;
+  font-size: 8px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  opacity: 0.55;
+}
+
 .waiting-editor-tool[aria-pressed="true"] {
   border-color: color-mix(in srgb, var(--primary) 55%, transparent);
   background: color-mix(in srgb, var(--primary) 15%, Canvas);
+}
+
+.waiting-editor-origin {
+  position: absolute;
+  z-index: 2;
+  width: 18px;
+  height: 18px;
+  transform: translate(-50%, -50%);
+  color: color-mix(in srgb, CanvasText 45%, transparent);
+  pointer-events: none;
+}
+
+.waiting-editor-origin::before,
+.waiting-editor-origin::after {
+  position: absolute;
+  content: "";
+  background: currentColor;
+}
+
+.waiting-editor-origin::before {
+  top: 8px;
+  left: 0;
+  width: 18px;
+  height: 1px;
+}
+
+.waiting-editor-origin::after {
+  top: 0;
+  left: 8px;
+  width: 1px;
+  height: 18px;
+}
+
+.waiting-editor-origin span {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  white-space: nowrap;
+  font-size: 9px;
+  line-height: 1;
+}
+
+.waiting-dgm-text-editor {
+  overflow: visible !important;
+}
+
+.waiting-dgm-text-editor .ProseMirror p,
+.waiting-dgm-text-editor .ProseMirror ul,
+.waiting-dgm-text-editor .ProseMirror ol {
+  margin-block-start: 0;
 }
 
 .waiting-editor-palette {

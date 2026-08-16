@@ -1,10 +1,13 @@
 import type { Editor, Shape, ShapeProps } from "@dgmjs/core";
-import { DGMEditor } from "@dgmjs/react";
+import { DGMEditorCore, DGMTextInplaceEditor } from "@dgmjs/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "preact/hooks";
 import { getSettings, onSettingsChange, setSettings } from "../../shared/storage";
 import {
   createWaitingEditorOptions,
+  getWaitingPageOriginPosition,
+  hideWaitingPageBoundary,
   isWaitingToolId,
+  waitingToolForKeyboardEvent,
   type WaitingToolId,
 } from "./dgm";
 import {
@@ -34,6 +37,7 @@ export function WaitingEditor({ onDirtyChange }: Props) {
   const [editor, setEditor] = useState<Editor | null>(null);
   const [activeTool, setActiveTool] = useState<WaitingToolId>("Select");
   const [selections, setSelections] = useState<Shape[]>([]);
+  const [originPosition, setOriginPosition] = useState<[number, number] | null>(null);
   const [paletteDefaults, setPaletteDefaults] = useState<EditorPaletteDefaults>(
     DEFAULT_EDITOR_PALETTE,
   );
@@ -50,6 +54,10 @@ export function WaitingEditor({ onDirtyChange }: Props) {
   draftRef.current = draft;
   paletteDefaultsRef.current = paletteDefaults;
 
+  const updateOriginPosition = useCallback((currentEditor = editorRef.current) => {
+    setOriginPosition(currentEditor ? getWaitingPageOriginPosition(currentEditor) : null);
+  }, []);
+
   const loadDocument = useCallback((next: WaitingScreen, fitToScreen = true) => {
     const copy = cloneWaitingScreen(next);
     setDraft(copy);
@@ -65,6 +73,7 @@ export function WaitingEditor({ onDirtyChange }: Props) {
       if (fitToScreen) currentEditor.fitToScreen(0.9, 1);
       currentEditor.repaint();
       currentEditor.activateDefaultHandler();
+      updateOriginPosition(currentEditor);
       setLoadError(null);
       setActiveTool("Select");
       setSelections([]);
@@ -73,7 +82,7 @@ export function WaitingEditor({ onDirtyChange }: Props) {
     } finally {
       loadingRef.current = false;
     }
-  }, []);
+  }, [updateOriginPosition]);
 
   useEffect(() => {
     let mounted = true;
@@ -108,14 +117,37 @@ export function WaitingEditor({ onDirtyChange }: Props) {
   }, []);
 
   useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (loadError !== null) return;
+      const tool = waitingToolForKeyboardEvent({
+        key: event.key,
+        defaultPrevented: event.defaultPrevented,
+        repeat: event.repeat,
+        altKey: event.altKey,
+        ctrlKey: event.ctrlKey,
+        metaKey: event.metaKey,
+        shiftKey: event.shiftKey,
+        editableTarget: isEditableTarget(event.target),
+      });
+      const currentEditor = editorRef.current;
+      if (!tool || !currentEditor) return;
+      event.preventDefault();
+      currentEditor.activateHandler(tool);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [loadError]);
+
+  useEffect(() => {
     if (!editor) return;
     const observer = new ResizeObserver(() => {
       editor.fit();
       editor.repaint();
+      updateOriginPosition(editor);
     });
     observer.observe(editor.parent);
     return () => observer.disconnect();
-  }, [editor]);
+  }, [editor, updateOriginPosition]);
 
   if (!draft || !saved) return <p>Loading…</p>;
 
@@ -123,6 +155,11 @@ export function WaitingEditor({ onDirtyChange }: Props) {
     editorRef.current = nextEditor;
     setEditor(nextEditor);
     loadDocument(draftRef.current ?? draft);
+    requestAnimationFrame(() => {
+      if (!nextEditor.parent.isConnected) return;
+      hideWaitingPageBoundary(nextEditor);
+      updateOriginPosition(nextEditor);
+    });
   };
 
   const captureDocument = () => {
@@ -171,7 +208,7 @@ export function WaitingEditor({ onDirtyChange }: Props) {
   return (
     <section class="waiting-editor-page">
       <div class="waiting-design-canvas">
-        <DGMEditor
+        <DGMEditorCore
           className="waiting-dgm-editor"
           options={options}
           showGrid={false}
@@ -185,10 +222,28 @@ export function WaitingEditor({ onDirtyChange }: Props) {
           onShapeInitialize={(shape: Shape) => {
             initializeWaitingShape(shape, paletteDefaultsRef.current);
           }}
+          onZoom={() => updateOriginPosition()}
+          onScroll={() => updateOriginPosition()}
           onTransaction={captureDocument}
           onUndo={captureDocument}
           onRedo={captureDocument}
-        />
+        >
+          {editor && (
+            <DGMTextInplaceEditor
+              className="waiting-dgm-text-editor"
+              editor={editor}
+            />
+          )}
+        </DGMEditorCore>
+        {originPosition && (
+          <div
+            class="waiting-editor-origin"
+            style={{ left: `${originPosition[0]}px`, top: `${originPosition[1]}px` }}
+            aria-hidden="true"
+          >
+            <span>(0,0)</span>
+          </div>
+        )}
         <WaitingEditorPalette
           activeTool={activeTool}
           defaults={paletteDefaults}
@@ -240,4 +295,10 @@ export function WaitingEditor({ onDirtyChange }: Props) {
 
 function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
+}
+
+function isEditableTarget(target: EventTarget | null): boolean {
+  if (!(target instanceof Element)) return false;
+  return target.matches("input, textarea, select, [contenteditable='true']") ||
+    target.closest("input, textarea, select, [contenteditable='true']") !== null;
 }

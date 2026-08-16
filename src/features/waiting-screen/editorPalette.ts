@@ -9,7 +9,7 @@ import {
   type Shape,
   type ShapeProps,
 } from "@dgmjs/core";
-import type { WaitingToolId } from "./dgm";
+import { isWaitingQuestionShape, type WaitingToolId } from "./dgm";
 
 export type PaletteKind = "rectangle" | "text" | "freehand";
 
@@ -113,6 +113,7 @@ export function updatePaletteDefaults(
 }
 
 function paletteKindForShape(shape: Shape): PaletteKind | null {
+  if (isWaitingQuestionShape(shape)) return "text";
   if (shape instanceof Text) return "text";
   if (shape instanceof Rectangle) return "rectangle";
   if (shape instanceof Freehand) return "freehand";

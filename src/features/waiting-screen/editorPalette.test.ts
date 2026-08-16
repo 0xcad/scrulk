@@ -14,6 +14,7 @@ import {
   paletteTargets,
   updatePaletteDefaults,
 } from "./editorPalette";
+import { WAITING_QUESTION_TAG } from "./model";
 
 describe("waiting editor palette", () => {
   it("shows controls for supported tools when nothing is selected", () => {
@@ -26,15 +27,19 @@ describe("waiting editor palette", () => {
 
   it("uses supported selections instead of the active tool", () => {
     const rectangle = new Rectangle();
+    const question = new Rectangle();
+    question.tags = [WAITING_QUESTION_TAG];
     const text = new Text();
     const freehand = new Freehand();
     const highlighter = new Highlighter();
 
-    expect(paletteKinds("Text", [rectangle, text, freehand, highlighter])).toEqual([
+    expect(paletteKinds("Text", [rectangle, question, text, freehand, highlighter])).toEqual([
       "rectangle",
       "text",
       "freehand",
     ]);
+    expect(paletteKinds("Select", [question])).toEqual(["text"]);
+    expect(paletteTargets("text", [rectangle, question, text])).toEqual([question, text]);
     expect(paletteTargets("freehand", [rectangle, freehand, highlighter])).toEqual([freehand]);
     expect(paletteKinds("Rectangle", [highlighter])).toEqual([]);
   });

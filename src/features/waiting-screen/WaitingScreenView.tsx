@@ -3,8 +3,10 @@ import { DGMEditorCore } from "@dgmjs/react";
 import { useEffect, useMemo, useState } from "preact/hooks";
 import {
   createWaitingViewerOptions,
+  getWaitingQuestionAppearance,
   getWaitingQuestionPrompt,
   getWaitingQuestionShapes,
+  hideWaitingPageBoundary,
 } from "./dgm";
 import {
   cloneWaitingScreen,
@@ -33,6 +35,9 @@ interface QuestionLayout {
   height: number;
   scale: number;
   rotation: number;
+  fontColor: string;
+  fontFamily: string;
+  textAlign: Box["horzAlign"];
 }
 
 export function WaitingScreenView({ screen, timerElapsed, onQuestionsComplete }: Props) {
@@ -70,7 +75,12 @@ export function WaitingScreenView({ screen, timerElapsed, onQuestionsComplete }:
     loadViewerDocument(editor, screen, setQuestions, setLoadError, setLoaded);
   }, [editor, screen]);
 
-  const handleMount = (nextEditor: Editor) => setEditor(nextEditor);
+  const handleMount = (nextEditor: Editor) => {
+    setEditor(nextEditor);
+    requestAnimationFrame(() => {
+      if (nextEditor.parent.isConnected) hideWaitingPageBoundary(nextEditor);
+    });
+  };
 
   useEffect(() => {
     if (!editor) return;
@@ -86,7 +96,6 @@ export function WaitingScreenView({ screen, timerElapsed, onQuestionsComplete }:
       <DGMEditorCore
         className="waiting-dgm-viewer"
         options={options}
-        enabled={false}
         showGrid={false}
         snapToGrid={false}
         snapToObjects={false}
@@ -106,7 +115,16 @@ export function WaitingScreenView({ screen, timerElapsed, onQuestionsComplete }:
               transform: `rotate(${question.rotation}deg) scale(${question.scale})`,
             }}
           >
-            <span>{question.prompt}</span>
+            <span
+              class="waiting-question-prompt"
+              style={{
+                color: question.fontColor,
+                fontFamily: question.fontFamily,
+                textAlign: question.textAlign,
+              }}
+            >
+              {question.prompt}
+            </span>
             <textarea
               value={answer}
               onInput={(event) => {
@@ -165,6 +183,7 @@ function questionLayout(editor: Editor, shape: Box, scale: number): QuestionLayo
   const rect = shape.getRectInDCS(editor.canvas);
   const [left = 0, top = 0] = rect[0] ?? [];
   const [right = left, bottom = top] = rect[1] ?? [];
+  const appearance = getWaitingQuestionAppearance(editor, shape);
   return {
     id: shape.id,
     prompt: getWaitingQuestionPrompt(shape),
@@ -174,6 +193,7 @@ function questionLayout(editor: Editor, shape: Box, scale: number): QuestionLayo
     height: bottom - top,
     scale,
     rotation: utils.angleInCCS(editor.canvas, shape),
+    ...appearance,
   };
 }
 

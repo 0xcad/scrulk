@@ -23,7 +23,7 @@ import { DEFAULT_SETTINGS, type Settings } from "../../../shared/settings";
 import { WaitingScreenView } from "../../waiting-screen/WaitingScreenView";
 
 const DEFAULT_TITLE = "Scroll Unlock";
-const INACTIVE_TITLE = "Return to Scroll Unlock to continue waiting";
+const INACTIVE_TITLE = "waiting timer paused ⏸️";
 
 function destination(): string | undefined {
   return new URLSearchParams(window.location.search).get("dest") ?? undefined;
@@ -172,8 +172,8 @@ export function Gateway() {
   if (dayState.accessFlowPhase === "waitingConfirmation") {
     return (
       <main class="scrulk-card flow-card gateway-confirmation">
-        <h1 class="scrulk-card-title">Wait?</h1>
-        <p class="scrulk-card-copy">Do you want to enter the waiting screen?</p>
+        <h1 class="scrulk-card-title">Enter tracked site?</h1>
+        <p class="scrulk-card-copy">You'll have to wait first before continuing with this action</p>
         <div class="scrulk-card-actions">
           <button type="button" class="primary" onClick={() => void sendCommand({ type: "access:declineWaiting" })}>go back</button>
           <button type="button" class="secondary" onClick={() => void sendCommand({ type: "access:confirmWaiting" })}>continue &gt;</button>

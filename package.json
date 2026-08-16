@@ -20,6 +20,7 @@
   "dependencies": {
     "@dgmjs/core": "1.5.5",
     "@dgmjs/react": "1.5.2",
+    "@tiptap/core": "^2.27.2",
     "idb": "^8.0.3",
     "preact": "^10.22.0",
     "webextension-polyfill": "^0.12.0"

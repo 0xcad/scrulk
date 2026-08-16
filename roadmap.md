@@ -91,11 +91,6 @@ Also: "Focus mode".
 * good idea! let user save tabs for later in focus mode (stash a tab). essentially like firefox "send tab to device". you send a tab out of focus mode, when you turn off focus mode you get it back later.
     * can stash a tab in the extension popup
 
-next:
-* stop using modal editor for text, should be in-place
-    * TODO: open-source excalidraw?
-* confirm: I'm done with tracked sites works
-
 
 ## Ideas I doubt I could personally implement, or perhaps could use
 

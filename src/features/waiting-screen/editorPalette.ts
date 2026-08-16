@@ -4,10 +4,12 @@ import {
   HorzAlign,
   Rectangle,
   Text,
+  VertAlign,
   type FillStyleEnum,
   type HorzAlignEnum,
   type Shape,
   type ShapeProps,
+  type VertAlignEnum,
 } from "@dgmjs/core";
 import { isWaitingQuestionShape, type WaitingToolId } from "./dgm";
 
@@ -22,6 +24,8 @@ interface TextDefaults {
   fontColor: string;
   fontFamily: string;
   horzAlign: HorzAlignEnum;
+  vertAlign: VertAlignEnum;
+  padding: number[];
 }
 
 interface FreehandDefaults {
@@ -32,6 +36,7 @@ interface FreehandDefaults {
 export interface EditorPaletteDefaults {
   rectangle: RectangleDefaults;
   text: TextDefaults;
+  rectangleText: TextDefaults;
   freehand: FreehandDefaults;
 }
 
@@ -44,6 +49,15 @@ export const DEFAULT_EDITOR_PALETTE: EditorPaletteDefaults = {
     fontColor: "#000000",
     fontFamily: "sans-serif",
     horzAlign: HorzAlign.LEFT,
+    vertAlign: VertAlign.TOP,
+    padding: [4, 4, 4, 4],
+  },
+  rectangleText: {
+    fontColor: "#000000",
+    fontFamily: "sans-serif",
+    horzAlign: HorzAlign.LEFT,
+    vertAlign: VertAlign.MIDDLE,
+    padding: [4, 4, 4, 4],
   },
   freehand: {
     strokeColor: "#000000",
@@ -53,36 +67,40 @@ export const DEFAULT_EDITOR_PALETTE: EditorPaletteDefaults = {
 
 export function paletteKinds(activeTool: WaitingToolId, selections: Shape[]): PaletteKind[] {
   if (selections.length > 0) {
-    const kinds = new Set(selections.flatMap((shape) => {
-      const kind = paletteKindForShape(shape);
-      return kind ? [kind] : [];
-    }));
+    const kinds = new Set(selections.flatMap(paletteKindsForShape));
     return (["rectangle", "text", "freehand"] as const).filter((kind) => kinds.has(kind));
   }
 
-  if (activeTool === "Rectangle") return ["rectangle"];
+  if (activeTool === "Rectangle") return ["rectangle", "text"];
   if (activeTool === "Text") return ["text"];
   if (activeTool === "Freehand") return ["freehand"];
   return [];
 }
 
 export function paletteTargets(kind: PaletteKind, selections: Shape[]): Shape[] {
-  return selections.filter((shape) => paletteKindForShape(shape) === kind);
+  return selections.filter((shape) => paletteKindsForShape(shape).includes(kind));
 }
 
 export function initializeWaitingShape(
   shape: Shape,
   defaults: EditorPaletteDefaults,
 ): void {
-  const kind = paletteKindForShape(shape);
-  if (!kind) return;
-  Object.assign(shape, defaults[kind]);
+  if (shape instanceof Rectangle) {
+    Object.assign(shape, defaults.rectangle, defaults.rectangleText);
+    return;
+  }
+  if (shape instanceof Text) {
+    Object.assign(shape, defaults.text);
+    return;
+  }
+  if (shape instanceof Freehand) Object.assign(shape, defaults.freehand);
 }
 
 export function updatePaletteDefaults(
   defaults: EditorPaletteDefaults,
   kind: PaletteKind,
   props: ShapeProps,
+  activeTool: WaitingToolId = "Text",
 ): EditorPaletteDefaults {
   if (kind === "rectangle") {
     return {
@@ -94,12 +112,16 @@ export function updatePaletteDefaults(
     };
   }
   if (kind === "text") {
+    const key = activeTool === "Rectangle" ? "rectangleText" : "text";
     return {
       ...defaults,
-      text: {
-        fontColor: props.fontColor ?? defaults.text.fontColor,
-        fontFamily: props.fontFamily ?? defaults.text.fontFamily,
-        horzAlign: props.horzAlign ?? defaults.text.horzAlign,
+      [key]: {
+        ...defaults[key],
+        fontColor: props.fontColor ?? defaults[key].fontColor,
+        fontFamily: props.fontFamily ?? defaults[key].fontFamily,
+        horzAlign: props.horzAlign ?? defaults[key].horzAlign,
+        vertAlign: props.vertAlign ?? defaults[key].vertAlign,
+        padding: props.padding ?? defaults[key].padding,
       },
     };
   }
@@ -112,10 +134,17 @@ export function updatePaletteDefaults(
   };
 }
 
-function paletteKindForShape(shape: Shape): PaletteKind | null {
-  if (isWaitingQuestionShape(shape)) return "text";
-  if (shape instanceof Text) return "text";
-  if (shape instanceof Rectangle) return "rectangle";
-  if (shape instanceof Freehand) return "freehand";
-  return null;
+export function textDefaultsForTool(
+  defaults: EditorPaletteDefaults,
+  activeTool: WaitingToolId,
+): TextDefaults {
+  return activeTool === "Rectangle" ? defaults.rectangleText : defaults.text;
+}
+
+function paletteKindsForShape(shape: Shape): PaletteKind[] {
+  if (isWaitingQuestionShape(shape)) return ["text"];
+  if (shape instanceof Rectangle) return ["rectangle", "text"];
+  if (shape instanceof Text) return ["text"];
+  if (shape instanceof Freehand) return ["freehand"];
+  return [];
 }

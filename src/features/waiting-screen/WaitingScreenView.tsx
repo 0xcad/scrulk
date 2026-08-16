@@ -1,9 +1,10 @@
 import { utils, type Box, type Editor } from "@dgmjs/core";
 import { DGMEditorCore } from "@dgmjs/react";
-import { useEffect, useMemo, useState } from "preact/hooks";
+import { useEffect, useMemo, useRef, useState } from "preact/hooks";
 import {
   createWaitingViewerOptions,
   getWaitingQuestionAppearance,
+  getWaitingQuestionContent,
   getWaitingQuestionPrompt,
   getWaitingQuestionShapes,
   hideWaitingPageBoundary,
@@ -14,6 +15,7 @@ import {
   waitingQuestionsComplete,
   type WaitingScreen,
 } from "./model";
+import { WaitingRichText } from "./WaitingRichText";
 
 interface Props {
   screen: WaitingScreen;
@@ -29,6 +31,7 @@ interface Answer {
 interface QuestionLayout {
   id: string;
   prompt: string;
+  content: unknown;
   left: number;
   top: number;
   width: number;
@@ -46,6 +49,7 @@ export function WaitingScreenView({ screen, timerElapsed, onQuestionsComplete }:
   const [loadError, setLoadError] = useState<string | null>(null);
   const [loaded, setLoaded] = useState(false);
   const [editor, setEditor] = useState<Editor | null>(null);
+  const editorRef = useRef<Editor | null>(null);
   const options = useMemo(createWaitingViewerOptions, []);
 
   useEffect(() => {
@@ -76,6 +80,7 @@ export function WaitingScreenView({ screen, timerElapsed, onQuestionsComplete }:
   }, [editor, screen]);
 
   const handleMount = (nextEditor: Editor) => {
+    editorRef.current = nextEditor;
     setEditor(nextEditor);
     requestAnimationFrame(() => {
       if (nextEditor.parent.isConnected) hideWaitingPageBoundary(nextEditor);
@@ -100,6 +105,9 @@ export function WaitingScreenView({ screen, timerElapsed, onQuestionsComplete }:
         snapToGrid={false}
         snapToObjects={false}
         onMount={handleMount}
+        onScroll={() => {
+          if (editorRef.current) updateQuestionLayouts(editorRef.current, setQuestions);
+        }}
       />
       {questions.map((question) => {
         const answer = answers[question.id]?.value ?? "";
@@ -123,7 +131,7 @@ export function WaitingScreenView({ screen, timerElapsed, onQuestionsComplete }:
                 textAlign: question.textAlign,
               }}
             >
-              {question.prompt}
+              <WaitingRichText content={question.content} />
             </span>
             <textarea
               value={answer}
@@ -175,6 +183,13 @@ function layoutViewer(
   editor.fit();
   editor.fitToScreen(0.9, 1);
   editor.repaint(false);
+  updateQuestionLayouts(editor, setQuestions);
+}
+
+function updateQuestionLayouts(
+  editor: Editor,
+  setQuestions: (questions: QuestionLayout[]) => void,
+): void {
   const scale = editor.getScale();
   setQuestions(getWaitingQuestionShapes(editor).map((shape) => questionLayout(editor, shape, scale)));
 }
@@ -187,6 +202,7 @@ function questionLayout(editor: Editor, shape: Box, scale: number): QuestionLayo
   return {
     id: shape.id,
     prompt: getWaitingQuestionPrompt(shape),
+    content: getWaitingQuestionContent(shape),
     left,
     top,
     width: right - left,

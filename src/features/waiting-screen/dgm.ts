@@ -85,10 +85,11 @@ export function createWaitingEditorOptions(): Partial<EditorOptions> {
 }
 
 export function createWaitingViewerOptions(): Partial<EditorOptions> {
+  const hand = basicSetup().handlers?.find(({ id }) => id === "Hand");
   return {
-    handlers: [],
+    handlers: hand ? [hand] : [],
     keymap: {},
-    defaultHandlerId: null,
+    defaultHandlerId: "Hand",
     allowAutoScroll: false,
     allowCreateTextOnCanvas: false,
     allowCreateTextOnConnector: false,
@@ -106,6 +107,10 @@ export function getWaitingQuestionShapes(editor: Editor): Box[] {
 
 export function getWaitingQuestionPrompt(shape: Box): string {
   return textUtils.extractTextFromShapes([shape]).trim();
+}
+
+export function getWaitingQuestionContent(shape: Box): unknown {
+  return shape.text;
 }
 
 export function getWaitingQuestionAppearance(

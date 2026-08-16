@@ -1,5 +1,9 @@
-import type { Editor, Shape, ShapeProps } from "@dgmjs/core";
-import { DGMEditorCore, DGMTextInplaceEditor } from "@dgmjs/react";
+import type { Box, Editor, Shape, ShapeProps } from "@dgmjs/core";
+import {
+  DGMEditorCore,
+  DGMTextInplaceEditor,
+  type TiptapEditor,
+} from "@dgmjs/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "preact/hooks";
 import { getSettings, onSettingsChange, setSettings } from "../../shared/storage";
 import {
@@ -26,6 +30,7 @@ import {
   type WaitingScreen,
 } from "./model";
 import { WaitingEditorPalette, WaitingEditorToolbar } from "./WaitingEditorControls";
+import { installWaitingHeadingShortcuts } from "./textShortcuts";
 
 interface Props {
   onDirtyChange: (dirty: boolean) => void;
@@ -47,6 +52,8 @@ export function WaitingEditor({ onDirtyChange }: Props) {
   const draftRef = useRef<WaitingScreen | null>(null);
   const loadingRef = useRef(false);
   const paletteDefaultsRef = useRef(paletteDefaults);
+  const editingTextShapeRef = useRef<Box | null>(null);
+  const textShortcutCleanupRef = useRef<(() => void) | null>(null);
   const options = useMemo(createWaitingEditorOptions, []);
   const dirty = saved !== null && draft !== null && JSON.stringify(saved) !== JSON.stringify(draft);
   const dirtyRef = useRef(dirty);
@@ -106,6 +113,7 @@ export function WaitingEditor({ onDirtyChange }: Props) {
 
   useEffect(() => onDirtyChange(dirty), [dirty, onDirtyChange]);
   useEffect(() => () => onDirtyChange(false), [onDirtyChange]);
+  useEffect(() => () => textShortcutCleanupRef.current?.(), []);
   useEffect(() => {
     const beforeUnload = (event: BeforeUnloadEvent) => {
       if (!dirtyRef.current) return;
@@ -182,7 +190,7 @@ export function WaitingEditor({ onDirtyChange }: Props) {
       currentEditor.actions.update(props, targets);
       return;
     }
-    setPaletteDefaults((current) => updatePaletteDefaults(current, kind, props));
+    setPaletteDefaults((current) => updatePaletteDefaults(current, kind, props, activeTool));
   };
 
   const save = async () => {
@@ -203,6 +211,14 @@ export function WaitingEditor({ onDirtyChange }: Props) {
     } catch (error: unknown) {
       setSaveError(`Could not save waiting screen: ${errorMessage(error)}`);
     }
+  };
+
+  const handleTextEditorMount = (tiptapEditor: TiptapEditor) => {
+    textShortcutCleanupRef.current?.();
+    textShortcutCleanupRef.current = installWaitingHeadingShortcuts(
+      tiptapEditor,
+      () => editingTextShapeRef.current?.fontSize ?? 16,
+    );
   };
 
   return (
@@ -232,6 +248,10 @@ export function WaitingEditor({ onDirtyChange }: Props) {
             <DGMTextInplaceEditor
               className="waiting-dgm-text-editor"
               editor={editor}
+              onMount={handleTextEditorMount}
+              onOpen={(shape: Box) => {
+                editingTextShapeRef.current = shape;
+              }}
             />
           )}
         </DGMEditorCore>

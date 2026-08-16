@@ -1,6 +1,7 @@
 import {
   FillStyle,
   HorzAlign,
+  VertAlign,
   type Box,
   type Freehand,
   type Rectangle,
@@ -11,6 +12,7 @@ import { waitingToolShortcut, type WaitingToolId } from "./dgm";
 import {
   paletteKinds,
   paletteTargets,
+  textDefaultsForTool,
   type EditorPaletteDefaults,
   type PaletteKind,
 } from "./editorPalette";
@@ -82,6 +84,7 @@ export function WaitingEditorPalette({
   const rectangle = selectedValue("rectangle") as Rectangle | undefined;
   const text = selectedValue("text") as Box | undefined;
   const freehand = selectedValue("freehand") as Freehand | undefined;
+  const textDefaults = textDefaultsForTool(defaults, activeTool);
 
   return (
     <aside class="waiting-editor-palette" aria-label="Tool properties">
@@ -118,14 +121,14 @@ export function WaitingEditorPalette({
           <legend>text</legend>
           <ColorControl
             label="Color"
-            value={text?.fontColor ?? defaults.text.fontColor}
-            fallback={defaults.text.fontColor}
+            value={text?.fontColor ?? textDefaults.fontColor}
+            fallback={textDefaults.fontColor}
             onChange={(fontColor) => onChange("text", { fontColor })}
           />
           <label class="waiting-palette-control">
             <span>font</span>
             <select
-              value={fontOption(text?.fontFamily ?? defaults.text.fontFamily)}
+              value={fontOption(text?.fontFamily ?? textDefaults.fontFamily)}
               onChange={(event) => onChange("text", {
                 fontFamily: (event.currentTarget as HTMLSelectElement).value,
               })}
@@ -135,7 +138,7 @@ export function WaitingEditorPalette({
               <option value="sans-serif">sans</option>
             </select>
           </label>
-          <div class="waiting-palette-button-row" aria-label="Text alignment">
+          <div class="waiting-palette-button-row" aria-label="Horizontal text alignment">
             {([
               [HorzAlign.LEFT, "left", "L"],
               [HorzAlign.CENTER, "center", "C"],
@@ -144,13 +147,44 @@ export function WaitingEditorPalette({
               <PaletteButton
                 key={alignment}
                 label={`${label} align`}
-                active={(text?.horzAlign ?? defaults.text.horzAlign) === alignment}
+                active={(text?.horzAlign ?? textDefaults.horzAlign) === alignment}
                 onClick={() => onChange("text", { horzAlign: alignment })}
               >
                 {glyph}
               </PaletteButton>
             ))}
           </div>
+          <div class="waiting-palette-button-row" aria-label="Vertical text alignment">
+            {([
+              [VertAlign.TOP, "top", "T"],
+              [VertAlign.MIDDLE, "middle", "M"],
+              [VertAlign.BOTTOM, "bottom", "B"],
+            ] as const).map(([alignment, label, glyph]) => (
+              <PaletteButton
+                key={alignment}
+                label={`${label} vertical align`}
+                active={(text?.vertAlign ?? textDefaults.vertAlign) === alignment}
+                onClick={() => onChange("text", { vertAlign: alignment })}
+              >
+                {glyph}
+              </PaletteButton>
+            ))}
+          </div>
+          <label class="waiting-palette-control waiting-palette-range">
+            <span>padding</span>
+            <input
+              type="range"
+              min="0"
+              max="32"
+              step="1"
+              value={uniformPadding(text?.padding ?? textDefaults.padding)}
+              onInput={(event) => {
+                const padding = Number((event.currentTarget as HTMLInputElement).value);
+                onChange("text", { padding: [padding, padding, padding, padding] });
+              }}
+            />
+            <output>{uniformPadding(text?.padding ?? textDefaults.padding)}</output>
+          </label>
         </fieldset>
       )}
 
@@ -236,4 +270,8 @@ function asInputColor(value: string, fallback: string): string {
 function fontOption(value: string): string {
   if (value === "monospace" || value === "serif" || value === "sans-serif") return value;
   return "sans-serif";
+}
+
+function uniformPadding(padding: number[]): number {
+  return Math.min(32, Math.max(0, Math.round(padding[0] ?? 0)));
 }

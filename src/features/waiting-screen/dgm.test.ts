@@ -18,7 +18,8 @@ describe("waiting DGM integration", () => {
     const editorOptions = createWaitingEditorOptions();
     const viewerOptions = createWaitingViewerOptions();
     expect(editorOptions.handlers?.map(({ id }) => id)).toEqual(WAITING_TOOL_IDS);
-    expect(viewerOptions.handlers).toEqual([]);
+    expect(viewerOptions.handlers?.map(({ id }) => id)).toEqual(["Hand"]);
+    expect(viewerOptions.defaultHandlerId).toBe("Hand");
     expect(editorOptions.blankColor).toBe("$background");
     expect(editorOptions.canvasColor).toBe("$background");
     expect(viewerOptions.blankColor).toBe("$background");

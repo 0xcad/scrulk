@@ -105,9 +105,7 @@
   padding: 4px;
   transform: translateX(-50%);
   border: 1px solid var(--border);
-  border-radius: 8px;
   background: Canvas;
-  box-shadow: 0 4px 16px color-mix(in srgb, CanvasText 18%, transparent);
 }
 
 .waiting-editor-tool {
@@ -118,7 +116,6 @@
   padding: 0;
   place-items: center;
   border-color: transparent;
-  border-radius: 6px;
   background: transparent;
   font-size: 19px;
   line-height: 1;
@@ -201,9 +198,7 @@
   padding: 10px;
   overflow-y: auto;
   border: 1px solid var(--border);
-  border-radius: 8px;
   background: Canvas;
-  box-shadow: 0 4px 16px color-mix(in srgb, CanvasText 14%, transparent);
 }
 
 .waiting-editor-palette fieldset {
@@ -244,7 +239,6 @@
   flex: 1;
   padding: 4px 6px;
   border-color: var(--border);
-  border-radius: 5px;
   font-size: 12px;
 }
 
@@ -276,7 +270,6 @@
   height: 28px;
   padding: 2px;
   border: 1px solid var(--border);
-  border-radius: 4px;
   background: Canvas;
   cursor: pointer;
 }

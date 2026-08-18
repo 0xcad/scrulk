@@ -71,12 +71,6 @@ ai generated code cleanup:
 metrics idea: capture moving average of "outlier scrolling". my average right now is 11 mins per day, that seems suspiciously good, but I'm also trying to measure binge scrolling, which is less frequent. so maybe that's measuring a moving average of my top 5% outlier scroll sessions? another idea could also just be plotting a normal distribution of scrolling...
 * how long was this binge scroll session compared to your last one? what about the ones before? what do your trendlines look like?
 
-If I like camera on pause menu, keep it, but make the styling look nicer
-If I dislike it, get rid of it (commit 149aaf61becbf377cb89f73879f0045f6165819b)
-* codex resume 019fb5d7-5d24-7c22-9803-be04b224db47
-
-Focus/research mode: hide timer, intentionally more permissive?
-
 idea: on "hold to continue" button, show a percentage of times I've regretted scrolling for X amount of time? requires bringing survey back
 
 *wonderful* idea: A DNS, MITM proxy (with trusted root certificate) that just loads scroll unlock whenever you use it. must run a server then to store data in the backend. instead of browser extension pages, something like `scroll-unlock.local` could be used? or, best user-experience, the extension communicates with the locally running server. extension settings modify the server settings. if we get connection to the server (heartbeat), hide all shadow DOM and just let DNS injection handle everything.
@@ -90,7 +84,10 @@ Also: "Focus mode".
 * hides the timer. do show the sleep timer.
 * good idea! let user save tabs for later in focus mode (stash a tab). essentially like firefox "send tab to device". you send a tab out of focus mode, when you turn off focus mode you get it back later.
     * can stash a tab in the extension popup
+* idea on calendar: show a pie chart for days. tracked time, focused time, unfocused time
 
+Idea:
+* Show a waiting cursor instead of not-allowed on the "continue" button. a waiting cursor on the waiting page?
 
 ## Ideas I doubt I could personally implement, or perhaps could use
 
@@ -109,6 +106,10 @@ idea: what would it look like for a system to:
 one problem is that sometimes, "research" is scrolling/scanning. You gotta look around a lot to figure out if something is worth reading or not...
 Could perhaps turn or turn off this setting? "Deep focus" mode or something, which I turn on only when I have a task I want to start (e.g, writing), and resources pulled up of something i want to do...
 ^For this, and predictive pre-commitment, I think to what a misinformation researcher told me at CMU. I really wondered how they could track the spread of misinformation so broadly across the internet. What does that look like at a technical level? This researcher said that misinfo has a "signature", essentially, unique properties in its virality, and they don't track when sources are wrong but *how sources spread* to determine if something is misinfo or not. Could be the same thing here...
+
+
+Idea: gate the user based on previous behavior? allow user to set screentime goal. if user is below this goal, do not show waiting screens to them. give them a clear way where they can see if they go over time, they click a button ("accept"), and then lose no-waiting-screen privileges. make the conditions to go back to no-waiting screen very clear (like a probation).
+* I don't think it is helpful to me actually, or matches my goals of finding other things to be doing with my time. could be helpful for others though
 
 ## ideas I've determined may be bad
 

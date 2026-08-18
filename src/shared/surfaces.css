@@ -11,6 +11,7 @@
   min-height: 100vh;
   display: grid;
   place-items: center;
+  justify-content: center;
   background: color-mix(in srgb, currentColor 4%, transparent);
 }
 

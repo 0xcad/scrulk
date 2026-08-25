@@ -97,7 +97,7 @@ export function TrackedSitesList() {
             <li key={d}>
               <span>{d}</span>
               <button type="button" onClick={() => onRemove(d)}>
-                Remove
+                🗑️
               </button>
             </li>
           ))

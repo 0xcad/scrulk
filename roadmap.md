@@ -71,8 +71,6 @@ ai generated code cleanup:
 metrics idea: capture moving average of "outlier scrolling". my average right now is 11 mins per day, that seems suspiciously good, but I'm also trying to measure binge scrolling, which is less frequent. so maybe that's measuring a moving average of my top 5% outlier scroll sessions? another idea could also just be plotting a normal distribution of scrolling...
 * how long was this binge scroll session compared to your last one? what about the ones before? what do your trendlines look like?
 
-idea: on "hold to continue" button, show a percentage of times I've regretted scrolling for X amount of time? requires bringing survey back
-
 *wonderful* idea: A DNS, MITM proxy (with trusted root certificate) that just loads scroll unlock whenever you use it. must run a server then to store data in the backend. instead of browser extension pages, something like `scroll-unlock.local` could be used? or, best user-experience, the extension communicates with the locally running server. extension settings modify the server settings. if we get connection to the server (heartbeat), hide all shadow DOM and just let DNS injection handle everything.
 * Value: If I want to get around this, i can just open a different browser, open a private browsing window, and I'm stopped. i never fuck with my DNS settings. Editing my hosts file is super inconvenient. Also, you can get it on multiple devices in sync for cheap
 
@@ -80,16 +78,29 @@ Also: "Focus mode".
 * Log time in a separate timer (still increments total time, now increments focus time)
 * can be enabled and disabled in extension popup
 * extension has new icon when enabled
-* idea: shows something unobtrusive at top of all sites? like "Focus mode". just so user knows they're in it?
+* idea: "focus mode" is a separate window? so you can have multiple "focus windows", where all tabs are focused.
+    * in a focus window (or if focus mode is active), you can never use a tracked site. must use popups
+    * idea: let user "stash" an entire window at once? you can name it, then resume a focus session later. what does this accomplish? declutters my computer (i have like 3 "project" firefox windows open at once), still provides alternatives to scrolling (work on a project instead), less likely to open a non-project website in a focus window if the window is absent until i'm working on something 
 * hides the timer. do show the sleep timer.
 * good idea! let user save tabs for later in focus mode (stash a tab). essentially like firefox "send tab to device". you send a tab out of focus mode, when you turn off focus mode you get it back later.
     * can stash a tab in the extension popup
 * idea on calendar: show a pie chart for days. tracked time, focused time, unfocused time
 
+needs an allowlist. for example, nytimes cooking, or music.k4x.club.
+
 Idea:
 * Show a waiting cursor instead of not-allowed on the "continue" button. a waiting cursor on the waiting page?
 
+idea: increase unpredictability by randomly replacing clicked links with a camera popup and a question challenge?
+* increase unpredictability by making the allowed time random +/- 1 min? so user doesn't know when they'll stop
+
+add a secondary colored fullscreen button on popup
+
+idea: a way to share your calendar view on a webserver, as an embed/iframe (works easy with DNS). it's like github's green squares, and it's public accountability
+
 ## Ideas I doubt I could personally implement, or perhaps could use
+
+personal investment: something like an ascii garden that grows just by you having the extension enabled. "uptime" stops being just a number, has more emotional value. think john green sock buddy
 
 idea: not really for me but for clearspace, really -- an iphone widget on the home screen. put it next to your social media apps. user can see their friend + partner's scrolling next to their own. idea: for people who don't have a partner to go to bed next to, essentially 
 

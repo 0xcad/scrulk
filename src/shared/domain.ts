@@ -54,6 +54,16 @@ export function isTracked(hostname: string, tracked: string[]): boolean {
   return findMatchingDomain(hostname, tracked) !== null;
 }
 
+/** Whether two configured domains cover any of the same hosts. */
+export function domainsOverlap(left: string, right: string): boolean {
+  return left === right || left.endsWith(`.${right}`) || right.endsWith(`.${left}`);
+}
+
+/** Remove every configured domain that overlaps the supplied domain. */
+export function withoutOverlappingDomains(domains: string[], domain: string): string[] {
+  return domains.filter((candidate) => !domainsOverlap(candidate, domain));
+}
+
 /**
  * Returns the tracked domain (from `tracked`) that matches `hostname`, or
  * null if none. Used to key per-domain state (e.g. clock position) so a

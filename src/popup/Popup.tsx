@@ -1,6 +1,10 @@
 import { useEffect, useState } from "preact/hooks";
 import browser from "webextension-polyfill";
-import { hostnameOf, isTracked } from "../shared/domain";
+import {
+  hostnameOf,
+  isTracked,
+  withoutOverlappingDomains,
+} from "../shared/domain";
 import {
   getDayState,
   getSettings,
@@ -121,6 +125,7 @@ export function Popup() {
   }
 
   const tracked = host ? isTracked(host, settings.trackedSites) : false;
+  const ignored = host ? isTracked(host, settings.ignoredSites) : false;
   const displayHost = host ? host.replace(/^www\./, "") : null;
   const trackedMs = effectiveMs(state, now);
   const allSitesMs = effectiveAllSitesMs(state, now);
@@ -133,18 +138,26 @@ export function Popup() {
 
   const onAdd = async () => {
     if (!displayHost) return;
-    if (settings.trackedSites.includes(displayHost)) return;
     await setSettings({
       trackedSites: [...settings.trackedSites, displayHost].sort(),
+      ignoredSites: withoutOverlappingDomains(settings.ignoredSites, displayHost),
+    });
+  };
+
+  const onIgnore = async () => {
+    if (!displayHost) return;
+    await setSettings({
+      trackedSites: withoutOverlappingDomains(settings.trackedSites, displayHost),
+      ignoredSites: [...settings.ignoredSites, displayHost].sort(),
     });
   };
 
   const onRemove = async () => {
     if (!displayHost) return;
     await setSettings({
-      trackedSites: settings.trackedSites.filter(
-        (d) => d !== displayHost && !displayHost.endsWith("." + d),
-      ),
+      ...(tracked
+        ? { trackedSites: withoutOverlappingDomains(settings.trackedSites, displayHost) }
+        : { ignoredSites: withoutOverlappingDomains(settings.ignoredSites, displayHost) }),
     });
   };
 
@@ -197,17 +210,24 @@ export function Popup() {
         <>
           <p class="flex">
             <span class="host">{displayHost}</span>{" "}
-            <span class={`status ${tracked ? "tracked" : "untracked"}`}>
-              {tracked ? "tracked" : "not tracked"}
+            <span class={`status ${tracked ? "tracked" : ignored ? "ignored" : "untracked"}`}>
+              {tracked ? "tracked" : ignored ? "ignored" : "not tracked"}
             </span>
-            <button 
-              type="button"
-              class="float-right"
-              onClick={tracked ? onRemove : onAdd}
-              title={tracked ? "remove from tracked sites" : "add to tracked sites"}
-            >
-            {tracked ? "x" : "+" }
-            </button>
+            {tracked || ignored ? (
+              <button
+                type="button"
+                class="float-right"
+                onClick={onRemove}
+                title={tracked ? "remove from tracked sites" : "remove from ignored sites"}
+              >
+                x
+              </button>
+            ) : (
+              <span class="site-actions float-right">
+                <button type="button" onClick={onAdd} title="add to tracked sites">+</button>
+                <button type="button" onClick={onIgnore} title="add to ignored sites">−</button>
+              </span>
+            )}
           </p>
         </>
       ) : (

@@ -66,6 +66,16 @@ form {
   align-items: center;
 }
 
+.site-list-switcher {
+  display: flex;
+  gap: 4px;
+}
+
+.site-list-switcher button[aria-pressed="true"] {
+  background: CanvasText;
+  color: Canvas;
+}
+
 .visually-hidden {
   display: none;
 }

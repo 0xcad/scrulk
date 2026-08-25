@@ -6,6 +6,7 @@ import {
 
 export interface Settings {
   trackedSites: string[];
+  ignoredSites: string[];
   installedAt: number;
   firstInstalledAt: number;
   /** Local "HH:MM" wake-day boundary. */
@@ -30,6 +31,7 @@ export type CameraOverlayPermission = "unknown" | "granted" | "denied";
 
 export const DEFAULT_SETTINGS: Settings = {
   trackedSites: [],
+  ignoredSites: [],
   installedAt: 0,
   firstInstalledAt: 0,
   wakeUpTime: "07:00",
@@ -54,6 +56,7 @@ export type SettingScope = "settings" | "debug" | "internal" | "component";
 /** Every setting must have an intentional owner before it can be added. */
 export const SETTINGS_SCOPES = {
   trackedSites: "settings",
+  ignoredSites: "settings",
   installedAt: "internal",
   firstInstalledAt: "internal",
   wakeUpTime: "settings",

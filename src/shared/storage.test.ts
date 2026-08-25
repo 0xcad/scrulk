@@ -7,6 +7,15 @@ describe("storage normalization", () => {
     expect(normalizeSettings({ wakeUpHour: 6, wakeUpTime: "06:30" }).wakeUpTime)
       .toBe("06:30");
     expect(normalizeSettings(undefined).trackedSites).toEqual([]);
+    expect(normalizeSettings(undefined).ignoredSites).toEqual([]);
+  });
+
+  it("gives ignored domains precedence over overlapping tracked domains", () => {
+    const settings = normalizeSettings({
+      trackedSites: ["example.com", "other.com"],
+      ignoredSites: ["blog.example.com"],
+    });
+    expect(settings.trackedSites).toEqual(["other.com"]);
   });
 
   it("fills newly added DayState fields without changing stored values", () => {

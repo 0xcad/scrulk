@@ -41,9 +41,10 @@ camera on tracked pages: don't show immediately, show after, say, 10 minutes of 
 * if tab is closed, click "connecting..." again to reopen camera window
 * regression: it's broken?
 
+needs an allowlist. for example, nytimes cooking.
+
 ## TODO:
 
-* i think there's a bug with the survey -> re-entry flow
 * need to change icons ofc
 * probably a bug with calendar day drawer *arrow to average* thing
 
@@ -51,14 +52,6 @@ another idea:
 * limit clicks in addition to time. or, as the user approaches a breaktime limit, you should also bottleneck how many clicks they get to slow them down
 
 Calendar probably needs more horizontal screen real estate, current look should only be on narrower screens...
-
-Remove comments referencing slices and whatnot
-
-==
-
-ai generated code cleanup:
-* after removing a website from a tracked page, remove its clockPositions from settings
-* computation of the running average ms could be more efficient / "online", but whatever this is fine
 
 ==
 
@@ -86,15 +79,13 @@ Also: "Focus mode".
     * can stash a tab in the extension popup
 * idea on calendar: show a pie chart for days. tracked time, focused time, unfocused time
 
-needs an allowlist. for example, nytimes cooking, or music.k4x.club.
-
 Idea:
 * Show a waiting cursor instead of not-allowed on the "continue" button. a waiting cursor on the waiting page?
 
 idea: increase unpredictability by randomly replacing clicked links with a camera popup and a question challenge?
 * increase unpredictability by making the allowed time random +/- 1 min? so user doesn't know when they'll stop
 
-add a secondary colored fullscreen button on popup
+add a secondary colored fullscreen button on peek preview 
 
 idea: a way to share your calendar view on a webserver, as an embed/iframe (works easy with DNS). it's like github's green squares, and it's public accountability
 

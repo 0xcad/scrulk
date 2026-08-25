@@ -54,6 +54,7 @@ type ActivityInputs = {
   activeTabUrl: string | undefined;
   idleState: chrome.idle.IdleState;
   trackedSites: string[];
+  ignoredSites: string[];
 };
 
 async function readActivity(): Promise<ActivityInputs> {
@@ -82,6 +83,7 @@ async function readActivity(): Promise<ActivityInputs> {
     activeTabUrl,
     idleState,
     trackedSites: settings.trackedSites,
+    ignoredSites: settings.ignoredSites,
   };
 }
 
@@ -95,7 +97,8 @@ function shouldBeActive(inputs: ActivityInputs): boolean {
 
 function shouldTrackAllSites(inputs: ActivityInputs): boolean {
   if (!inputs.windowFocused || inputs.idleState !== "active") return false;
-  return hostnameOf(inputs.activeTabUrl) !== null;
+  const host = hostnameOf(inputs.activeTabUrl);
+  return host !== null && !isTracked(host, inputs.ignoredSites);
 }
 
 export async function recompute(): Promise<void> {

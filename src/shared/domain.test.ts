@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
   findMatchingDomain,
+  domainsOverlap,
   hostnameOf,
   isTracked,
   normalizeDomain,
+  withoutOverlappingDomains,
 } from "./domain";
 
 describe("normalizeDomain", () => {
@@ -75,6 +77,22 @@ describe("findMatchingDomain", () => {
 
   it("returns null when nothing matches", () => {
     expect(findMatchingDomain("notexample.com", list)).toBeNull();
+  });
+});
+
+describe("domainsOverlap", () => {
+  it("recognizes exact, parent, and subdomain overlap", () => {
+    expect(domainsOverlap("example.com", "example.com")).toBe(true);
+    expect(domainsOverlap("example.com", "blog.example.com")).toBe(true);
+    expect(domainsOverlap("blog.example.com", "example.com")).toBe(true);
+    expect(domainsOverlap("example.com", "other.com")).toBe(false);
+  });
+
+  it("removes every overlapping domain", () => {
+    expect(withoutOverlappingDomains(
+      ["example.com", "blog.example.com", "other.com"],
+      "shop.example.com",
+    )).toEqual(["blog.example.com", "other.com"]);
   });
 });
 

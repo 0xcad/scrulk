@@ -1,5 +1,6 @@
 import { DEFAULT_DAY_STATE, type DayState } from "./dayState";
 import { DEFAULT_SETTINGS, type Settings } from "./settings";
+import { domainsOverlap } from "./domain";
 import { normalizeWaitingScreen } from "../features/waiting-screen/model";
 
 export type StoredSettings = Partial<Settings> & {
@@ -16,6 +17,11 @@ export function normalizeSettings(raw: StoredSettings | undefined): Settings {
     merged.wakeUpTime = `${String(raw.wakeUpHour).padStart(2, "0")}:00`;
   }
   merged.waitingScreen = normalizeWaitingScreen(raw?.waitingScreen);
+  // Ignore is the safer behavior if malformed or legacy storage ever contains
+  // overlapping entries. Normal UI mutations keep the lists disjoint.
+  merged.trackedSites = merged.trackedSites.filter(
+    (tracked) => !merged.ignoredSites.some((ignored) => domainsOverlap(tracked, ignored)),
+  );
   return merged;
 }
 

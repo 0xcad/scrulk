@@ -45,6 +45,10 @@
   color: #c0392b;
 }
 
+.status.ignored {
+  color: #7963a8;
+}
+
 .status.untracked {
   color: #27867a;
 }
@@ -55,6 +59,11 @@
 }
 .float-right {
   margin-left: auto;
+}
+
+.site-actions {
+  display: flex;
+  gap: 4px;
 }
 
 button {

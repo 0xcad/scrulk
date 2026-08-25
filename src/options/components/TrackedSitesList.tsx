@@ -1,10 +1,11 @@
 import { useEffect, useState } from "preact/hooks";
-import { normalizeDomain } from "../../shared/domain";
+import { normalizeDomain, withoutOverlappingDomains } from "../../shared/domain";
 import { getSettings, onSettingsChange, setSettings } from "../../shared/storage";
 import type { Settings } from "../../shared/settings";
 
 export function TrackedSitesList() {
   const [settings, setLocal] = useState<Settings | null>(null);
+  const [list, setList] = useState<"tracked" | "ignored">("tracked");
   const [input, setInput] = useState("");
   const [error, setError] = useState<string | null>(null);
 
@@ -15,6 +16,10 @@ export function TrackedSitesList() {
 
   if (!settings) return <p>Loading…</p>;
 
+  const domains = list === "tracked" ? settings.trackedSites : settings.ignoredSites;
+  const otherDomains = list === "tracked" ? settings.ignoredSites : settings.trackedSites;
+  const label = list === "tracked" ? "tracked" : "ignored";
+
   const onSubmit = async (e: Event) => {
     e.preventDefault();
     setError(null);
@@ -23,27 +28,53 @@ export function TrackedSitesList() {
       setError("Enter a valid domain like example.com");
       return;
     }
-    if (settings.trackedSites.includes(normalized)) {
-      setError(`${normalized} is already tracked`);
+    if (domains.includes(normalized)) {
+      setError(`${normalized} is already ${label}`);
       return;
     }
     await setSettings({
-      trackedSites: [...settings.trackedSites, normalized].sort(),
+      ...(list === "tracked"
+        ? {
+            trackedSites: [...domains, normalized].sort(),
+            ignoredSites: withoutOverlappingDomains(otherDomains, normalized),
+          }
+        : {
+            trackedSites: withoutOverlappingDomains(otherDomains, normalized),
+            ignoredSites: [...domains, normalized].sort(),
+          }),
     });
     setInput("");
   };
 
   const onRemove = async (domain: string) => {
     await setSettings({
-      trackedSites: settings.trackedSites.filter((d) => d !== domain),
+      ...(list === "tracked"
+        ? { trackedSites: domains.filter((d) => d !== domain) }
+        : { ignoredSites: domains.filter((d) => d !== domain) }),
     });
   };
 
   return (
     <>
+      <div class="site-list-switcher" role="group" aria-label="Website list">
+        <button
+          type="button"
+          aria-pressed={list === "tracked"}
+          onClick={() => { setList("tracked"); setError(null); }}
+        >
+          Tracked websites
+        </button>
+        <button
+          type="button"
+          aria-pressed={list === "ignored"}
+          onClick={() => { setList("ignored"); setError(null); }}
+        >
+          Ignored websites
+        </button>
+      </div>
       <form onSubmit={onSubmit}>
         <label class="visually-hidden" htmlFor="add-domain">
-          Add a domain
+          Add a {label} domain
         </label>
         <input
           id="add-domain"
@@ -59,10 +90,10 @@ export function TrackedSitesList() {
       {error && <p class="error">{error}</p>}
 
       <ul class="tracked-sites">
-        {settings.trackedSites.length === 0 ? (
-          <li class="empty">No tracked sites yet.</li>
+        {domains.length === 0 ? (
+          <li class="empty">No {label} sites yet.</li>
         ) : (
-          settings.trackedSites.map((d) => (
+          domains.map((d) => (
             <li key={d}>
               <span>{d}</span>
               <button type="button" onClick={() => onRemove(d)}>

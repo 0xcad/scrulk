@@ -114,6 +114,14 @@ export const DAY_STATE_FIELDS = {
     null,
     "Epoch milliseconds for the open all-sites segment, or blank for null.",
   ),
+  focusMs: numberField(
+    0,
+    "Closed focus-mode usage segments, in milliseconds.",
+  ),
+  focusActiveSince: nullableNumberField(
+    null,
+    "Epoch milliseconds for the open focus-mode segment, or blank for null.",
+  ),
   activityCheckpointAt: nullableNumberField(
     null,
     "Latest activity checkpoint in epoch milliseconds, or blank for null.",
@@ -247,6 +255,11 @@ export function remainingAllowanceMs(state: DayState, now: number): number {
 export function effectiveAllSitesMs(state: DayState, now: number): number {
   if (state.allSitesActiveSince === null) return state.allSitesMs;
   return state.allSitesMs + Math.max(0, now - state.allSitesActiveSince);
+}
+
+export function effectiveFocusMs(state: DayState, now: number): number {
+  if (state.focusActiveSince === null) return state.focusMs;
+  return state.focusMs + Math.max(0, now - state.focusActiveSince);
 }
 
 export function isUsageStreakDay(state: DayState, now: number): boolean {

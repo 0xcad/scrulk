@@ -17,6 +17,7 @@ export default defineManifest({
     "alarms",
     "idle",
     "webNavigation",
+    "sessions",
     "declarativeNetRequestWithHostAccess",
   ],
 

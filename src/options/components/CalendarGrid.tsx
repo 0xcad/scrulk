@@ -1,6 +1,7 @@
 import { useMemo } from "preact/hooks";
 import { type DayRecord } from "../../shared/history";
 import { formatDuration } from "../../shared/wakeDay";
+import { UsagePie } from "./UsagePie";
 
 interface Props {
   days: DayRecord[];
@@ -163,9 +164,12 @@ export function CalendarGrid({
             >
               <span class="cal-day-num">{c.day}</span>
               {rec && !isPreInstall && (
-                <span class="cal-day-usage">
-                  {formatDuration(rec.totalMs)}
-                </span>
+                <>
+                  <UsagePie record={rec} />
+                  <span class="cal-day-usage">
+                    {formatDuration(rec.allSitesMs ?? rec.totalMs)}
+                  </span>
+                </>
               )}
               {hasNotes && !isPreInstall && (
                 <span class="cal-notes-dot" aria-hidden="true" />

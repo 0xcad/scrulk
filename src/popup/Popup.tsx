@@ -9,12 +9,15 @@ import {
   getDayState,
   getSettings,
   onDayStateChange,
+  getFocusSessions,
+  onFocusSessionsChange,
   onSettingsChange,
   setSettings,
 } from "../shared/storage";
 import { sendCommand } from "../shared/messages";
-import { DEFAULT_DAY_STATE, effectiveAllSitesMs, effectiveMs, liveUsageStreakCount, type DayState } from "../shared/dayState";
+import { DEFAULT_DAY_STATE, effectiveAllSitesMs, effectiveFocusMs, effectiveMs, liveUsageStreakCount, type DayState } from "../shared/dayState";
 import type { Settings } from "../shared/settings";
+import { DEFAULT_FOCUS_SESSIONS, type FocusSessionsState } from "../shared/focusSessions";
 import { formatDuration } from "../shared/wakeDay";
 
 function formatWakeTime(t: string): string {
@@ -79,15 +82,34 @@ async function getActiveTabHost(): Promise<string | null> {
   return hostnameOf(tab?.url);
 }
 
+interface PopupTabContext {
+  id: number | null;
+  windowId: number | null;
+  incognito: boolean;
+}
+
+async function getPopupTabContext(): Promise<PopupTabContext> {
+  const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
+  return {
+    id: tab?.id ?? null,
+    windowId: tab?.windowId ?? null,
+    incognito: tab?.incognito ?? false,
+  };
+}
+
 export function Popup() {
   const [settings, setLocal] = useState<Settings | null>(null);
   const [host, setHost] = useState<string | null>(null);
   const [state, setState] = useState<DayState>(DEFAULT_DAY_STATE);
   const [now, setNow] = useState(Date.now());
+  const [focusSessions, setFocusSessions] = useState<FocusSessionsState>(DEFAULT_FOCUS_SESSIONS);
+  const [tabContext, setTabContext] = useState<PopupTabContext | null>(null);
 
   useEffect(() => {
     void getSettings().then(setLocal);
     void getActiveTabHost().then(setHost);
+    void getPopupTabContext().then(setTabContext);
+    void getFocusSessions().then(setFocusSessions);
     void getDayState().then((s) => {
       setState(s);
       // Acknowledge the warning the moment the user opens the popup; we
@@ -98,9 +120,11 @@ export function Popup() {
     });
     const offSettings = onSettingsChange(setLocal);
     const offState = onDayStateChange(setState);
+    const offFocus = onFocusSessionsChange(setFocusSessions);
     return () => {
       offSettings();
       offState();
+      offFocus();
     };
   }, []);
 
@@ -110,10 +134,13 @@ export function Popup() {
   }, [state.tabLimitWarning]);
 
   useEffect(() => {
-    if (state.activeSince === null && state.allSitesActiveSince === null) return;
+    if (
+      state.activeSince === null && state.allSitesActiveSince === null &&
+      state.focusActiveSince === null
+    ) return;
     const id = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(id);
-  }, [state.activeSince, state.totalMs, state.allSitesActiveSince, state.allSitesMs]);
+  }, [state.activeSince, state.totalMs, state.allSitesActiveSince, state.allSitesMs, state.focusActiveSince, state.focusMs]);
 
   if (!settings) {
     return (
@@ -129,6 +156,10 @@ export function Popup() {
   const displayHost = host ? host.replace(/^www\./, "") : null;
   const trackedMs = effectiveMs(state, now);
   const allSitesMs = effectiveAllSitesMs(state, now);
+  const focusMs = effectiveFocusMs(state, now);
+  const focusSession = focusSessions.sessions.find((session) =>
+    session.status === "active" && session.runtimeWindowId === tabContext?.windowId
+  );
   const todayMs = settings.alwaysShowTimer ? allSitesMs : trackedMs;
   const display = formatDuration(todayMs);
   const usageStreak = liveUsageStreakCount(settings.usageStreak, state, now);
@@ -206,6 +237,10 @@ export function Popup() {
         </section>
       )}
 
+      {focusSession && (
+        <p class="focus-usage">Focus time: {formatDuration(focusMs)}</p>
+      )}
+
       {displayHost ? (
         <>
           <p class="flex">
@@ -246,6 +281,44 @@ export function Popup() {
       </section>
 
       <nav>
+        {tabContext && !tabContext.incognito && (
+          focusSession ? (
+            <>
+              <button
+                type="button"
+                onClick={() => sendCommand({ type: "focus:end", sessionId: focusSession.id })}
+              >
+                end focus
+              </button>
+              <button
+                type="button"
+                disabled={tabContext.id === null}
+                onClick={() => {
+                  if (tabContext.id !== null) {
+                    void sendCommand({ type: "focus:stashTab", tabId: tabContext.id });
+                  }
+                }}
+              >
+                stash tab for later
+              </button>
+            </>
+          ) : (
+            <button
+              type="button"
+              disabled={tabContext.windowId === null}
+              onClick={() => {
+                if (tabContext.windowId !== null) {
+                  void sendCommand({ type: "focus:start", windowId: tabContext.windowId });
+                }
+              }}
+            >
+              start focus
+            </button>
+          )
+        )}
+        {tabContext?.incognito && (
+          <small class="focus-private-note">Focus mode is unavailable in private windows.</small>
+        )}
         <button
           type="button"
           onClick={() => browser.runtime.openOptionsPage()}

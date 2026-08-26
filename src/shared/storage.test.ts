@@ -24,6 +24,8 @@ describe("storage normalization", () => {
     expect(state.accessFlowPhase).toBe("waitingConfirmation");
     expect(state.breaktimeExtensionTabs).toEqual({});
     expect(state.waitingTimerElapsed).toBe(false);
+    expect(state.focusMs).toBe(0);
+    expect(state.focusActiveSince).toBeNull();
     expect(normalizeDayState({ accessFlowPhase: "waiting" }).accessFlowPhase)
       .toBe("waiting");
   });

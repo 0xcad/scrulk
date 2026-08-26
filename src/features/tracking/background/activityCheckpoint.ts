@@ -35,7 +35,8 @@ export function reconcileStaleActivity(
   now: number,
 ): DayState {
   const hasOpenSegment =
-    state.activeSince !== null || state.allSitesActiveSince !== null;
+    state.activeSince !== null || state.allSitesActiveSince !== null ||
+    state.focusActiveSince !== null;
 
   if (!hasOpenSegment) {
     return state.activityCheckpointAt === null
@@ -60,6 +61,9 @@ export function reconcileStaleActivity(
       state.allSitesMs +
       cappedElapsed(state.allSitesActiveSince, checkpointAt, now),
     allSitesActiveSince: null,
+    focusMs:
+      state.focusMs + cappedElapsed(state.focusActiveSince, checkpointAt, now),
+    focusActiveSince: null,
     activityCheckpointAt: null,
   };
 }
@@ -70,7 +74,8 @@ export function checkpointOpenActivity(
   now: number,
 ): DayState {
   const checkpointAt =
-    state.activeSince !== null || state.allSitesActiveSince !== null
+    state.activeSince !== null || state.allSitesActiveSince !== null ||
+      state.focusActiveSince !== null
       ? now
       : null;
   return state.activityCheckpointAt === checkpointAt

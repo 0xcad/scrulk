@@ -4,6 +4,7 @@ import { Home } from "./pages/Home";
 import { Settings } from "./pages/Settings";
 import { Debug } from "./pages/Debug";
 import { WaitingEditor } from "../features/waiting-screen/WaitingEditor";
+import { Focus } from "./pages/Focus";
 
 export function App() {
   const [page, setPage] = useState<Page>("home");
@@ -27,6 +28,7 @@ export function App() {
         {page === "home" && <Home />}
         {page === "waiting" && <WaitingEditor onDirtyChange={setWaitingDirty} />}
         {page === "settings" && <Settings />}
+        {page === "focus" && <Focus />}
         {page === "debug" && __SCRULK_DEBUG__ && <Debug />}
       </main>
     </div>

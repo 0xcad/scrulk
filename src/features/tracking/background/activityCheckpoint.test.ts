@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   DEFAULT_DAY_STATE,
   effectiveAllSitesMs,
+  effectiveFocusMs,
   effectiveMs,
 } from "../../../shared/dayState";
 import {
@@ -20,6 +21,8 @@ describe("reconcileStaleActivity", () => {
       activeSince: checkpointAt - 30_000,
       allSitesMs: 20_000,
       allSitesActiveSince: checkpointAt - 30_000,
+      focusMs: 30_000,
+      focusActiveSince: checkpointAt - 30_000,
       activityCheckpointAt: checkpointAt,
     };
 
@@ -27,8 +30,10 @@ describe("reconcileStaleActivity", () => {
 
     expect(next.totalMs).toBe(10_000 + 90_000);
     expect(next.allSitesMs).toBe(20_000 + 90_000);
+    expect(next.focusMs).toBe(30_000 + 90_000);
     expect(next.activeSince).toBeNull();
     expect(next.allSitesActiveSince).toBeNull();
+    expect(next.focusActiveSince).toBeNull();
     expect(next.activityCheckpointAt).toBeNull();
   });
 
@@ -67,6 +72,7 @@ describe("reconcileStaleActivity", () => {
         ...DEFAULT_DAY_STATE,
         activeSince: checkpointAt - 30_000,
         allSitesActiveSince: checkpointAt - 30_000,
+        focusActiveSince: checkpointAt - 30_000,
         activityCheckpointAt: checkpointAt,
       },
       checkpointAt + 4 * 60 * 60_000,
@@ -74,6 +80,7 @@ describe("reconcileStaleActivity", () => {
 
     expect(effectiveMs(next, wakeDayBoundary)).toBe(90_000);
     expect(effectiveAllSitesMs(next, wakeDayBoundary)).toBe(90_000);
+    expect(effectiveFocusMs(next, wakeDayBoundary)).toBe(90_000);
   });
 
   it("clears an orphan checkpoint when no segment is open", () => {
@@ -95,6 +102,14 @@ describe("checkpointOpenActivity", () => {
     );
 
     expect(next.activityCheckpointAt).toBe(now);
+  });
+
+  it("refreshes the checkpoint for a focus-only segment", () => {
+    const next = checkpointOpenActivity(
+      { ...DEFAULT_DAY_STATE, focusActiveSince: 1_000_000 },
+      2_000_000,
+    );
+    expect(next.activityCheckpointAt).toBe(2_000_000);
   });
 
   it("clears the checkpoint after all segments close", () => {

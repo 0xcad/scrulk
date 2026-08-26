@@ -1,6 +1,7 @@
 import { useEffect, useState } from "preact/hooks";
 import { type DayRecord, getRunningAverageMs } from "../../shared/history";
 import { formatDuration } from "../../shared/wakeDay";
+import { UsageLegend, UsagePie } from "./UsagePie";
 
 interface Props {
   /** All loaded records, sorted ascending by date. */
@@ -83,6 +84,10 @@ export function DayDrawer({ days, selectedDate, onSelect, showAllSitesTime }: Pr
           →
         </button>
       </div>
+      <div class="day-usage-chart">
+        <UsagePie record={record} large />
+        <UsageLegend record={record} />
+      </div>
       <dl>
         {showAllSitesTime && (
           <>
@@ -99,6 +104,8 @@ export function DayDrawer({ days, selectedDate, onSelect, showAllSitesTime }: Pr
             </small>
           )}
         </dd>
+        <dt>Focus time</dt>
+        <dd>{formatDuration(record.focusMs ?? 0)}</dd>
         <dt>Notes</dt>
         <dd class="notes">{record.notes ?? "—"}</dd>
       </dl>

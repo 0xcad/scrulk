@@ -15,6 +15,8 @@ export interface DayRecord {
   totalMs: number;
   /** Active time on all HTTP(S) sites; absent for records from before this feature. */
   allSitesMs?: number;
+  /** Active all-sites time accrued while a focus window was foreground. */
+  focusMs?: number;
   notes: string | null;
   createdAt: number;
   updatedAt: number;

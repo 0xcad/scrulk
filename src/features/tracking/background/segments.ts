@@ -64,6 +64,24 @@ export function applyAllSitesTransition(
   return state;
 }
 
+export function applyFocusTransition(
+  state: DayState,
+  wantActive: boolean,
+  now: number,
+): DayState {
+  const isActive = state.focusActiveSince !== null;
+  if (wantActive && !isActive) return { ...state, focusActiveSince: now };
+  if (!wantActive && isActive) {
+    const elapsed = Math.max(0, now - (state.focusActiveSince ?? now));
+    return {
+      ...state,
+      focusMs: state.focusMs + elapsed,
+      focusActiveSince: null,
+    };
+  }
+  return state;
+}
+
 export function applyTrackedTransition(
   state: DayState,
   wantActive: boolean,

@@ -1,4 +1,7 @@
 :root,
 :host {
   --primary: #FF5733;
+  --scrulk-focus: #2f6fed;
+  --scrulk-tracked: #c0392b;
+  --scrulk-untracked: #27867a;
 }

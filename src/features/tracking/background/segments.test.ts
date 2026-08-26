@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { DEFAULT_DAY_STATE } from "../../../shared/dayState";
-import { dayStateEqual } from "./segments";
+import { applyFocusTransition, dayStateEqual } from "./segments";
 
 describe("dayStateEqual", () => {
   it("compares every scalar DayState field", () => {
@@ -26,5 +26,16 @@ describe("dayStateEqual", () => {
 
     expect(dayStateEqual(left, sameValue)).toBe(true);
     expect(dayStateEqual(left, differentValue)).toBe(false);
+  });
+});
+
+describe("applyFocusTransition", () => {
+  it("opens and closes an event-driven focus segment", () => {
+    const opened = applyFocusTransition(DEFAULT_DAY_STATE, true, 1_000);
+    expect(opened.focusActiveSince).toBe(1_000);
+
+    const closed = applyFocusTransition(opened, false, 4_500);
+    expect(closed.focusMs).toBe(3_500);
+    expect(closed.focusActiveSince).toBeNull();
   });
 });

@@ -1,4 +1,4 @@
-export type Page = "home" | "waiting" | "settings" | "debug";
+export type Page = "home" | "waiting" | "settings" | "focus" | "debug";
 
 interface Props {
   page: Page;
@@ -9,6 +9,7 @@ const PAGES: { id: Page; label: string }[] = [
   { id: "home", label: "Home" },
   { id: "waiting", label: "Waiting" },
   { id: "settings", label: "Settings" },
+  { id: "focus", label: "Focus" },
   ...(__SCRULK_DEBUG__ ? [{ id: "debug" as const, label: "Debug" }] : []),
 ];
 

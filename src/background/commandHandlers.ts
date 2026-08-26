@@ -2,7 +2,7 @@ import browser from "webextension-polyfill";
 import { dateKey, upsertDay } from "../shared/history";
 import type { Message, MessageType } from "../shared/messages";
 import { getDayState, getSettings, setDayState } from "../shared/storage";
-import { effectiveAllSitesMs, effectiveMs } from "../shared/dayState";
+import { effectiveAllSitesMs, effectiveFocusMs, effectiveMs } from "../shared/dayState";
 import { currentWakeDayStart } from "../shared/wakeDay";
 import {
   handleBreaktimeContinue,
@@ -31,6 +31,16 @@ import {
   resetDayStateForDebug,
 } from "../features/tracking/background/tracker";
 import { reduceAccessFlow } from "../features/access-flow/transitions";
+import {
+  deleteFocus,
+  endFocus,
+  openFocusTabOutside,
+  renameFocus,
+  resumeFocus,
+  startFocus,
+  stashFocusTab,
+  isFocusWindow,
+} from "../features/focus/background";
 
 type Sender = browser.Runtime.MessageSender;
 type HandlerResult = Promise<unknown> | unknown;
@@ -66,6 +76,15 @@ const COMMAND_HANDLERS = {
   "breaktime:done": () => withRecompute(handleBreaktimeDone),
   "popup:done": () => withRecompute(handlePopupDone),
   "popup:acknowledgeTabLimitWarning": () => acknowledgeTabLimitWarning(),
+  "focus:start": (message) => withRecompute(() => startFocus(message.windowId)),
+  "focus:end": (message) => withRecompute(() => endFocus(message.sessionId)),
+  "focus:stashTab": (message) => withRecompute(() => stashFocusTab(message.tabId)),
+  "focus:resume": (message) => withRecompute(() => resumeFocus(message.sessionId)),
+  "focus:delete": (message) => withRecompute(() => deleteFocus(message.sessionId)),
+  "focus:rename": (message) => renameFocus(message.sessionId, message.name),
+  "focus:openTabOutside": (message) =>
+    openFocusTabOutside(message.sessionId, message.tabId),
+  "focus:getContext": (_message, sender) => isFocusWindow(sender.tab?.windowId),
   "survey:submit": (message, sender) => handleSurveySubmit(message, sender.tab?.id),
   "survey:continue": (_message, sender) =>
     withRecompute(() => handleSurveyContinue(sender.tab?.id)),
@@ -126,6 +145,7 @@ async function handleSurveySubmit(
     notes: message.notes,
     ...(isCurrent ? { totalMs: effectiveMs(state, now) } : {}),
     ...(isCurrent ? { allSitesMs: effectiveAllSitesMs(state, now) } : {}),
+    ...(isCurrent ? { focusMs: effectiveFocusMs(state, now) } : {}),
   });
   if (isCurrent) {
     await setDayState({ ...state, surveyFilledFor: message.date });

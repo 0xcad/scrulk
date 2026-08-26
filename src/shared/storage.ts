@@ -6,6 +6,12 @@ import {
   normalizeSettings,
   type StoredSettings,
 } from "./storageNormalization";
+import {
+  DEFAULT_FOCUS_SESSIONS,
+  FOCUS_SESSIONS_KEY,
+  normalizeFocusSessions,
+  type FocusSessionsState,
+} from "./focusSessions";
 
 export async function getSettings(): Promise<Settings> {
   const stored = await browser.storage.local.get(SETTINGS_KEY);
@@ -27,6 +33,15 @@ export async function getDayState(): Promise<DayState> {
 
 export async function setDayState(next: DayState): Promise<void> {
   await browser.storage.local.set({ [DAY_STATE_KEY]: next });
+}
+
+export async function getFocusSessions(): Promise<FocusSessionsState> {
+  const stored = await browser.storage.local.get(FOCUS_SESSIONS_KEY);
+  return normalizeFocusSessions(stored[FOCUS_SESSIONS_KEY] ?? DEFAULT_FOCUS_SESSIONS);
+}
+
+export async function setFocusSessions(next: FocusSessionsState): Promise<void> {
+  await browser.storage.local.set({ [FOCUS_SESSIONS_KEY]: next });
 }
 
 type Unsubscribe = () => void;
@@ -56,6 +71,22 @@ export function onDayStateChange(cb: (next: DayState) => void): Unsubscribe {
     if (!change) return;
     const raw = change.newValue as Partial<DayState> | undefined;
     cb(normalizeDayState(raw));
+  };
+  browser.storage.onChanged.addListener(listener);
+  return () => browser.storage.onChanged.removeListener(listener);
+}
+
+export function onFocusSessionsChange(
+  cb: (next: FocusSessionsState) => void,
+): Unsubscribe {
+  const listener = (
+    changes: Record<string, browser.Storage.StorageChange>,
+    area: string,
+  ) => {
+    if (area !== "local") return;
+    const change = changes[FOCUS_SESSIONS_KEY];
+    if (!change) return;
+    cb(normalizeFocusSessions(change.newValue));
   };
   browser.storage.onChanged.addListener(listener);
   return () => browser.storage.onChanged.removeListener(listener);

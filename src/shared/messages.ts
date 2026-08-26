@@ -25,6 +25,14 @@ export type Message =
   | { type: "breaktime:extend" }
   | { type: "popup:done" }
   | { type: "popup:acknowledgeTabLimitWarning" }
+  | { type: "focus:start"; windowId: number }
+  | { type: "focus:end"; sessionId: string }
+  | { type: "focus:stashTab"; tabId: number }
+  | { type: "focus:resume"; sessionId: string }
+  | { type: "focus:delete"; sessionId: string }
+  | { type: "focus:rename"; sessionId: string; name: string | null }
+  | { type: "focus:openTabOutside"; sessionId: string; tabId: string }
+  | { type: "focus:getContext" }
   | { type: "survey:submit"; date: string; notes: string }
   | { type: "survey:continue" }
   | { type: "camera:enable" }

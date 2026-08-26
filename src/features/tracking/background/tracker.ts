@@ -14,6 +14,7 @@ import {
 } from "../../../shared/wakeDay";
 import {
   effectiveAllSitesMs,
+  effectiveFocusMs,
   effectiveMs,
   effectiveWaitingMs,
   isUsageStreakDay,
@@ -31,12 +32,14 @@ import {
 } from "./activityCheckpoint";
 import {
   applyAllSitesTransition,
+  applyFocusTransition,
   applyTrackedTransition,
   applyWaitingTransition,
   checkpointWaiting,
   dayStateEqual,
   reconcileStaleWaiting,
 } from "./segments";
+import { isFocusWindow } from "../../focus/background";
 
 /**
  * The tracker is *event-driven*. We never tick a counter. Instead we
@@ -50,6 +53,7 @@ import {
  */
 
 type ActivityInputs = {
+  windowId: number | undefined;
   windowFocused: boolean;
   activeTabUrl: string | undefined;
   idleState: chrome.idle.IdleState;
@@ -79,6 +83,7 @@ async function readActivity(): Promise<ActivityInputs> {
   );
 
   return {
+    windowId: focusedWindow?.id,
     windowFocused,
     activeTabUrl,
     idleState,
@@ -119,6 +124,7 @@ export async function recompute(): Promise<void> {
   }
 
   const inputs = await readActivity();
+  const focusWindowActive = await isFocusWindow(inputs.windowId);
   const waitingActive =
     state.accessFlowPhase === "waiting" &&
     !state.waitingTimerElapsed &&
@@ -135,15 +141,18 @@ export async function recompute(): Promise<void> {
   }
 
   const flowAllowsTracking = state.accessFlowPhase === "browsing";
-  const wantActive = flowAllowsTracking && shouldBeActive(inputs);
+  const wantActive = !focusWindowActive && flowAllowsTracking && shouldBeActive(inputs);
   const allSitesPaused =
     state.accessFlowPhase === "break" ||
     state.accessFlowPhase === "challenge" ||
     state.accessFlowPhase === "resumePrompt" ||
     state.accessFlowPhase === "popupLocked";
-  const wantAllSitesActive = !allSitesPaused && shouldTrackAllSites(inputs);
+  const eligibleAllSites = shouldTrackAllSites(inputs);
+  const wantAllSitesActive = (focusWindowActive || !allSitesPaused) && eligibleAllSites;
+  const wantFocusActive = focusWindowActive && eligibleAllSites;
   let next = applyTrackedTransition(state, wantActive, now);
   next = applyAllSitesTransition(next, wantAllSitesActive, now);
+  next = applyFocusTransition(next, wantFocusActive, now);
 
   // If we've crossed the breaktime threshold while active and no alert is
   // currently open, raise it. Content scripts on tracked tabs pick this up
@@ -160,6 +169,7 @@ export async function recompute(): Promise<void> {
     // the page (no focus/idle event would otherwise fire to recompute).
     next = applyTrackedTransition(next, false, now);
     next = applyAllSitesTransition(next, false, now);
+    next = applyFocusTransition(next, false, now);
     next = reduceAccessFlow(next, { type: "allowanceExpired", openedAt: now });
   }
 
@@ -189,6 +199,7 @@ async function syncActivityCheckAlarm(state: DayState): Promise<void> {
   const hasOpenSegment =
     state.activeSince !== null ||
     state.allSitesActiveSince !== null ||
+    state.focusActiveSince !== null ||
     state.waitingActiveSince !== null;
   const existing = await browser.alarms
     .get(ALARM_NAMES.activityCheck)
@@ -235,6 +246,7 @@ export async function rolloverDay(
 ): Promise<DayState> {
   const finalTotalMs = effectiveMs(outgoing, newWakeDayStart);
   const finalAllSitesMs = effectiveAllSitesMs(outgoing, newWakeDayStart);
+  const finalFocusMs = effectiveFocusMs(outgoing, newWakeDayStart);
   const outgoingDate = dateKey(outgoing.wakeDayStart);
 
   const settings = await getSettings();
@@ -243,10 +255,11 @@ export async function rolloverDay(
     : 0;
   await setSettings({ usageStreak });
 
-  if (outgoing.wakeDayStart > 0 && (finalTotalMs > 0 || finalAllSitesMs > 0)) {
+  if (outgoing.wakeDayStart > 0 && (finalTotalMs > 0 || finalAllSitesMs > 0 || finalFocusMs > 0)) {
     await upsertDay(outgoingDate, {
       totalMs: finalTotalMs,
       allSitesMs: finalAllSitesMs,
+      focusMs: finalFocusMs,
     }).catch(() => null);
   }
 
@@ -256,6 +269,8 @@ export async function rolloverDay(
     activeSince: null,
     allSitesMs: 0,
     allSitesActiveSince: null,
+    focusMs: 0,
+    focusActiveSince: null,
     activityCheckpointAt: null,
     accessFlowPhase: "waitingConfirmation",
     waitingMs: 0,

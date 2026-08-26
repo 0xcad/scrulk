@@ -42,7 +42,7 @@
 }
 
 .status.tracked {
-  color: #c0392b;
+  color: var(--scrulk-tracked);
 }
 
 .status.ignored {
@@ -50,7 +50,7 @@
 }
 
 .status.untracked {
-  color: #27867a;
+  color: var(--scrulk-untracked);
 }
 
 .flex { 
@@ -124,6 +124,18 @@ p {
   text-align: right;
   font-size: 11px;
   opacity: 0.6;
+}
+
+.focus-usage {
+  margin: -4px 0 0;
+  color: var(--scrulk-focus);
+  text-align: right;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.focus-private-note {
+  opacity: 0.65;
 }
 
 .warning {

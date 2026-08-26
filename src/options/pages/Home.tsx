@@ -6,7 +6,7 @@ import {
   onDayStateChange,
   onSettingsChange,
 } from "../../shared/storage";
-import { DEFAULT_DAY_STATE, effectiveAllSitesMs, effectiveMs, liveUsageStreakCount, type DayState } from "../../shared/dayState";
+import { DEFAULT_DAY_STATE, effectiveAllSitesMs, effectiveFocusMs, effectiveMs, liveUsageStreakCount, type DayState } from "../../shared/dayState";
 import type { Settings } from "../../shared/settings";
 import { formatDuration, formatUptime } from "../../shared/wakeDay";
 import { CalendarPanel } from "../components/CalendarPanel";
@@ -37,10 +37,13 @@ export function Home() {
   }, []);
 
   useEffect(() => {
-    if (state.activeSince === null && state.allSitesActiveSince === null) return;
+    if (
+      state.activeSince === null && state.allSitesActiveSince === null &&
+      state.focusActiveSince === null
+    ) return;
     const id = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(id);
-  }, [state.activeSince, state.totalMs, state.allSitesActiveSince, state.allSitesMs]);
+  }, [state.activeSince, state.totalMs, state.allSitesActiveSince, state.allSitesMs, state.focusActiveSince, state.focusMs]);
 
   if (!settings) return <section><p>Loading…</p></section>;
 
@@ -53,6 +56,22 @@ export function Home() {
 
   const trackedMs = effectiveMs(state, now);
   const allSitesMs = effectiveAllSitesMs(state, now);
+  const focusMs = effectiveFocusMs(state, now);
+  const currentDate = dateKey(state.wakeDayStart || Date.now());
+  const existingCurrent = days.find((day) => day.date === currentDate);
+  const liveCurrent = {
+    date: currentDate,
+    totalMs: trackedMs,
+    allSitesMs,
+    focusMs,
+    notes: existingCurrent?.notes ?? null,
+    createdAt: existingCurrent?.createdAt ?? now,
+    updatedAt: now,
+  };
+  const displayDays = [
+    ...days.filter((day) => day.date !== currentDate),
+    liveCurrent,
+  ].sort((a, b) => a.date.localeCompare(b.date));
   const todayMs = settings.alwaysShowTimer ? allSitesMs : trackedMs;
   const usageStreak = liveUsageStreakCount(settings.usageStreak, state, now);
   const trackedAvgMs = days.length > 0
@@ -96,6 +115,7 @@ export function Home() {
       {usageStreak > 1 && (
         <p class="streak-today">{usageStreak}-day tracked-site usage streak</p>
       )}
+      <p class="focus-today">Focus time: {formatDuration(focusMs)}</p>
 
       <h2 class="scrulk-section-title dashboard-section-title">Summary</h2>
       <dl>
@@ -134,7 +154,7 @@ export function Home() {
 
       <h2 class="scrulk-section-title dashboard-section-title">Calendar</h2>
       <CalendarPanel
-        days={days}
+        days={displayDays}
         selectedDate={selectedDate ?? dateKey(state.wakeDayStart || Date.now())}
         onSelect={setSelectedDate}
         installedAt={settings.firstInstalledAt || settings.installedAt}

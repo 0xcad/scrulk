@@ -6,6 +6,7 @@ import {
   getSettings,
   onDayStateChange,
   onSettingsChange,
+  onFocusSessionsChange,
 } from "../shared/storage";
 import {
   DEFAULT_DAY_STATE,
@@ -23,6 +24,7 @@ import { SleepClock } from "./SleepClock";
 import { UsageClock } from "../features/tracking/content/UsageClock";
 import { RemainingTimeOverlay } from "../features/access-flow/content/RemainingTimeOverlay";
 import { AccessInProgressOverlay } from "../features/access-flow/content/AccessInProgressOverlay";
+import { sendCommand } from "../shared/messages";
 
 interface Props {
   matchedDomain: string | null;
@@ -32,10 +34,22 @@ export function Root({ matchedDomain }: Props) {
   const [state, setState] = useState<DayState>(DEFAULT_DAY_STATE);
   const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS);
   const [now, setNow] = useState(Date.now());
+  const [focusMode, setFocusMode] = useState(false);
 
   useEffect(() => {
     void getDayState().then(setState);
     return onDayStateChange(setState);
+  }, []);
+
+  useEffect(() => {
+    const sync = () => {
+      void sendCommand({ type: "focus:getContext" }).then((value) => {
+        setFocusMode(value === true);
+      });
+    };
+    sync();
+    const off = onFocusSessionsChange(sync);
+    return off;
   }, []);
 
   useEffect(() => {
@@ -57,7 +71,7 @@ export function Root({ matchedDomain }: Props) {
     <>
       <style>{themeStyles}</style>
       {extensionFrameVisible && <ExtensionFrame />}
-      {(matchedDomain !== null || settings.alwaysShowTimer) && (
+      {!focusMode && (matchedDomain !== null || settings.alwaysShowTimer) && (
         <UsageClock matchedDomain={matchedDomain} alwaysShowTimer={settings.alwaysShowTimer} />
       )}
       {shouldShowCameraOverlay(matchedDomain, settings, state) && (

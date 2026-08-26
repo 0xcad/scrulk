@@ -82,6 +82,10 @@ nav button {
   flex: 1;
 }
 
+.tracked-action {
+  border-color: #c0392b;
+}
+
 p {
   margin: 8px 0;
 }

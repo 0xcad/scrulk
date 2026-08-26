@@ -234,6 +234,12 @@ export function Popup() {
         <p>This page can't be tracked.</p>
       )}
 
+      {!state.popupDoneToday && (
+        <button type="button" class="tracked-action" onClick={onDone}>
+          i'm done with tracked sites 🔓
+        </button>
+      )}
+
       <section class="settings-section">
         <h2 class="scrulk-section-title popup-section-title">Settings</h2>
         <WakeUpRow value={settings.wakeUpTime} />
@@ -246,11 +252,6 @@ export function Popup() {
         >
           open dashboard ↗
         </button>
-        {!state.popupDoneToday && (
-          <button type="button" onClick={onDone}>
-            i'm done with tracked sites 🔓
-          </button>
-        )}
       </nav>
     </main>
   );

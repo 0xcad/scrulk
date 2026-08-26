@@ -63,14 +63,20 @@ function FocusSessionDetails({
   return (
     <details class="focus-session">
       <summary>
-        <span class="focus-session-name">{session.name ?? `Focus window ${fallbackIndex}`}</span>
+        <button
+          type="button"
+          class="focus-session-name"
+          title="Rename focus window"
+          onClick={(event) => action(event, rename)}
+        >
+          {session.name ?? `Focus window ${fallbackIndex}`}
+        </button>
         <span class={`focus-session-status ${session.status}`}>{session.status === "active" ? "open" : "saved"}</span>
         <span class="focus-session-counts">
           {session.tabs.length} {session.tabs.length === 1 ? "tab" : "tabs"}
           {session.stashedTabs.length > 0 && ` · ${session.stashedTabs.length} stashed`}
         </span>
         <span class="focus-session-actions">
-          <button type="button" onClick={(event) => action(event, rename)}>rename</button>
           {session.status === "active" ? (
             <button
               type="button"
@@ -134,4 +140,3 @@ function FocusTabList({
     </div>
   );
 }
-

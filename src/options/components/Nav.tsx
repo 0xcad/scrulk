@@ -8,8 +8,8 @@ interface Props {
 const PAGES: { id: Page; label: string }[] = [
   { id: "home", label: "Home" },
   { id: "waiting", label: "Waiting" },
-  { id: "settings", label: "Settings" },
   { id: "focus", label: "Focus" },
+  { id: "settings", label: "Settings" },
   ...(__SCRULK_DEBUG__ ? [{ id: "debug" as const, label: "Debug" }] : []),
 ];
 

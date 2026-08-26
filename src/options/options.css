@@ -158,16 +158,26 @@ label.row small {
 }
 
 .focus-session summary {
-  display: grid;
-  grid-template-columns: minmax(120px, 1fr) max-content max-content max-content;
-  align-items: center;
-  gap: 10px;
+  display: list-item;
   padding: 10px 12px;
   cursor: pointer;
 }
 
-.focus-session-name { font-weight: 600; }
-.focus-session-counts { opacity: 0.65; font-size: 12px; }
+.focus-session-name {
+  margin-right: 10px;
+  margin-left: 6px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-style: dotted;
+  text-underline-offset: 2px;
+}
+.focus-session-counts { margin-left: 10px; opacity: 0.65; font-size: 12px; }
 .focus-session-status {
   padding: 1px 7px;
   border-radius: 999px;
@@ -176,7 +186,7 @@ label.row small {
 }
 .focus-session-status.active { color: #2f6fed; }
 .focus-session-status.inactive { opacity: 0.6; }
-.focus-session-actions { display: flex; gap: 4px; }
+.focus-session-actions { float: right; display: flex; gap: 4px; margin-top: -3px; }
 .focus-session-actions button { padding: 3px 7px; }
 
 .focus-tabs {

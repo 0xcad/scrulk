@@ -306,6 +306,16 @@ label.row small {
   opacity: 0.6;
 }
 
+.today-time-row small.tracked-label {
+  color: var(--scrulk-tracked);
+  opacity: 1;
+}
+
+.today-time-row small.focus-label {
+  color: var(--scrulk-focus);
+  opacity: 1;
+}
+
 .today-time-row.primary .big-number {
   margin: 0;
 }
@@ -332,12 +342,6 @@ label.row small {
   font-size: 14px;
   opacity: 0.75;
   margin: 2px 0 12px;
-}
-
-.focus-today {
-  margin: 0;
-  color: var(--scrulk-focus);
-  font-weight: 600;
 }
 
 dl {

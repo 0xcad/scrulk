@@ -103,20 +103,31 @@ export function Home() {
           </div>
           <div class="today-time-row secondary">
             <span>{formatDuration(trackedMs)}</span>
-            <small>tracked</small>
+            <small class="tracked-label">tracked</small>
+          </div>
+          <div class="today-time-row secondary">
+            <span>{formatDuration(focusMs)}</span>
+            <small class="focus-label">focus</small>
           </div>
         </div>
       ) : (
-        <p class="big-number">
-          {formatDuration(todayMs)}
-          {avgDirection && <AverageArrow direction={avgDirection} />}
-        </p>
+        <div class="today-times">
+          <div class="today-time-row primary">
+            <span class="big-number">
+              {formatDuration(todayMs)}
+              {avgDirection && <AverageArrow direction={avgDirection} />}
+            </span>
+            <small class="tracked-label">tracked</small>
+          </div>
+          <div class="today-time-row secondary">
+            <span>{formatDuration(focusMs)}</span>
+            <small class="focus-label">focus</small>
+          </div>
+        </div>
       )}
       {usageStreak > 1 && (
         <p class="streak-today">{usageStreak}-day tracked-site usage streak</p>
       )}
-      <p class="focus-today">Focus time: {formatDuration(focusMs)}</p>
-
       <h2 class="scrulk-section-title dashboard-section-title">Summary</h2>
       <dl>
         <dt>Tracked sites</dt>

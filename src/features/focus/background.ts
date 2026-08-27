@@ -2,6 +2,7 @@ import browser from "webextension-polyfill";
 import { hostnameOf, isTracked } from "../../shared/domain";
 import type { FocusSession, FocusTabSnapshot } from "../../shared/focusSessions";
 import { getFocusSessions, getSettings, setFocusSessions } from "../../shared/storage";
+import { shouldDeleteFocusSessionForTabRemoval } from "./model";
 
 const FOCUS_BLOCK_RULE_ID = 10_002;
 const WINDOW_SESSION_KEY = "scrulkFocusSessionId";
@@ -357,10 +358,17 @@ export async function handleFocusTabRemoved(
   tabId: number,
   removeInfo: browser.Tabs.OnRemovedRemoveInfoType,
 ): Promise<void> {
-  if (removeInfo.isWindowClosing) return;
   const state = await getFocusSessions();
   const session = sessionForWindow(state.sessions, removeInfo.windowId);
   if (!session || session.closingAction !== null) return;
+  if (shouldDeleteFocusSessionForTabRemoval(session, tabId, removeInfo)) {
+    await setFocusSessions({
+      sessions: state.sessions.filter((candidate) => candidate.id !== session.id),
+    });
+    await syncFocusBlockRule();
+    return;
+  }
+  if (removeInfo.isWindowClosing) return;
   await persistSession({
     ...session,
     tabs: session.tabs.filter((tab) => tab.runtimeTabId !== tabId),

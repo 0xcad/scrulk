@@ -16,7 +16,7 @@
 }
 
 .scrulk-centered-page > #root {
-  width: 100%;
+  width: 100vw;
 }
 
 .scrulk-card {

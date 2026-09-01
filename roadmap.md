@@ -88,6 +88,18 @@ idea: increase unpredictability by randomly replacing clicked links with a camer
 
 add a secondary colored fullscreen button on peek preview 
 
+idea: before starting a focus window, you have to type in "confirm" in some modal, that what you're doing matches a goal you set for yourself?
+
+idea: just give me 15 mins on tracked websites to begin with (no waiting screen). only after that, must i see the waiting screen
+    * problem: after 15 mins of scrolling i may be more likely (less rational) to just open a chrome window?
+    * idea!: optional setting, default true, to always start tracked sites with a waiting screen. replace breaktime challenge with the waiting screen.
+        * ensure that the interrupt screen shows the user their total time on the screen, clear as day...
+        * configure both how long to wait before using a site, and how long to wait in between
+
+TODO: focus mode timer flashes on load
+
+hey, where are negative streaks shown? are they on the waiting confirm screen? still?
+
 idea: a way to share your calendar view on a webserver, as an embed/iframe (works easy with DNS). it's like github's green squares, and it's public accountability
 
 ## Ideas I doubt I could personally implement, or perhaps could use

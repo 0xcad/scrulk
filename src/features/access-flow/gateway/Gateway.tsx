@@ -172,10 +172,10 @@ export function Gateway() {
   if (dayState.accessFlowPhase === "waitingConfirmation") {
     return (
       <main class="scrulk-card flow-card gateway-confirmation">
-        <h1 class="scrulk-card-title">Enter tracked site?</h1>
-        <p class="scrulk-card-copy">You'll have to wait first before continuing with this action</p>
+        <h1 class="scrulk-card-title">Do you want to continue?</h1>
+        <p class="scrulk-card-copy">You are about to enter a tracked site. To give you clarity on this decision, you'll have to wait first.</p>
         <div class="scrulk-card-actions">
-          <button type="button" class="primary" onClick={() => void sendCommand({ type: "access:declineWaiting" })}>go back</button>
+          <button type="button" class="primary" onClick={() => void sendCommand({ type: "access:declineWaiting" })}>no thanks, I'll go back</button>
           <button type="button" class="secondary" onClick={() => void sendCommand({ type: "access:confirmWaiting" })}>continue &gt;</button>
         </div>
       </main>

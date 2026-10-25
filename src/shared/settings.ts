@@ -11,7 +11,8 @@ export interface Settings {
   firstInstalledAt: number;
   /** Local "HH:MM" wake-day boundary. */
   wakeUpTime: string;
-  waitingMinutes: number;
+  initialWaitingSeconds: number;
+  repeatWaitingSeconds: number;
   tabLimit: number;
   peekEnabled: boolean;
   alwaysShowTimer: boolean;
@@ -35,7 +36,8 @@ export const DEFAULT_SETTINGS: Settings = {
   installedAt: 0,
   firstInstalledAt: 0,
   wakeUpTime: "07:00",
-  waitingMinutes: 5,
+  initialWaitingSeconds: 5 * 60,
+  repeatWaitingSeconds: 60,
   tabLimit: 3,
   peekEnabled: true,
   alwaysShowTimer: false,
@@ -60,7 +62,8 @@ export const SETTINGS_SCOPES = {
   installedAt: "internal",
   firstInstalledAt: "internal",
   wakeUpTime: "settings",
-  waitingMinutes: "debug",
+  initialWaitingSeconds: "settings",
+  repeatWaitingSeconds: "settings",
   tabLimit: "settings",
   peekEnabled: "settings",
   alwaysShowTimer: "settings",

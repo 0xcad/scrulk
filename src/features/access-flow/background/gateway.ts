@@ -73,8 +73,7 @@ export async function handleBeforeNavigate(
     state.accessFlowPhase === "waitingConfirmation" ||
     state.accessFlowPhase === "waiting" ||
     state.accessFlowPhase === "waitingReady" ||
-    state.accessFlowPhase === "picking" ||
-    state.accessFlowPhase === "challenge"
+    state.accessFlowPhase === "picking"
   ) {
     const existing = await findPage(accessBase());
     if (existing && existing.id !== details.tabId) {
@@ -104,13 +103,17 @@ export async function ensureAccessPage(
   });
 }
 
-/** Focus the extension-owned hold challenge without allowing stale content
- * pages to reopen the access flow after it has advanced. */
-export async function focusChallengePage(
+/** Focus the extension-owned access page without allowing stale content pages
+ * to reopen a post-break flow after it has advanced. */
+export async function focusAccessPage(
   sourceTab?: browser.Tabs.Tab,
 ): Promise<void> {
   const state = await getDayState();
-  if (state.accessFlowPhase !== "challenge") return;
+  if (
+    !state.postBreakAllowancePending ||
+    (state.accessFlowPhase !== "waiting" &&
+      state.accessFlowPhase !== "waitingReady")
+  ) return;
   await ensureAccessPage(sourceTab);
 }
 

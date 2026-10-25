@@ -16,8 +16,11 @@ import { reduceAccessFlow } from "../transitions";
 const EXTENSION_MS = 2 * 60_000;
 
 export async function handleConfirmWaiting(): Promise<void> {
-  const state = await getDayState();
-  await persistTransition(state, reduceAccessFlow(state, { type: "waitingConfirmed" }));
+  const [state, settings] = await Promise.all([getDayState(), getSettings()]);
+  await persistTransition(state, reduceAccessFlow(state, {
+    type: "waitingConfirmed",
+    skip: settings.initialWaitingSeconds === 0,
+  }));
 }
 
 export async function handleQuestionsComplete(): Promise<void> {
@@ -134,23 +137,16 @@ export async function handleResumePrompt(): Promise<void> {
 export async function handleBreaktimeContinue(
   sourceTab: browser.Tabs.Tab | undefined,
 ): Promise<void> {
-  const state = await getDayState();
+  const [state, settings] = await Promise.all([getDayState(), getSettings()]);
   const next = reduceAccessFlow(state, {
-    type: "challengeStarted",
+    type: "postBreakWaitingStarted",
     now: Date.now(),
     gateMs: 30_000,
+    skip: settings.repeatWaitingSeconds === 0,
   });
   if (next === state) return;
   await setDayState(next);
   await ensureAccessPage(sourceTab);
-}
-
-export async function handleChallengeComplete(): Promise<void> {
-  const state = await getDayState();
-  await persistTransition(
-    state,
-    reduceAccessFlow(state, { type: "challengeCompleted" }),
-  );
 }
 
 export async function handleBreaktimeExtend(): Promise<void> {

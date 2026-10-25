@@ -3,6 +3,7 @@ import { TrackedSitesList } from "../components/TrackedSitesList";
 import { NumberField } from "../components/NumberField";
 import { getSettings, onSettingsChange, setSettings } from "../../shared/storage";
 import { CameraSettingsField } from "../../features/camera/CameraSettingsField";
+import type { Settings as SettingsModel } from "../../shared/settings";
 
 export function Settings() {
   return (
@@ -18,6 +19,23 @@ export function Settings() {
           What time do you usually have to wake up? Daily usage resets when you need to wake up, not midnight.
         </p>
         <WakeUpTimeField />
+      </section>
+
+      <section>
+        <h2 class="scrulk-section-title dashboard-section-title">Waiting periods</h2>
+        <p>
+          Choose how long the waiting screen stays active before selecting
+          tracked-site time. The timer only runs while its tab is focused.
+        </p>
+        <WaitingDurationField
+          field="initialWaitingSeconds"
+          label="First wait of the day"
+        />
+        <WaitingDurationField
+          field="repeatWaitingSeconds"
+          label="Wait after each break"
+        />
+        <small>Set a wait to 0 to skip that waiting screen.</small>
       </section>
 
       <section>
@@ -63,6 +81,59 @@ export function Settings() {
 
     </>
   );
+}
+
+type WaitingDurationKey =
+  | "initialWaitingSeconds"
+  | "repeatWaitingSeconds";
+
+function WaitingDurationField({
+  field,
+  label,
+}: {
+  field: WaitingDurationKey;
+  label: string;
+}) {
+  const [value, setValue] = useState<number | null>(null);
+  const id = `setting-${field}`;
+
+  useEffect(() => {
+    void getSettings().then((settings) => setValue(settings[field]));
+    return onSettingsChange((settings) => setValue(settings[field]));
+  }, [field]);
+
+  if (value === null) return <p>Loading…</p>;
+
+  const display = formatWaitDuration(value);
+  return (
+    <label class="row waiting-duration-row" for={id}>
+      <span>{label}</span>
+      <input
+        id={id}
+        type="range"
+        min={0}
+        max={15 * 60}
+        step={30}
+        value={value}
+        aria-valuetext={display}
+        onInput={(event) => {
+          const next = Number((event.target as HTMLInputElement).value);
+          setValue(next);
+        }}
+        onChange={(event) => {
+          const next = Number((event.target as HTMLInputElement).value);
+          void setSettings({ [field]: next } as Partial<SettingsModel>);
+        }}
+      />
+      <output for={id}>{display}</output>
+    </label>
+  );
+}
+
+function formatWaitDuration(seconds: number): string {
+  if (seconds === 0) return "0 minutes (off)";
+  const minutes = seconds / 60;
+  return `${minutes} ${minutes === 1 ? "minute" : "minutes"}`;
 }
 
 function PeekEnabledField() {

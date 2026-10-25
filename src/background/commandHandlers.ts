@@ -8,7 +8,6 @@ import {
   handleBreaktimeContinue,
   handleBreaktimeDone,
   handleBreaktimeExtend,
-  handleChallengeComplete,
   handleChooseAllowance,
   handleConfirmWaiting,
   handlePopupDone,
@@ -24,7 +23,7 @@ import {
 } from "../features/camera/background";
 import {
   ensureAccessPage,
-  focusChallengePage,
+  focusAccessPage,
 } from "../features/access-flow/background/gateway";
 import {
   recompute,
@@ -68,10 +67,9 @@ const COMMAND_HANDLERS = {
       handleChooseAllowance(message.minutes, message.destUrl, sender.tab?.id)
     ),
   "access:resumeAllowance": () => withRecompute(handleResumePrompt),
-  "access:startChallenge": (_message, sender) =>
+  "access:startPostBreakWait": (_message, sender) =>
     withRecompute(() => handleBreaktimeContinue(sender.tab)),
-  "access:focusPage": (_message, sender) => focusChallengePage(sender.tab),
-  "access:challengeComplete": () => withRecompute(handleChallengeComplete),
+  "access:focusPage": (_message, sender) => focusAccessPage(sender.tab),
   "breaktime:extend": () => withRecompute(handleBreaktimeExtend),
   "breaktime:done": () => withRecompute(handleBreaktimeDone),
   "popup:done": () => withRecompute(handlePopupDone),

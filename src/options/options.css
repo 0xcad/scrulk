@@ -144,6 +144,20 @@ label.row small {
   opacity: 0.6;
 }
 
+.waiting-duration-row > span {
+  min-width: 150px;
+}
+
+.waiting-duration-row input[type="range"] {
+  flex: 1;
+}
+
+.waiting-duration-row output {
+  min-width: 6.5em;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
 .focus-empty {
   opacity: 0.65;
 }

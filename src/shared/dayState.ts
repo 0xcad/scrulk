@@ -8,7 +8,6 @@ export const ACCESS_FLOW_PHASES = [
   "browsing",
   "resumePrompt",
   "break",
-  "challenge",
   "popupLocked",
 ] as const;
 
@@ -148,7 +147,11 @@ export const DAY_STATE_FIELDS = {
   ),
   waitingTimerElapsed: booleanField(
     false,
-    "Whether the focused waiting requirement has elapsed this wake-day.",
+    "Whether the focused requirement for the current wait has elapsed.",
+  ),
+  postBreakAllowancePending: booleanField(
+    false,
+    "Whether the next allowance follows a post-break waiting flow.",
   ),
   allowanceMs: nullableNumberField(
     null,
@@ -186,9 +189,9 @@ export const DAY_STATE_FIELDS = {
     false,
     "Whether a break alert has appeared this wake-day.",
   ),
-  breaktimeChallengeCompletedToday: booleanField(
+  postBreakAllowanceStartedToday: booleanField(
     false,
-    "Whether a breaktime challenge has been completed this wake-day.",
+    "Whether a post-break allowance has started this wake-day.",
   ),
   popupDoneToday: booleanField(
     false,

@@ -48,15 +48,3 @@ button[aria-disabled="true"]:hover,
 button[data-disabled="true"]:hover {
   text-decoration: none;
 }
-
-button.hold {
-  user-select: none;
-  touch-action: none;
-  width: 100%;
-  margin: 10px 0;
-}
-
-button.hold:active {
-  background: CanvasText;
-  color: Canvas;
-}

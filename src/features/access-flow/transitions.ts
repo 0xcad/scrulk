@@ -5,17 +5,17 @@ import {
 } from "../../shared/dayState";
 
 export type AccessFlowEvent =
-  | { type: "waitingConfirmed" }
+  | { type: "waitingConfirmed"; skip: boolean }
   | { type: "waitingElapsed" }
   | { type: "waitingQuestionsCompleted" }
   | { type: "waitCompleted" }
+  | { type: "waitingSkipped" }
   | { type: "waitingFocusChanged"; focused: boolean }
   | { type: "allowanceChosen"; allowanceMs: number; startTotalMs: number }
   | { type: "allowanceResumed" }
   | { type: "allowanceInterrupted" }
   | { type: "allowanceExpired"; openedAt: number }
-  | { type: "challengeStarted"; now: number; gateMs: number }
-  | { type: "challengeCompleted" }
+  | { type: "postBreakWaitingStarted"; now: number; gateMs: number; skip: boolean }
   | {
       type: "extensionStarted";
       expiresAt: number;
@@ -46,10 +46,13 @@ export function reduceAccessFlow(
   switch (event.type) {
     case "waitingConfirmed":
       if (state.accessFlowPhase !== "waitingConfirmation") return state;
-      return {
+      return event.skip ? {
+        ...resetWaiting(state),
+        accessFlowPhase: "picking",
+      } : {
         ...state,
         accessFlowPhase: "waiting",
-        waitingTimerElapsed: false,
+        ...waitingDefaults(),
       };
     case "waitingElapsed":
       if (state.accessFlowPhase !== "waiting") return state;
@@ -64,6 +67,9 @@ export function reduceAccessFlow(
     case "waitCompleted":
       if (state.accessFlowPhase !== "waitingReady") return state;
       return { ...state, accessFlowPhase: "picking", waitingPageFocused: false };
+    case "waitingSkipped":
+      if (state.accessFlowPhase !== "waiting") return state;
+      return { ...resetWaiting(state), accessFlowPhase: "picking" };
     case "waitingFocusChanged":
       if (
         state.accessFlowPhase !== "waiting" ||
@@ -82,6 +88,9 @@ export function reduceAccessFlow(
         breaktimeExtensionExpiresAt: null,
         breaktimeExtensionUsed: false,
         breaktimeExtensionTabs: {},
+        postBreakAllowanceStartedToday:
+          state.postBreakAllowanceStartedToday || state.postBreakAllowancePending,
+        postBreakAllowancePending: false,
       };
     case "allowanceResumed":
       return state.accessFlowPhase === "resumePrompt"
@@ -101,19 +110,16 @@ export function reduceAccessFlow(
         breakOpenedAt: event.openedAt,
         breaktimeShownToday: true,
       };
-    case "challengeStarted":
+    case "postBreakWaitingStarted":
       if (
         state.accessFlowPhase !== "break" ||
         state.breakOpenedAt === null ||
         event.now - state.breakOpenedAt < event.gateMs
       ) return state;
-      return { ...state, accessFlowPhase: "challenge" };
-    case "challengeCompleted":
-      if (state.accessFlowPhase !== "challenge") return state;
       return {
-        ...state,
-        accessFlowPhase: "picking",
-        breaktimeChallengeCompletedToday: true,
+        ...resetWaiting(state),
+        accessFlowPhase: event.skip ? "picking" : "waiting",
+        postBreakAllowancePending: true,
         allowanceMs: null,
         allowanceStartTotalMs: null,
         breakOpenedAt: null,
@@ -170,5 +176,27 @@ function clearAllowance(state: DayState): DayState {
     breaktimeExtensionExpiresAt: null,
     breaktimeExtensionUsed: false,
     breaktimeExtensionTabs: {},
+    postBreakAllowancePending: false,
   };
+}
+
+function waitingDefaults(): Pick<
+  DayState,
+  | "waitingMs"
+  | "waitingActiveSince"
+  | "waitingCheckpointAt"
+  | "waitingPageFocused"
+  | "waitingTimerElapsed"
+> {
+  return {
+    waitingMs: 0,
+    waitingActiveSince: null,
+    waitingCheckpointAt: null,
+    waitingPageFocused: false,
+    waitingTimerElapsed: false,
+  };
+}
+
+function resetWaiting(state: DayState): DayState {
+  return { ...state, ...waitingDefaults() };
 }

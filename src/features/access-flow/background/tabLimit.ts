@@ -24,7 +24,6 @@ export async function enforceTabLimit(
     state.accessFlowPhase === "waiting" ||
     state.accessFlowPhase === "waitingReady" ||
     state.accessFlowPhase === "picking" ||
-    state.accessFlowPhase === "challenge" ||
     state.accessFlowPhase === "popupLocked"
   ) return;
 

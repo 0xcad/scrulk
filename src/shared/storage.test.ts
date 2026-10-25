@@ -8,6 +8,8 @@ describe("storage normalization", () => {
       .toBe("06:30");
     expect(normalizeSettings(undefined).trackedSites).toEqual([]);
     expect(normalizeSettings(undefined).ignoredSites).toEqual([]);
+    expect(normalizeSettings(undefined).initialWaitingSeconds).toBe(300);
+    expect(normalizeSettings(undefined).repeatWaitingSeconds).toBe(60);
   });
 
   it("gives ignored domains precedence over overlapping tracked domains", () => {

@@ -89,10 +89,16 @@ export function Root({ matchedDomain }: Props) {
       {matchedDomain !== null && state.accessFlowPhase === "resumePrompt" && (
         <RemainingTimeOverlay remainingMs={remainingAllowanceMs(state, now)} />
       )}
-      {matchedDomain !== null &&
-        (state.accessFlowPhase === "challenge" || state.accessFlowPhase === "picking") && (
-          <AccessInProgressOverlay challengeActive={state.accessFlowPhase === "challenge"} />
-        )}
+      {matchedDomain !== null && (
+        state.accessFlowPhase === "picking" ||
+        (state.postBreakAllowancePending &&
+          (state.accessFlowPhase === "waiting" ||
+            state.accessFlowPhase === "waitingReady"))
+      ) && (
+        <AccessInProgressOverlay
+          accessPageActive={state.accessFlowPhase !== "picking"}
+        />
+      )}
     </>
   );
 }

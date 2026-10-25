@@ -1,5 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "preact/hooks";
-import { Challenge } from "../content/Challenge";
+import { useCallback, useEffect, useState } from "preact/hooks";
 import { FullPageOverlay, fullPageOverlayStyles } from "../../../shared/FullPageOverlay";
 import {
   allowanceOptions,
@@ -36,9 +35,7 @@ export function Gateway() {
   const [active, setActive] = useState(
     document.visibilityState === "visible" && document.hasFocus(),
   );
-  const [showCamera, setShowCamera] = useState(false);
   const [trackedAverageMs, setTrackedAverageMs] = useState<number | null>(null);
-  const cameraRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
     void getSettings().then(setSettings);
@@ -103,55 +100,6 @@ export function Gateway() {
     };
   }, [dayState.accessFlowPhase, dayState.wakeDayStart]);
 
-  useEffect(() => {
-    let disposed = false;
-    let stream: MediaStream | null = null;
-    let requestInFlight = false;
-    const pageIsActive = () =>
-      dayState.accessFlowPhase === "challenge" &&
-      document.visibilityState === "visible" &&
-      document.hasFocus();
-    const stopCamera = () => {
-      if (cameraRef.current) cameraRef.current.srcObject = null;
-      stream?.getTracks().forEach((track) => track.stop());
-      stream = null;
-      setShowCamera(false);
-    };
-    const startCamera = () => {
-      if (!navigator.mediaDevices?.getUserMedia || !pageIsActive() || stream || requestInFlight) return;
-      requestInFlight = true;
-      void navigator.mediaDevices.getUserMedia({
-        audio: false,
-        video: { facingMode: { ideal: "user" } },
-      }).then((next) => {
-        requestInFlight = false;
-        if (disposed || !pageIsActive() || !cameraRef.current) {
-          next.getTracks().forEach((track) => track.stop());
-          return;
-        }
-        stream = next;
-        cameraRef.current.srcObject = next;
-        setShowCamera(true);
-        void cameraRef.current.play().catch(() => null);
-      }).catch(() => {
-        requestInFlight = false;
-        if (!disposed) setShowCamera(false);
-      });
-    };
-    const sync = () => pageIsActive() ? startCamera() : stopCamera();
-    document.addEventListener("visibilitychange", sync);
-    window.addEventListener("focus", sync);
-    window.addEventListener("blur", sync);
-    sync();
-    return () => {
-      disposed = true;
-      document.removeEventListener("visibilitychange", sync);
-      window.removeEventListener("focus", sync);
-      window.removeEventListener("blur", sync);
-      stopCamera();
-    };
-  }, [dayState.accessFlowPhase]);
-
   const pick = (minutes: number) => {
     void sendCommand({ type: "access:chooseAllowance", minutes, destUrl: dest });
   };
@@ -173,7 +121,11 @@ export function Gateway() {
     return (
       <main class="scrulk-card flow-card gateway-confirmation">
         <h1 class="scrulk-card-title">Do you want to continue?</h1>
-        <p class="scrulk-card-copy">You are about to enter a tracked site. To give you clarity on this decision, you'll have to wait first.</p>
+        <p class="scrulk-card-copy">
+          {settings.initialWaitingSeconds === 0
+            ? "You are about to enter a tracked site. Choose how much time you want to spend before continuing."
+            : "You are about to enter a tracked site. To give you clarity on this decision, you'll have to wait first."}
+        </p>
         <div class="scrulk-card-actions">
           <button type="button" class="primary" onClick={() => void sendCommand({ type: "access:declineWaiting" })}>no thanks, I'll go back</button>
           <button type="button" class="secondary" onClick={() => void sendCommand({ type: "access:confirmWaiting" })}>continue &gt;</button>
@@ -220,12 +172,6 @@ export function Gateway() {
   return (
     <div class="gateway-cards">
       <style>{fullPageOverlayStyles}</style>
-      {dayState.accessFlowPhase === "challenge" && (
-        <section class={`scrulk-card flow-card camera-card${showCamera ? "" : " camera-card--hidden"}`}>
-          <video ref={cameraRef} autoplay muted playsinline aria-label="Your camera preview" />
-        </section>
-      )}
-
       <main class="scrulk-card flow-card">
         {dayState.accessFlowPhase === "picking" && (
           <>
@@ -250,11 +196,6 @@ export function Gateway() {
               ))}
             </div>
           </>
-        )}
-        {dayState.accessFlowPhase === "challenge" && (
-          <Challenge
-            onComplete={() => void sendCommand({ type: "access:challengeComplete" })}
-          />
         )}
       </main>
     </div>

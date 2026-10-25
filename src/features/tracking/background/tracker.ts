@@ -132,9 +132,18 @@ export async function recompute(): Promise<void> {
     inputs.windowFocused &&
     isAccessPageUrl(inputs.activeTabUrl);
   state = applyWaitingTransition(state, waitingActive, now);
+  const waitingSeconds = state.postBreakAllowancePending
+    ? settings.repeatWaitingSeconds
+    : settings.initialWaitingSeconds;
   if (
     state.accessFlowPhase === "waiting" &&
-    effectiveWaitingMs(state, now) >= settings.waitingMinutes * 60_000
+    waitingSeconds === 0
+  ) {
+    state = applyWaitingTransition(state, false, now);
+    state = reduceAccessFlow(state, { type: "waitingSkipped" });
+  } else if (
+    state.accessFlowPhase === "waiting" &&
+    effectiveWaitingMs(state, now) >= waitingSeconds * 1000
   ) {
     state = applyWaitingTransition(state, false, now);
     state = reduceAccessFlow(state, { type: "waitingElapsed" });
@@ -144,7 +153,9 @@ export async function recompute(): Promise<void> {
   const wantActive = !focusWindowActive && flowAllowsTracking && shouldBeActive(inputs);
   const allSitesPaused =
     state.accessFlowPhase === "break" ||
-    state.accessFlowPhase === "challenge" ||
+    (state.postBreakAllowancePending &&
+      (state.accessFlowPhase === "waiting" ||
+        state.accessFlowPhase === "waitingReady")) ||
     state.accessFlowPhase === "resumePrompt" ||
     state.accessFlowPhase === "popupLocked";
   const eligibleAllSites = shouldTrackAllSites(inputs);
@@ -181,7 +192,12 @@ export async function recompute(): Promise<void> {
   }
   await ensureDayResetAlarm(settings.wakeUpTime);
   await syncActivityCheckAlarm(next);
-  await syncWaitingAlarm(next, settings.waitingMinutes);
+  await syncWaitingAlarm(
+    next,
+    next.postBreakAllowancePending
+      ? settings.repeatWaitingSeconds
+      : settings.initialWaitingSeconds,
+  );
   await scheduleBreaktimeAlarm(next);
 }
 
@@ -218,7 +234,7 @@ async function syncActivityCheckAlarm(state: DayState): Promise<void> {
   await browser.alarms.create(ALARM_NAMES.activityCheck, { when });
 }
 
-async function syncWaitingAlarm(state: DayState, waitingMinutes: number): Promise<void> {
+async function syncWaitingAlarm(state: DayState, waitingSeconds: number): Promise<void> {
   if (
     state.accessFlowPhase !== "waiting" ||
     state.waitingTimerElapsed ||
@@ -227,7 +243,7 @@ async function syncWaitingAlarm(state: DayState, waitingMinutes: number): Promis
     await browser.alarms.clear(ALARM_NAMES.waiting).catch(() => null);
     return;
   }
-  const remaining = waitingMinutes * 60_000 - effectiveWaitingMs(state, Date.now());
+  const remaining = waitingSeconds * 1000 - effectiveWaitingMs(state, Date.now());
   if (remaining <= 0) return;
   const when = Date.now() + remaining;
   const existing = await browser.alarms.get(ALARM_NAMES.waiting).catch(() => null);
@@ -278,6 +294,7 @@ export async function rolloverDay(
     waitingCheckpointAt: null,
     waitingPageFocused: false,
     waitingTimerElapsed: false,
+    postBreakAllowancePending: false,
     allowanceMs: null,
     allowanceStartTotalMs: null,
     breakOpenedAt: null,
@@ -287,7 +304,7 @@ export async function rolloverDay(
     tabLimitWarning: false,
     surveyFilledFor: null,
     breaktimeShownToday: false,
-    breaktimeChallengeCompletedToday: false,
+    postBreakAllowanceStartedToday: false,
     popupDoneToday: false,
     surveyContinueAllowed: false,
   };

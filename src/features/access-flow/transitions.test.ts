@@ -14,13 +14,15 @@ const phases: AccessFlowPhase[] = [
   "browsing",
   "resumePrompt",
   "break",
-  "challenge",
   "popupLocked",
 ];
 
 describe("reduceAccessFlow", () => {
   it("requires confirmation, elapsed time, and completed questions in order", () => {
-    const waiting = reduceAccessFlow(DEFAULT_DAY_STATE, { type: "waitingConfirmed" });
+    const waiting = reduceAccessFlow(DEFAULT_DAY_STATE, {
+      type: "waitingConfirmed",
+      skip: false,
+    });
     expect(waiting.accessFlowPhase).toBe("waiting");
     expect(waiting.waitingTimerElapsed).toBe(false);
 
@@ -36,11 +38,17 @@ describe("reduceAccessFlow", () => {
       .toBe("waitingReady");
   });
 
+  it("skips a disabled initial wait", () => {
+    expect(reduceAccessFlow(DEFAULT_DAY_STATE, {
+      type: "waitingConfirmed",
+      skip: true,
+    }).accessFlowPhase).toBe("picking");
+  });
+
   it.each([
     ["waitCompleted", "waitingReady", "picking"],
     ["allowanceResumed", "resumePrompt", "browsing"],
     ["allowanceInterrupted", "browsing", "resumePrompt"],
-    ["challengeCompleted", "challenge", "picking"],
     ["surveyContinued", "popupLocked", "picking"],
   ] as const)("applies %s only from %s", (type, from, to) => {
     const event = { type } as AccessFlowEvent;
@@ -85,11 +93,27 @@ describe("reduceAccessFlow", () => {
       breakOpenedAt: 10_000,
     };
     expect(reduceAccessFlow(breakState, {
-      type: "challengeStarted", now: 39_999, gateMs: 30_000,
+      type: "postBreakWaitingStarted", now: 39_999, gateMs: 30_000, skip: false,
     })).toBe(breakState);
+    expect(reduceAccessFlow({
+      ...breakState,
+      waitingMs: 20_000,
+      waitingTimerElapsed: true,
+    }, {
+      type: "postBreakWaitingStarted", now: 40_000, gateMs: 30_000, skip: false,
+    })).toMatchObject({
+      accessFlowPhase: "waiting",
+      waitingMs: 0,
+      waitingTimerElapsed: false,
+      postBreakAllowancePending: true,
+    });
+
     expect(reduceAccessFlow(breakState, {
-      type: "challengeStarted", now: 40_000, gateMs: 30_000,
-    }).accessFlowPhase).toBe("challenge");
+      type: "postBreakWaitingStarted", now: 40_000, gateMs: 30_000, skip: true,
+    })).toMatchObject({
+      accessFlowPhase: "picking",
+      postBreakAllowancePending: true,
+    });
 
     const extended = reduceAccessFlow(breakState, {
       type: "extensionStarted",
@@ -105,6 +129,27 @@ describe("reduceAccessFlow", () => {
       { ...breakState, breaktimeExtensionUsed: true },
       { type: "extensionStarted", expiresAt: 100_000, tabs: {} },
     ).accessFlowPhase).toBe("break");
+  });
+
+  it("unlocks the camera only when a post-break allowance is chosen", () => {
+    const initial = reduceAccessFlow(
+      { ...DEFAULT_DAY_STATE, accessFlowPhase: "picking" },
+      { type: "allowanceChosen", allowanceMs: 60_000, startTotalMs: 0 },
+    );
+    expect(initial.postBreakAllowanceStartedToday).toBe(false);
+
+    const postBreak = reduceAccessFlow(
+      {
+        ...DEFAULT_DAY_STATE,
+        accessFlowPhase: "picking",
+        postBreakAllowancePending: true,
+      },
+      { type: "allowanceChosen", allowanceMs: 60_000, startTotalMs: 0 },
+    );
+    expect(postBreak).toMatchObject({
+      postBreakAllowancePending: false,
+      postBreakAllowanceStartedToday: true,
+    });
   });
 });
 

@@ -18,9 +18,8 @@ export type Message =
   | { type: "access:setWaitingFocus"; focused: boolean }
   | { type: "access:chooseAllowance"; minutes: number; destUrl?: string }
   | { type: "access:resumeAllowance" }
-  | { type: "access:startChallenge" }
+  | { type: "access:startPostBreakWait" }
   | { type: "access:focusPage" }
-  | { type: "access:challengeComplete" }
   | { type: "breaktime:done" }
   | { type: "breaktime:extend" }
   | { type: "popup:done" }

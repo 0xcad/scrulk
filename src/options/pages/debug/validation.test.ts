@@ -39,7 +39,6 @@ describe("DayState debug validation", () => {
       "browsing",
       "resumePrompt",
       "break",
-      "challenge",
       "popupLocked",
     ]);
   });

@@ -47,7 +47,7 @@ export function BreaktimeOverlay() {
   };
   const onContinue = () => {
     if (!continueReady) return;
-    void sendCommand({ type: "access:startChallenge" });
+    void sendCommand({ type: "access:startPostBreakWait" });
   };
   const onExtend = () => {
     void sendCommand({ type: "breaktime:extend" });

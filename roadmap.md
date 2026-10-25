@@ -126,6 +126,8 @@ Could perhaps turn or turn off this setting? "Deep focus" mode or something, whi
 Idea: gate the user based on previous behavior? allow user to set screentime goal. if user is below this goal, do not show waiting screens to them. give them a clear way where they can see if they go over time, they click a button ("accept"), and then lose no-waiting-screen privileges. make the conditions to go back to no-waiting screen very clear (like a probation).
 * I don't think it is helpful to me actually, or matches my goals of finding other things to be doing with my time. could be helpful for others though
 
+idea: show the user their prev submissions as placeholder on the waiting page
+
 ## ideas I've determined may be bad
 
 idea: collect bullet points from user about what they want to be doing online *instead* of using tracked sites. show those in an accordion in the modal popup. occasionally, when user is scrolling, show these at random intervals to user one at a time

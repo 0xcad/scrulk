@@ -15,6 +15,9 @@ export interface Settings {
   repeatWaitingSeconds: number;
   tabLimit: number;
   peekEnabled: boolean;
+  peekBlocklistPatterns: string[];
+  pendingTrackedSiteRemovals: Record<string, number>;
+  pendingPeekBlocklistRemovals: Record<string, number>;
   alwaysShowTimer: boolean;
   alwaysShowTimerExpanded: boolean;
   clockPositions: Record<string, ClockPosition>;
@@ -40,6 +43,9 @@ export const DEFAULT_SETTINGS: Settings = {
   repeatWaitingSeconds: 60,
   tabLimit: 3,
   peekEnabled: true,
+  peekBlocklistPatterns: [],
+  pendingTrackedSiteRemovals: {},
+  pendingPeekBlocklistRemovals: {},
   alwaysShowTimer: false,
   alwaysShowTimerExpanded: false,
   clockPositions: {},
@@ -66,6 +72,9 @@ export const SETTINGS_SCOPES = {
   repeatWaitingSeconds: "settings",
   tabLimit: "settings",
   peekEnabled: "settings",
+  peekBlocklistPatterns: "settings",
+  pendingTrackedSiteRemovals: "internal",
+  pendingPeekBlocklistRemovals: "internal",
   alwaysShowTimer: "settings",
   alwaysShowTimerExpanded: "component",
   clockPositions: "component",

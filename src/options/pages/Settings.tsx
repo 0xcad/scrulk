@@ -4,6 +4,7 @@ import { NumberField } from "../components/NumberField";
 import { getSettings, onSettingsChange, setSettings } from "../../shared/storage";
 import { CameraSettingsField } from "../../features/camera/CameraSettingsField";
 import type { Settings as SettingsModel } from "../../shared/settings";
+import { PeekBlocklist } from "../components/PeekBlocklist";
 
 export function Settings() {
   return (
@@ -58,6 +59,7 @@ export function Settings() {
           preview without starting tracked time or applying restrictions.
         </p>
         <PeekEnabledField />
+        <PeekBlocklist />
       </section>
 
       <section>

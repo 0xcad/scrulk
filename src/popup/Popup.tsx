@@ -1,6 +1,7 @@
 import { useEffect, useState } from "preact/hooks";
 import browser from "webextension-polyfill";
 import {
+  domainsOverlap,
   hostnameOf,
   isTracked,
   withoutOverlappingDomains,
@@ -104,6 +105,7 @@ export function Popup() {
   const [now, setNow] = useState(Date.now());
   const [focusSessions, setFocusSessions] = useState<FocusSessionsState>(DEFAULT_FOCUS_SESSIONS);
   const [tabContext, setTabContext] = useState<PopupTabContext | null>(null);
+  const [siteError, setSiteError] = useState<string | null>(null);
 
   useEffect(() => {
     void getSettings().then(setLocal);
@@ -169,6 +171,7 @@ export function Popup() {
 
   const onAdd = async () => {
     if (!displayHost) return;
+    setSiteError(null);
     await setSettings({
       trackedSites: [...settings.trackedSites, displayHost].sort(),
       ignoredSites: withoutOverlappingDomains(settings.ignoredSites, displayHost),
@@ -177,18 +180,13 @@ export function Popup() {
 
   const onIgnore = async () => {
     if (!displayHost) return;
+    setSiteError(null);
+    if (settings.trackedSites.some((trackedSite) => domainsOverlap(trackedSite, displayHost))) {
+      setSiteError("Remove the overlapping tracked site in the dashboard first.");
+      return;
+    }
     await setSettings({
-      trackedSites: withoutOverlappingDomains(settings.trackedSites, displayHost),
       ignoredSites: [...settings.ignoredSites, displayHost].sort(),
-    });
-  };
-
-  const onRemove = async () => {
-    if (!displayHost) return;
-    await setSettings({
-      ...(tracked
-        ? { trackedSites: withoutOverlappingDomains(settings.trackedSites, displayHost) }
-        : { ignoredSites: withoutOverlappingDomains(settings.ignoredSites, displayHost) }),
     });
   };
 
@@ -248,22 +246,14 @@ export function Popup() {
             <span class={`status ${tracked ? "tracked" : ignored ? "ignored" : "untracked"}`}>
               {tracked ? "tracked" : ignored ? "ignored" : "not tracked"}
             </span>
-            {tracked || ignored ? (
-              <button
-                type="button"
-                class="float-right"
-                onClick={onRemove}
-                title={tracked ? "remove from tracked sites" : "remove from ignored sites"}
-              >
-                x
-              </button>
-            ) : (
+            {!tracked && !ignored && (
               <span class="site-actions float-right">
                 <button type="button" onClick={onAdd} title="add to tracked sites">+</button>
                 <button type="button" onClick={onIgnore} title="add to ignored sites">−</button>
               </span>
             )}
           </p>
+          {siteError && <p class="warning">{siteError}</p>}
         </>
       ) : (
         <p>This page can't be tracked.</p>

@@ -12,7 +12,7 @@ function readDateFromUrl(): string | null {
 }
 
 function formatDateLong(date: string): string {
-  // 'YYYY-MM-DD' in local time. Avoid Date('YYYY-MM-DD') UTC parsing trap.
+  // Parse the stored wake-day key in local time instead of as UTC.
   const [y, m, d] = date.split("-").map(Number);
   if (!y || !m || !d) return date;
   const local = new Date(y, m - 1, d);

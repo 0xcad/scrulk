@@ -3,6 +3,7 @@ export const ALARM_NAMES = {
   allowance: "scrulk:allowance",
   breaktimeExtension: "scrulk:breaktime-extension",
   dayReset: "scrulk:day-reset",
+  delayedSettingsRemoval: "scrulk:delayed-settings-removal",
   waiting: "scrulk:waiting",
 } as const;
 

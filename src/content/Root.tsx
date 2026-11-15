@@ -79,7 +79,10 @@ export function Root({ matchedDomain }: Props) {
       )}
       <SleepClock />
       {matchedDomain === null && settings.peekEnabled && (
-        <PeekOverlay trackedSites={settings.trackedSites} />
+        <PeekOverlay
+          trackedSites={settings.trackedSites}
+          blocklistPatterns={settings.peekBlocklistPatterns}
+        />
       )}
       <DimOverlay state={state} matchedDomain={matchedDomain} />
       {matchedDomain !== null && state.breaktimeExtensionExpiresAt !== null && (

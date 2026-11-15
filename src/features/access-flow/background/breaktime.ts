@@ -11,6 +11,7 @@ import { effectiveMs, remainingAllowanceMs, type DayState } from "../../../share
 import { currentWakeDayStart } from "../../../shared/wakeDay";
 import { ensureAccessPage, focusFirstTrackedTab } from "./gateway";
 import { ALARM_NAMES } from "../../../background/alarms";
+import { BREAKTIME_CONTINUE_GATE_MS } from "../timing";
 import { reduceAccessFlow } from "../transitions";
 
 const EXTENSION_MS = 2 * 60_000;
@@ -141,7 +142,7 @@ export async function handleBreaktimeContinue(
   const next = reduceAccessFlow(state, {
     type: "postBreakWaitingStarted",
     now: Date.now(),
-    gateMs: 30_000,
+    gateMs: BREAKTIME_CONTINUE_GATE_MS,
     skip: settings.repeatWaitingSeconds === 0,
   });
   if (next === state) return;

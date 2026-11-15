@@ -21,4 +21,34 @@ describe("peekUrlForHref", () => {
     expect(peekUrlForHref("https://other.example/", BASE, TRACKED)).toBeNull();
     expect(peekUrlForHref("mailto:hello@example.com", BASE, TRACKED)).toBeNull();
   });
+
+  it("rejects tracked destinations matching a full-URL blocklist pattern", () => {
+    expect(
+      peekUrlForHref(
+        "https://social.example/feed?mode=compact#today",
+        BASE,
+        TRACKED,
+        [String.raw`social\.example/feed\?mode=compact#today`],
+      ),
+    ).toBeNull();
+    expect(
+      peekUrlForHref(
+        "https://social.example/profile",
+        BASE,
+        TRACKED,
+        [String.raw`social\.example/feed`],
+      ),
+    ).toBe("https://social.example/profile");
+  });
+
+  it("matches blocklist patterns case-sensitively", () => {
+    expect(
+      peekUrlForHref(
+        "https://social.example/Feed",
+        BASE,
+        TRACKED,
+        ["/feed"],
+      ),
+    ).toBe("https://social.example/Feed");
+  });
 });

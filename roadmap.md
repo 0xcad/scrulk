@@ -56,6 +56,9 @@ Also: "Focus mode".
     * can stash a tab in the extension popup
 * idea on calendar: show a pie chart for days. tracked time, focused time, unfocused time
 
+* user should be able to add sites that cannot be viewed in site preview, using regex filters.
+* ^these, and top sites, can always be removed, but have a time-delay (takes 6 hrs to remove, say). the default option during the time delay is to cancel removing them
+
 ## TODO:
 
 * need to change icons ofc
@@ -127,6 +130,10 @@ Idea: gate the user based on previous behavior? allow user to set screentime goa
 * I don't think it is helpful to me actually, or matches my goals of finding other things to be doing with my time. could be helpful for others though
 
 idea: show the user their prev submissions as placeholder on the waiting page
+
+
+TODO:
+* need a way to write in time on new time screen, provided it's less than 30 mins...
 
 ## ideas I've determined may be bad
 

@@ -4,8 +4,7 @@ import { getDayState, onDayStateChange } from "../../../shared/storage";
 import { DEFAULT_DAY_STATE, type DayState, effectiveMs } from "../../../shared/dayState";
 import { overlayBaseStyles } from "../../../content/overlayStyles";
 import { FullPageOverlay, fullPageOverlayStyles } from "../../../shared/FullPageOverlay";
-
-const ALERT_GATE_MS = 30_000;
+import { BREAKTIME_CONTINUE_GATE_MS } from "../timing";
 
 function formatUsage(ms: number): string {
   const totalMinutes = Math.max(0, Math.floor(ms / 60_000));
@@ -32,7 +31,7 @@ export function BreaktimeOverlay() {
     const sync = () => {
       setContinueReady(
         state.breakOpenedAt !== null &&
-        Date.now() - state.breakOpenedAt >= ALERT_GATE_MS,
+        Date.now() - state.breakOpenedAt >= BREAKTIME_CONTINUE_GATE_MS,
       );
     };
     sync();

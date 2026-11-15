@@ -30,6 +30,7 @@ import { syncPeekFrameRule } from "../features/peek/background";
 import { ALARM_NAMES, isAlarmName, type AlarmName } from "./alarms";
 import { dispatchCommand } from "./commandHandlers";
 import { runBackgroundTask } from "./taskQueue";
+import { syncDelayedSettingsRemovals } from "./delayedSettingsRemovals";
 import {
   enforceFocusNavigation,
   handleFocusTabRemoved,
@@ -58,6 +59,7 @@ browser.runtime.onInstalled.addListener(({ reason }) =>
     await reconcileFocusWindows(true);
     await refreshAllTabIcons(current.trackedSites);
     await ensureDayResetAlarm(current.wakeUpTime);
+    await syncDelayedSettingsRemovals();
     await recompute();
     await syncTrackedTabPresence();
     await recompute();
@@ -72,6 +74,7 @@ browser.runtime.onStartup.addListener(() =>
     await reconcileFocusWindows(false);
     await refreshAllTabIcons(settings.trackedSites);
     await ensureDayResetAlarm(settings.wakeUpTime);
+    await syncDelayedSettingsRemovals();
     await recompute();
     await syncTrackedTabPresence();
     await recompute();
@@ -227,6 +230,7 @@ const ALARM_HANDLERS = {
     await handleDayResetAlarm();
     await recompute();
   },
+  [ALARM_NAMES.delayedSettingsRemoval]: syncDelayedSettingsRemovals,
   [ALARM_NAMES.waiting]: recompute,
 } satisfies Record<AlarmName, () => Promise<void>>;
 
@@ -253,6 +257,7 @@ onSettingsChange((next) => {
     await stashTrackedFocusTabs();
     await syncFocusBlockRule();
     await ensureDayResetAlarm(next.wakeUpTime);
+    await syncDelayedSettingsRemovals();
     await recompute();
     await syncTrackedTabPresence();
     await recompute();

@@ -60,7 +60,7 @@ main > section {
   font-size: 16px;
 }
 
-form {
+.site-list-form {
   display: flex;
   gap: 8px;
   align-items: center;
@@ -89,11 +89,12 @@ input[type="text"] {
   color: inherit;
 }
 
-form button {
+.site-list-form button {
+  align-self: stretch;
   padding-block: 4px;
 }
 
-ul.tracked-sites {
+ul.settings-entry-list {
   list-style: none;
   margin: 0;
   padding: 0;
@@ -102,7 +103,7 @@ ul.tracked-sites {
   border: 1px solid var(--border);
 }
 
-ul.tracked-sites li {
+ul.settings-entry-list li {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -110,14 +111,59 @@ ul.tracked-sites li {
   border-bottom: 1px solid var(--border);
 }
 
-ul.tracked-sites li:last-child {
+ul.settings-entry-list li:last-child {
   border-bottom: none;
 }
 
-ul.tracked-sites li.empty {
+ul.settings-entry-list li.empty {
   justify-content: center;
   opacity: 0.6;
   font-style: italic;
+}
+
+.entry-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.removal-countdown {
+  color: var(--light);
+  white-space: nowrap;
+  border-bottom: 1px dotted currentColor;
+  cursor: help;
+}
+
+.peek-blocklist-details {
+  padding-top: 6px;
+}
+
+.peek-blocklist-details summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.peek-blocklist-details[open] {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.peek-blocklist-details[open] summary {
+  margin-bottom: 4px;
+}
+
+.peek-blocklist-details p {
+  margin: 0 0 1rem;
+}
+
+.peek-filter-pattern {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+ul.peek-blocklist-list {
+  margin-top: 16px;
 }
 
 .error {

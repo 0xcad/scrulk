@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { DEFAULT_DAY_STATE, type AccessFlowPhase } from "../../shared/dayState";
+import { BREAKTIME_CONTINUE_GATE_MS } from "./timing";
 import {
   reduceAccessFlow,
   shouldInterruptAllowance,
@@ -93,14 +94,20 @@ describe("reduceAccessFlow", () => {
       breakOpenedAt: 10_000,
     };
     expect(reduceAccessFlow(breakState, {
-      type: "postBreakWaitingStarted", now: 39_999, gateMs: 30_000, skip: false,
+      type: "postBreakWaitingStarted",
+      now: breakState.breakOpenedAt + BREAKTIME_CONTINUE_GATE_MS - 1,
+      gateMs: BREAKTIME_CONTINUE_GATE_MS,
+      skip: false,
     })).toBe(breakState);
     expect(reduceAccessFlow({
       ...breakState,
       waitingMs: 20_000,
       waitingTimerElapsed: true,
     }, {
-      type: "postBreakWaitingStarted", now: 40_000, gateMs: 30_000, skip: false,
+      type: "postBreakWaitingStarted",
+      now: breakState.breakOpenedAt + BREAKTIME_CONTINUE_GATE_MS,
+      gateMs: BREAKTIME_CONTINUE_GATE_MS,
+      skip: false,
     })).toMatchObject({
       accessFlowPhase: "waiting",
       waitingMs: 0,
@@ -109,7 +116,10 @@ describe("reduceAccessFlow", () => {
     });
 
     expect(reduceAccessFlow(breakState, {
-      type: "postBreakWaitingStarted", now: 40_000, gateMs: 30_000, skip: true,
+      type: "postBreakWaitingStarted",
+      now: breakState.breakOpenedAt + BREAKTIME_CONTINUE_GATE_MS,
+      gateMs: BREAKTIME_CONTINUE_GATE_MS,
+      skip: true,
     })).toMatchObject({
       accessFlowPhase: "picking",
       postBreakAllowancePending: true,

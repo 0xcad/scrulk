@@ -23,7 +23,8 @@ export function MonthStats({ days, viewMonth, showAllSitesTime }: Props) {
     };
   }, [days, viewMonth]);
 
-  const monthName = new Date(viewMonth.year, viewMonth.month, 1).toLocaleDateString(undefined, { month: "long" });
+  const monthName = new Date(viewMonth.year, viewMonth.month, 1)
+    .toLocaleDateString(undefined, { month: "long" });
 
   return (
     <div class="month-stats">

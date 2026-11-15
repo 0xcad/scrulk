@@ -51,7 +51,7 @@ export function Home() {
     ? formatUptime(now - settings.installedAt)
     : "—";
   const installedOn = settings.installedAt
-    ? new Date(settings.installedAt).toLocaleDateString()
+    ? dateKey(settings.installedAt)
     : "—";
 
   const trackedMs = effectiveMs(state, now);

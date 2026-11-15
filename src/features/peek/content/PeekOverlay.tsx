@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from "preact/hooks";
 import { findMatchingDomain } from "../../../shared/domain";
+import { isPeekBlocklisted } from "../model";
 
 interface Props {
   trackedSites: string[];
+  blocklistPatterns: string[];
 }
 
 export const PEEK_FRAME_NAME = "scrulk-peek-frame";
@@ -24,11 +26,13 @@ export function peekUrlForHref(
   href: string,
   baseUrl: string,
   trackedSites: string[],
+  blocklistPatterns: string[] = [],
 ): string | null {
   try {
     const url = new URL(href, baseUrl);
     if (url.protocol !== "http:" && url.protocol !== "https:") return null;
-    return findMatchingDomain(url.hostname, trackedSites) === null
+    return findMatchingDomain(url.hostname, trackedSites) === null ||
+        isPeekBlocklisted(url.href, blocklistPatterns)
       ? null
       : url.href;
   } catch {
@@ -39,12 +43,18 @@ export function peekUrlForHref(
 function peekUrlForLink(
   link: LinkElement,
   trackedSites: string[],
+  blocklistPatterns: string[],
 ): string | null {
   if (link.hasAttribute("download")) return null;
-  return peekUrlForHref(link.href, document.baseURI, trackedSites);
+  return peekUrlForHref(
+    link.href,
+    document.baseURI,
+    trackedSites,
+    blocklistPatterns,
+  );
 }
 
-export function PeekOverlay({ trackedSites }: Props) {
+export function PeekOverlay({ trackedSites, blocklistPatterns }: Props) {
   const [url, setUrl] = useState<string | null>(null);
   const frameRef = useRef<HTMLIFrameElement>(null);
 
@@ -61,7 +71,7 @@ export function PeekOverlay({ trackedSites }: Props) {
       }
       const link = linkFromEvent(event);
       if (!link) return;
-      const nextUrl = peekUrlForLink(link, trackedSites);
+      const nextUrl = peekUrlForLink(link, trackedSites, blocklistPatterns);
       if (nextUrl === null) return;
       event.preventDefault();
       event.stopImmediatePropagation();
@@ -69,7 +79,7 @@ export function PeekOverlay({ trackedSites }: Props) {
     };
     document.addEventListener("click", onClick, true);
     return () => document.removeEventListener("click", onClick, true);
-  }, [trackedSites]);
+  }, [trackedSites, blocklistPatterns]);
 
   useEffect(() => {
     if (url === null) return;

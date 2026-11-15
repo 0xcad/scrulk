@@ -59,6 +59,8 @@ Also: "Focus mode".
 * user should be able to add sites that cannot be viewed in site preview, using regex filters.
 * ^these, and top sites, can always be removed, but have a time-delay (takes 6 hrs to remove, say). the default option during the time delay is to cancel removing them
 
+* need a way to write in time on new time screen, provided it's less than 30 mins...
+
 ## TODO:
 
 * need to change icons ofc
@@ -89,15 +91,7 @@ Idea:
 idea: increase unpredictability by randomly replacing clicked links with a camera popup and a question challenge?
 * increase unpredictability by making the allowed time random +/- 1 min? so user doesn't know when they'll stop
 
-add a secondary colored fullscreen button on peek preview 
-
-idea: before starting a focus window, you have to type in "confirm" in some modal, that what you're doing matches a goal you set for yourself?
-
-idea: just give me 15 mins on tracked websites to begin with (no waiting screen). only after that, must i see the waiting screen
-    * problem: after 15 mins of scrolling i may be more likely (less rational) to just open a chrome window?
-    * idea!: optional setting, default true, to always start tracked sites with a waiting screen. replace breaktime challenge with the waiting screen.
-        * ensure that the interrupt screen shows the user their total time on the screen, clear as day...
-        * configure both how long to wait before using a site, and how long to wait in between
+add a secondary colored fullscreen button for peek previews
 
 TODO: focus mode timer flashes on load
 
@@ -130,10 +124,6 @@ Idea: gate the user based on previous behavior? allow user to set screentime goa
 * I don't think it is helpful to me actually, or matches my goals of finding other things to be doing with my time. could be helpful for others though
 
 idea: show the user their prev submissions as placeholder on the waiting page
-
-
-TODO:
-* need a way to write in time on new time screen, provided it's less than 30 mins...
 
 ## ideas I've determined may be bad
 

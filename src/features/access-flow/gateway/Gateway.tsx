@@ -3,6 +3,7 @@ import { FullPageOverlay, fullPageOverlayStyles } from "../../../shared/FullPage
 import {
   allowanceOptions,
   completedTrackedAverageMs,
+  isCustomAllowanceMinutes,
 } from "../allowanceOptions";
 import { getAllDays } from "../../../shared/history";
 import { sendCommand } from "../../../shared/messages";
@@ -36,6 +37,7 @@ export function Gateway() {
     document.visibilityState === "visible" && document.hasFocus(),
   );
   const [trackedAverageMs, setTrackedAverageMs] = useState<number | null>(null);
+  const [customMinutes, setCustomMinutes] = useState("");
 
   useEffect(() => {
     void getSettings().then(setSettings);
@@ -102,6 +104,12 @@ export function Gateway() {
 
   const pick = (minutes: number) => {
     void sendCommand({ type: "access:chooseAllowance", minutes, destUrl: dest });
+  };
+  const submitCustomTime = (event: SubmitEvent) => {
+    event.preventDefault();
+    const minutes = Number(customMinutes);
+    if (!isCustomAllowanceMinutes(minutes)) return;
+    pick(minutes);
   };
   const usageStreak = liveUsageStreakCount(
     settings.usageStreak,
@@ -195,6 +203,27 @@ export function Gateway() {
                 </button>
               ))}
             </div>
+            <form class="write-in-time" onSubmit={submitCustomTime}>
+              <label class="write-in-time-label" for="write-in-minutes">
+                Write In Time
+              </label>
+              <div class="write-in-time-row">
+                <div class="write-in-time-input">
+                  <input
+                    id="write-in-minutes"
+                    type="number"
+                    min="1"
+                    max="29"
+                    step="1"
+                    required
+                    value={customMinutes}
+                    onInput={(event) => setCustomMinutes(event.currentTarget.value)}
+                  />
+                  <span>mins</span>
+                </div>
+                <button type="submit">submit</button>
+              </div>
+            </form>
           </>
         )}
       </main>

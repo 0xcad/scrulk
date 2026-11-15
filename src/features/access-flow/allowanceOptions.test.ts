@@ -3,6 +3,7 @@ import {
   allowanceOptions,
   completedTrackedAverageMs,
   isAllowanceMinutesAllowed,
+  isCustomAllowanceMinutes,
 } from "./allowanceOptions";
 import type { DayRecord } from "../../shared/history";
 
@@ -99,12 +100,32 @@ describe("allowanceOptions", () => {
     ]);
   });
 
-  it("allows only fixed choices and the current dynamic choice", () => {
+  it("allows custom times, fixed choices, and the current dynamic choice", () => {
+    expect(isAllowanceMinutesAllowed(1, 30 * MINUTE, 5 * MINUTE)).toBe(true);
+    expect(isAllowanceMinutesAllowed(10, 30 * MINUTE, 5 * MINUTE)).toBe(true);
     expect(isAllowanceMinutesAllowed(15, 30 * MINUTE, 5 * MINUTE)).toBe(true);
     expect(isAllowanceMinutesAllowed(22, 30 * MINUTE, 5 * MINUTE)).toBe(true);
+    expect(isAllowanceMinutesAllowed(29, 30 * MINUTE, 5 * MINUTE)).toBe(true);
     expect(isAllowanceMinutesAllowed(30, 30 * MINUTE, 5 * MINUTE)).toBe(true);
-    expect(isAllowanceMinutesAllowed(10, 30 * MINUTE, 5 * MINUTE)).toBe(false);
-    expect(isAllowanceMinutesAllowed(22, null, 5 * MINUTE)).toBe(false);
-    expect(isAllowanceMinutesAllowed(22, 40 * MINUTE, 5 * MINUTE)).toBe(false);
+    expect(isAllowanceMinutesAllowed(45, 50 * MINUTE, 0)).toBe(true);
+    expect(isAllowanceMinutesAllowed(0, 30 * MINUTE, 5 * MINUTE)).toBe(false);
+    expect(isAllowanceMinutesAllowed(30.5, 30 * MINUTE, 5 * MINUTE)).toBe(false);
+    expect(isAllowanceMinutesAllowed(31, 30 * MINUTE, 5 * MINUTE)).toBe(false);
+  });
+});
+
+describe("isCustomAllowanceMinutes", () => {
+  it("accepts whole minutes from one through twenty-nine", () => {
+    expect(isCustomAllowanceMinutes(1)).toBe(true);
+    expect(isCustomAllowanceMinutes(29)).toBe(true);
+  });
+
+  it("rejects values outside the custom range and fractional minutes", () => {
+    expect(isCustomAllowanceMinutes(Number.NaN)).toBe(false);
+    expect(isCustomAllowanceMinutes(-1)).toBe(false);
+    expect(isCustomAllowanceMinutes(0)).toBe(false);
+    expect(isCustomAllowanceMinutes(1.5)).toBe(false);
+    expect(isCustomAllowanceMinutes(30)).toBe(false);
+    expect(isCustomAllowanceMinutes(31)).toBe(false);
   });
 });

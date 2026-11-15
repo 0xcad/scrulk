@@ -2,6 +2,8 @@ import { dateKey, type DayRecord } from "../../shared/history";
 
 const MIN_DYNAMIC_MINUTES = 2;
 const FIXED_ALLOWANCE_MINUTES = [15, 30] as const;
+const MIN_CUSTOM_MINUTES = 1;
+const MAX_CUSTOM_MINUTES = 29;
 
 export interface AllowanceOption {
   minutes: number;
@@ -52,7 +54,14 @@ export function isAllowanceMinutesAllowed(
   averageMs: number | null,
   currentTrackedMs: number,
 ): boolean {
-  return allowanceOptions(averageMs, currentTrackedMs).some(
-    (option) => option.minutes === minutes,
-  );
+  return isCustomAllowanceMinutes(minutes) ||
+    allowanceOptions(averageMs, currentTrackedMs).some(
+      (option) => option.minutes === minutes,
+    );
+}
+
+export function isCustomAllowanceMinutes(minutes: number): boolean {
+  return Number.isInteger(minutes) &&
+    minutes >= MIN_CUSTOM_MINUTES &&
+    minutes <= MAX_CUSTOM_MINUTES;
 }

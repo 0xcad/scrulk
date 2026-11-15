@@ -58,3 +58,50 @@
   margin-left: 6px;
   color: #27867a;
 }
+
+.write-in-time {
+  margin-top: 8px;
+  text-align: left;
+}
+
+.write-in-time-label {
+  display: block;
+  margin-bottom: 5px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.write-in-time-row {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+}
+
+.write-in-time-input {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 6px;
+  padding-right: 1rem;
+}
+
+.write-in-time-input input,
+.write-in-time-row button {
+  box-sizing: border-box;
+  height: 34px;
+  font: inherit;
+}
+
+.write-in-time-input input {
+  flex: 1;
+  min-width: 0;
+  padding-inline: 8px;
+  border: 1px solid var(--border);
+  background: Canvas;
+  color: inherit;
+}
+
+.write-in-time-row button {
+  margin-left: auto;
+}

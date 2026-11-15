@@ -99,6 +99,12 @@ hey, where are negative streaks shown? are they on the waiting confirm screen? s
 
 idea: a way to share your calendar view on a webserver, as an embed/iframe (works easy with DNS). it's like github's green squares, and it's public accountability
 
+
+* make everything the same width as the "waiting" tab. then make the .cal-bottom actually be in line with the calendar, on the left, as a vertical grid of .day-drawer and .month-stats. also, make it so that .cal-bottom is an aside, not .day-drawer
+* I need something that makes my trends easier to see. On "summary" can I put a graph that shows something like 7d 30d 90d all trend lines, overlaid with total time and tracked time? so it'll look like a stock, almost, just not candelsticks.
+    * consider instead, a normal distribution of my scrolling habits, and where today is?
+
+
 ## Ideas I doubt I could personally implement, or perhaps could use
 
 personal investment: something like an ascii garden that grows just by you having the extension enabled. "uptime" stops being just a number, has more emotional value. think john green sock buddy

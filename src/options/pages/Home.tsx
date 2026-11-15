@@ -8,7 +8,7 @@ import {
 } from "../../shared/storage";
 import { DEFAULT_DAY_STATE, effectiveAllSitesMs, effectiveFocusMs, effectiveMs, liveUsageStreakCount, type DayState } from "../../shared/dayState";
 import type { Settings } from "../../shared/settings";
-import { formatDuration, formatUptime } from "../../shared/wakeDay";
+import { formatDuration } from "../../shared/wakeDay";
 import {
   AverageArrow,
   type AverageDirection,
@@ -16,12 +16,22 @@ import {
 } from "../components/AverageArrow";
 import { CalendarPanel } from "../components/CalendarPanel";
 import { percentageDifference } from "../components/usageTrends";
+import {
+  daysWithScrulk,
+  defaultSummaryTimeframe,
+  SUMMARY_TIMEFRAMES,
+  summaryUsage,
+  type SummaryMetric,
+  type SummaryTimeframe,
+} from "../components/summaryStats";
 export function Home() {
   const [settings, setSettings] = useState<Settings | null>(null);
   const [state, setState] = useState<DayState>(DEFAULT_DAY_STATE);
   const [now, setNow] = useState(Date.now());
   const [days, setDays] = useState<DayRecord[]>([]);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [summaryTimeframe, setSummaryTimeframe] =
+    useState<SummaryTimeframe | null>(null);
 
   const refreshDays = () => {
     void getAllDays().then(setDays);
@@ -53,12 +63,9 @@ export function Home() {
 
   if (!settings) return <section><p>Loading…</p></section>;
 
-  const uptime = settings.installedAt
-    ? formatUptime(now - settings.installedAt)
-    : "—";
-  const installedOn = settings.installedAt
-    ? dateKey(settings.installedAt)
-    : "—";
+  const loadedDays = settings.installedAt
+    ? Math.floor(Math.max(0, now - settings.installedAt) / (24 * 60 * 60_000))
+    : 0;
 
   const trackedMs = effectiveMs(state, now);
   const allSitesMs = effectiveAllSitesMs(state, now);
@@ -78,6 +85,13 @@ export function Home() {
     ...days.filter((day) => day.date !== currentDate),
     liveCurrent,
   ].sort((a, b) => a.date.localeCompare(b.date));
+  const activeSummaryTimeframe = summaryTimeframe ??
+    defaultSummaryTimeframe(days, currentDate);
+  const summary = summaryUsage(
+    displayDays,
+    currentDate,
+    activeSummaryTimeframe,
+  );
   const todayMs = settings.alwaysShowTimer ? allSitesMs : trackedMs;
   const usageStreak = liveUsageStreakCount(settings.usageStreak, state, now);
   const trackedAvgMs = days.length > 0
@@ -162,39 +176,48 @@ export function Home() {
         <p class="streak-today">{usageStreak}-day tracked-site usage streak</p>
       )}
       <h2 class="scrulk-section-title dashboard-section-title">Summary</h2>
-      <dl>
-        <dt>Tracked sites</dt>
-        <dd>{settings.trackedSites.length}</dd>
-        {settings.alwaysShowTimer && (
-          <>
-            <dt>Time on tracked sites today</dt>
-            <dd>{formatDuration(trackedMs)}</dd>
-            <dt>Average tracked time / day</dt>
-            <dd>
-              {trackedAvgMs === null ? "—" : formatDuration(trackedAvgMs)}
-              {trackedAvgMs !== null && (
-                <small> (over {days.length} {days.length === 1 ? "day" : "days"})</small>
-              )}
-            </dd>
-          </>
-        )}
-        <dt>Average {settings.alwaysShowTimer ? "all-sites " : ""}time / day</dt>
-        <dd>
-          {avgMs !== null
-            ? formatDuration(avgMs)
-            : "—"}
-          {avgMs !== null ? (
-            <small> (over {settings.alwaysShowTimer ? allSitesDays.length : days.length} {(settings.alwaysShowTimer ? allSitesDays.length : days.length) === 1 ? "day" : "days"})</small>
-          ) : null}
-        </dd>
-        <dt>Uptime</dt>
-        <dd>
-          {uptime}
-          {settings.installedAt ? (
-            <small> (since {installedOn})</small>
-          ) : null}
-        </dd>
-      </dl>
+      <div class="summary-cards">
+        <article class="summary-card days-with-scrulk-card">
+          <h3>Days with Scroll Unlock</h3>
+          <strong>{daysWithScrulk(days, currentDate)}</strong>
+          <small
+            title="How long the extension has been enabled since it was last loaded/installed. Disabling the extension resets this count."
+          >
+            Extension loaded for {loadedDays} {loadedDays === 1 ? "day" : "days"}
+          </small>
+        </article>
+        <article
+          class={`summary-card average-card${
+            settings.alwaysShowTimer ? " has-total-time" : ""
+          }`}
+        >
+          <SummaryAverage
+            label="Avg. daily tracked time"
+            metric={summary.tracked}
+            timeframe={activeSummaryTimeframe}
+          />
+          {settings.alwaysShowTimer && (
+            <SummaryAverage
+              label="Avg. daily total time"
+              metric={summary.allSites}
+              timeframe={activeSummaryTimeframe}
+            />
+          )}
+          <div class="summary-timeframes" aria-label="Average timeframe">
+            {SUMMARY_TIMEFRAMES.map((timeframe) => (
+              <button
+                key={timeframe}
+                type="button"
+                class="summary-timeframe"
+                aria-pressed={timeframe === activeSummaryTimeframe}
+                onClick={() => setSummaryTimeframe(timeframe)}
+              >
+                {timeframe}
+              </button>
+            ))}
+          </div>
+        </article>
+      </div>
 
       <h2 class="scrulk-section-title dashboard-section-title">Calendar</h2>
       <CalendarPanel
@@ -205,6 +228,47 @@ export function Home() {
         showAllSitesTime={settings.alwaysShowTimer}
       />
     </section>
+  );
+}
+
+function SummaryAverage({
+  label,
+  metric,
+  timeframe,
+}: {
+  label: string;
+  metric: SummaryMetric;
+  timeframe: SummaryTimeframe;
+}) {
+  return (
+    <div class="summary-average">
+      <h3>{label}</h3>
+      <strong>{metric.averageMs === null ? "—" : formatDuration(metric.averageMs)}</strong>
+      {metric.direction && metric.previousAverageMs !== null && (
+        <span
+          class="trend"
+          title={`Compared with previous ${timeframe} average: ${
+            formatDuration(metric.previousAverageMs)
+          }`}
+        >
+          {metric.percentage === null
+            ? (
+              <span
+                class={`avg-arrow ${metric.direction}`}
+                aria-label={metric.direction === "up" ? "higher" : "lower"}
+              >
+                {metric.direction === "up" ? "↗" : "↘"}
+              </span>
+            )
+            : (
+              <AverageArrow
+                direction={metric.direction}
+                percentage={metric.percentage}
+              />
+            )}
+        </span>
+      )}
+    </div>
   );
 }
 

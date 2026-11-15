@@ -265,7 +265,7 @@ export function CalendarChart({
           {showFullUsage && averages.allSitesAverageMs !== null && (
             <AverageLine
               kind="all-sites"
-              label="all-sites"
+              label="total"
               value={averages.allSitesAverageMs}
               maximum={chartMaximum}
               align="left"

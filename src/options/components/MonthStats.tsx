@@ -104,7 +104,7 @@ export function MonthStats({
           <dl>
             {showAllSitesTime && (
               <>
-                <dt>Avg all-sites time</dt>
+                <dt>Avg daily total time</dt>
                 <dd>
                   {current.allSitesAverageMs === null
                     ? "—"
@@ -126,7 +126,7 @@ export function MonthStats({
                 </dd>
               </>
             )}
-            <dt>Avg {showAllSitesTime ? "tracked " : ""}daily usage</dt>
+            <dt>Avg daily {showAllSitesTime ? "tracked " : ""}time</dt>
             <dd>
               {formatDuration(current.trackedAverageMs)}
               {previous.trackedAverageMs !== null && previous.trackedAverageMs > 0 && (

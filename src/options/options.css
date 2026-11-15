@@ -433,6 +433,105 @@ dl dd small {
   margin-left: 4px;
 }
 
+.summary-cards {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+  gap: 12px;
+}
+
+.summary-card {
+  border: 1px solid var(--border);
+  padding: 16px;
+  min-width: 0;
+}
+
+.summary-card h3 {
+  margin: 0;
+  color: var(--light);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.summary-card strong {
+  display: block;
+  margin-top: 6px;
+  font-size: 24px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+}
+
+.days-with-scrulk-card {
+  display: flex;
+  flex-direction: column;
+}
+
+.days-with-scrulk-card small {
+  margin-top: auto;
+  padding-top: 18px;
+  color: var(--light);
+  cursor: help;
+}
+
+.average-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  column-gap: 16px;
+}
+
+.average-card.has-total-time {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.summary-average {
+  position: relative;
+  min-width: 0;
+  padding-right: 42px;
+}
+
+.average-card.has-total-time .summary-average + .summary-average {
+  border-left: 1px solid var(--border);
+  padding-left: 16px;
+}
+
+.summary-average .trend {
+  position: absolute;
+  top: 0;
+  right: 0;
+}
+
+.summary-average .trend .avg-arrow {
+  margin: 0;
+  font-size: 13px;
+  opacity: 1;
+}
+
+.summary-timeframes {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: 4px;
+  margin-top: 18px;
+}
+
+.summary-timeframe {
+  border: 0;
+  padding: 2px 7px;
+  background: transparent;
+  color: var(--light);
+  font-size: 12px;
+  text-transform: lowercase;
+}
+
+.summary-timeframe[aria-pressed="true"] {
+  background: CanvasText;
+  color: Canvas;
+}
+
+@media (max-width: 600px) {
+  .summary-cards {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* Calendar */
 .cal {
   display: flex;

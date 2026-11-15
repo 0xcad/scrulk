@@ -45,13 +45,12 @@ export function UsageLegend({ record }: { record: DayRecord }) {
   const breakdown = usageBreakdown(record);
   return (
     <dl class="usage-legend">
-      <dt><span class="legend-dot focus" />Focus</dt>
-      <dd>{formatDuration(breakdown.focusMs)}</dd>
       <dt><span class="legend-dot tracked" />Tracked</dt>
       <dd>{formatDuration(breakdown.trackedMs)}</dd>
+      <dt><span class="legend-dot focus" />Focus</dt>
+      <dd>{formatDuration(breakdown.focusMs)}</dd>
       <dt><span class="legend-dot untracked" />Non-focus</dt>
       <dd>{formatDuration(breakdown.nonFocusMs)}</dd>
     </dl>
   );
 }
-

@@ -1,4 +1,4 @@
-import { useMemo } from "preact/hooks";
+import { useMemo, useState } from "preact/hooks";
 import { type DayRecord } from "../../shared/history";
 import { formatDuration } from "../../shared/wakeDay";
 import { monthKey, monthNavigationBounds, shiftMonth } from "./calendarNavigation";
@@ -19,9 +19,12 @@ interface Props {
 interface CalendarDay {
   day: number;
   date: string;
+  isMonday: boolean;
 }
 
 const CHART_HEADROOM = 1.12;
+const HOUR_MS = 60 * 60_000;
+const HOUR_GUIDE_EXCLUSION_MS = 10 * 60_000;
 
 function pad(n: number): string {
   return n.toString().padStart(2, "0");
@@ -44,9 +47,7 @@ export function calendarChartMaximum(
   showAllSitesTime: boolean,
 ): number {
   const barMaximum = records.reduce((maximum, record) => {
-    const value = showAllSitesTime
-      ? usageBreakdown(record).totalMs
-      : Math.max(0, record.totalMs);
+    const value = displayedUsage(record, showAllSitesTime);
     return Math.max(maximum, value);
   }, 0);
   const averageMaximum = Math.max(
@@ -54,6 +55,52 @@ export function calendarChartMaximum(
     showAllSitesTime ? averages.allSitesAverageMs ?? 0 : 0,
   );
   return Math.max(1, barMaximum, averageMaximum) * CHART_HEADROOM;
+}
+
+export function displayedUsage(
+  record: DayRecord,
+  showAllSitesTime: boolean,
+): number {
+  return showAllSitesTime
+    ? usageBreakdown(record).totalMs
+    : Math.max(0, record.totalMs);
+}
+
+export interface MaximumDisplayedUsage {
+  date: string;
+  valueMs: number;
+}
+
+export function maximumDisplayedUsage(
+  records: DayRecord[],
+  showAllSitesTime: boolean,
+): MaximumDisplayedUsage | null {
+  let maximum: MaximumDisplayedUsage | null = null;
+  for (const record of records) {
+    const valueMs = displayedUsage(record, showAllSitesTime);
+    if (
+      valueMs > 0 &&
+      (maximum === null || valueMs > maximum.valueMs ||
+        (valueMs === maximum.valueMs && record.date < maximum.date))
+    ) {
+      maximum = { date: record.date, valueMs };
+    }
+  }
+  return maximum;
+}
+
+export function hourGuideValues(
+  maximumUsageMs: number,
+  averageValuesMs: number[],
+): number[] {
+  const guides: number[] = [];
+  for (let valueMs = HOUR_MS; valueMs <= maximumUsageMs; valueMs += HOUR_MS) {
+    const isNearAverage = averageValuesMs.some(
+      (averageMs) => Math.abs(averageMs - valueMs) <= HOUR_GUIDE_EXCLUSION_MS,
+    );
+    if (!isNearAverage) guides.push(valueMs);
+  }
+  return guides;
 }
 
 function percentage(value: number, maximum: number): string {
@@ -80,6 +127,8 @@ export function CalendarChart({
   installedAt,
   showAllSitesTime,
 }: Props) {
+  const [showTrackedOnly, setShowTrackedOnly] = useState(false);
+  const showFullUsage = showAllSitesTime && !showTrackedOnly;
   const today = new Date();
   const todayKey = ymd(today.getFullYear(), today.getMonth(), today.getDate());
   const viewKey = monthKey(viewMonth);
@@ -108,7 +157,11 @@ export function CalendarChart({
     const daysInMonth = new Date(viewMonth.year, viewMonth.month + 1, 0).getDate();
     const out: CalendarDay[] = [];
     for (let day = 1; day <= daysInMonth; day++) {
-      out.push({ day, date: ymd(viewMonth.year, viewMonth.month, day) });
+      out.push({
+        day,
+        date: ymd(viewMonth.year, viewMonth.month, day),
+        isMonday: new Date(viewMonth.year, viewMonth.month, day).getDay() === 1,
+      });
     }
     return out;
   }, [viewMonth]);
@@ -116,9 +169,14 @@ export function CalendarChart({
   const monthRecords = useMemo(
     () => calendarDays.flatMap(({ date }) => {
       const record = recordByDate.get(date);
-      return record ? [record] : [];
+      const isPreInstall =
+        installDateKey !== null &&
+        installMonthKey !== null &&
+        viewKey === installMonthKey &&
+        date < installDateKey;
+      return record && !isPreInstall ? [record] : [];
     }),
-    [calendarDays, recordByDate],
+    [calendarDays, installDateKey, installMonthKey, recordByDate, viewKey],
   );
   const averages = useMemo(
     () => monthlyUsage(days, viewMonth.year, viewMonth.month),
@@ -127,8 +185,18 @@ export function CalendarChart({
   const chartMaximum = calendarChartMaximum(
     monthRecords,
     averages,
-    showAllSitesTime,
+    showFullUsage,
   );
+  const maximum = maximumDisplayedUsage(monthRecords, showFullUsage);
+  const displayedAverages = [
+    averages.trackedAverageMs,
+    showFullUsage ? averages.allSitesAverageMs : null,
+  ].filter((value): value is number => value !== null);
+  const hourGuides = hourGuideValues(maximum?.valueMs ?? 0, displayedAverages);
+  const maximumDayIndex = maximum === null
+    ? -1
+    : calendarDays.findIndex(({ date }) => date === maximum.date);
+  const flipMaximumLabel = maximumDayIndex >= calendarDays.length - 3;
 
   const prev = () => onViewMonthChange(shiftMonth(viewMonth, -1));
   const next = () => onViewMonthChange(shiftMonth(viewMonth, 1));
@@ -178,18 +246,26 @@ export function CalendarChart({
         </button>
       </div>
       <div
-        class="cal-chart"
+        class={`cal-chart${showAllSitesTime ? " has-tracked-toggle" : ""}`}
         style={{ "--cal-day-count": calendarDays.length }}
         role="group"
         aria-label={`Daily usage for ${monthLabel(viewMonth.year, viewMonth.month)}`}
       >
         <div class="cal-chart-plot">
-          {showAllSitesTime && averages.allSitesAverageMs !== null && (
+          {hourGuides.map((valueMs) => (
+            <HourGuide
+              key={valueMs}
+              valueMs={valueMs}
+              maximum={chartMaximum}
+            />
+          ))}
+          {showFullUsage && averages.allSitesAverageMs !== null && (
             <AverageLine
               kind="all-sites"
               label="all-sites"
               value={averages.allSitesAverageMs}
               maximum={chartMaximum}
+              align="left"
             />
           )}
           {averages.trackedAverageMs !== null && (
@@ -198,14 +274,36 @@ export function CalendarChart({
               label="tracked"
               value={averages.trackedAverageMs}
               maximum={chartMaximum}
+              align={showFullUsage ? "right" : "left"}
             />
+          )}
+          {maximum !== null && maximumDayIndex >= 0 && (
+            <span
+              class={`cal-maximum-label${flipMaximumLabel ? " flip" : ""}`}
+              style={{
+                bottom: percentage(maximum.valueMs, chartMaximum),
+                ...(flipMaximumLabel
+                  ? {
+                      right: `${(calendarDays.length - maximumDayIndex - 0.5) /
+                        calendarDays.length * 100}%`,
+                    }
+                  : {
+                      left: `${(maximumDayIndex + 0.5) /
+                        calendarDays.length * 100}%`,
+                    }),
+              }}
+              role="img"
+              aria-label={`Maximum displayed usage: ${formatDuration(maximum.valueMs)} on ${maximum.date}`}
+            >
+              {formatDuration(maximum.valueMs)}
+            </span>
           )}
           <div class="cal-day-slots">
             {calendarDays.map((calendarDay) => {
               const record = recordByDate.get(calendarDay.date);
               const breakdown = record ? usageBreakdown(record) : null;
               const displayedTotal = record
-                ? showAllSitesTime ? breakdown?.totalMs ?? 0 : Math.max(0, record.totalMs)
+                ? displayedUsage(record, showFullUsage)
                 : 0;
               const hasNotes = record?.notes !== null && record?.notes !== undefined;
               const isPreInstall =
@@ -221,7 +319,7 @@ export function CalendarChart({
                 calendarDay.date === selectedDate ? "selected" : "",
               ].filter(Boolean).join(" ");
               const label = record && breakdown
-                ? barLabel(record, breakdown, showAllSitesTime)
+                ? barLabel(record, breakdown, showFullUsage)
                 : calendarDay.date;
 
               return (
@@ -239,22 +337,22 @@ export function CalendarChart({
                         class="cal-bar"
                         style={{ height: percentage(displayedTotal, chartMaximum) }}
                       >
-                        {showAllSitesTime && breakdown.nonFocusMs > 0 && (
+                        {showFullUsage && breakdown.nonFocusMs > 0 && (
                           <span
                             class="cal-bar-segment non-focus"
                             style={{ height: percentage(breakdown.nonFocusMs, displayedTotal) }}
                           />
                         )}
-                        {showAllSitesTime && breakdown.focusMs > 0 && (
+                        {showFullUsage && breakdown.focusMs > 0 && (
                           <span
                             class="cal-bar-segment focus"
                             style={{ height: percentage(breakdown.focusMs, displayedTotal) }}
                           />
                         )}
-                        {(!showAllSitesTime || breakdown.trackedMs > 0) && (
+                        {(!showFullUsage || breakdown.trackedMs > 0) && (
                           <span
                             class="cal-bar-segment tracked"
-                            style={{ height: showAllSitesTime
+                            style={{ height: showFullUsage
                               ? percentage(breakdown.trackedMs, displayedTotal)
                               : "100%" }}
                           />
@@ -264,6 +362,9 @@ export function CalendarChart({
                   </span>
                   <span class="cal-day-label">
                     <span class="cal-day-num">{calendarDay.day}</span>
+                    {calendarDay.isMonday && (
+                      <span class="cal-monday-marker" aria-hidden="true">M</span>
+                    )}
                     {hasNotes && !isPreInstall && (
                       <span class="cal-notes-dot" aria-hidden="true" />
                     )}
@@ -273,6 +374,16 @@ export function CalendarChart({
             })}
           </div>
         </div>
+        {showAllSitesTime && (
+          <label class="cal-tracked-toggle">
+            <input
+              type="checkbox"
+              checked={showTrackedOnly}
+              onChange={(event) => setShowTrackedOnly(event.currentTarget.checked)}
+            />
+            Show only tracked usage
+          </label>
+        )}
       </div>
     </div>
   );
@@ -283,20 +394,50 @@ function AverageLine({
   label,
   value,
   maximum,
+  align,
 }: {
   kind: "all-sites" | "tracked";
   label: string;
   value: number;
   maximum: number;
+  align: "left" | "right";
 }) {
   return (
     <div
-      class={`cal-average-line ${kind}`}
+      class={`cal-average-line ${kind} align-${align}`}
       style={{ bottom: percentage(value, maximum) }}
       role="img"
       aria-label={`${label} average: ${formatDuration(value)}`}
     >
-      <span aria-hidden="true">{label}: {formatDuration(value)}</span>
+      <span aria-hidden="true">{label} {formatDuration(value)}</span>
     </div>
+  );
+}
+
+function HourGuide({
+  valueMs,
+  maximum,
+}: {
+  valueMs: number;
+  maximum: number;
+}) {
+  const label = `${valueMs / HOUR_MS}h`;
+  const bottom = percentage(valueMs, maximum);
+  return (
+    <>
+      <div
+        class="cal-hour-line"
+        style={{ bottom }}
+        aria-hidden="true"
+      />
+      <span
+        class="cal-hour-label"
+        style={{ bottom }}
+        role="img"
+        aria-label={`${label} usage guide`}
+      >
+        {label}
+      </span>
+    </>
   );
 }

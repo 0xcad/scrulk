@@ -143,7 +143,7 @@ export const DAY_STATE_FIELDS = {
   ),
   waitingPageFocused: booleanField(
     false,
-    "Whether the waiting extension page last reported focus.",
+    "Whether the waiting extension page last reported focus and a large enough window.",
   ),
   waitingTimerElapsed: booleanField(
     false,

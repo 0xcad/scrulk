@@ -100,16 +100,23 @@ hey, where are negative streaks shown? are they on the waiting confirm screen? s
 
 idea: a way to share your calendar view on a webserver, as an embed/iframe (works easy with DNS). it's like github's green squares, and it's public accountability
     * requires a server. could give each user a uuid they can reroll (or set), and I only save uuid's on my server that have at least a few days of usage...
+    * make a monorepo for both server + extension
+    * users should ofc be able to set their own custom css for the widget, too. they can also choose what server they send their info to, for self-hosting purposes.
+    * can customize their widget / what data they send. so it's either a 7d view of tracked usage, or a 30d view. 
 
 dynamic scale for the calendar grid. so instead of doing only every 1h, make scale options for 15 min, 30 min, and 1hr, add rules on which scale option to pick, and when to hide them (if tracked or total time obscure them)
+* on calendar, arrow keys should move left/right a day
 
+make everything the same width as the "waiting" tab. then make the .cal-bottom actually be in line with the calendar, on the left, as a vertical grid of .day-drawer and .month-stats. also, make it so that .cal-bottom is an aside, not .day-drawer
+* at the very least, the nav shouldn't move around. so the waiting tab can be wide, but again, nav shouldn't move.
 
-* make everything the same width as the "waiting" tab. then make the .cal-bottom actually be in line with the calendar, on the left, as a vertical grid of .day-drawer and .month-stats. also, make it so that .cal-bottom is an aside, not .day-drawer
-* I need something that makes my trends easier to see. On "summary" can I put a graph that shows something like 7d 30d 90d all trend lines, overlaid with total time and tracked time? so it'll look like a stock, almost, just not candelsticks.
+I need something that makes my trends easier to see. On "summary" can I put a graph that shows something like 7d 30d 90d all trend lines, overlaid with total time and tracked time? so it'll look like a stock, almost, just not candelsticks.
     * consider instead, a normal distribution of my scrolling habits, and where today is?
 * Should probably replace average with median, right? or at least, show the median in the month card + as a summary card...
 
-* on calendar, arrow keys should move left/right a day
+consider: is there a way to view a computer's full resolution/size? does wayland let your browser do this? if so, require scroll unlock waiting tab to be full screened, essentially, in order to load(?) -prevents you from doing something else on your computer / leaving it focused, but reading something else
+
+re browser resizability: consider having a flag to turn this feature off (great for tiling window managers, less so for, say, a mac computer). say so in the "resize this window" dialogue, and put a link to the setting...
 
 
 ## Ideas I doubt I could personally implement, or perhaps could use

@@ -21,9 +21,36 @@ import {
 } from "../../../shared/dayState";
 import { DEFAULT_SETTINGS, type Settings } from "../../../shared/settings";
 import { WaitingScreenView } from "../../waiting-screen/WaitingScreenView";
+import {
+  isWaitingPageEligible,
+  isWaitingWindowLargeEnough,
+  type WaitingWindowMetrics,
+} from "./waitingWindow";
 
 const DEFAULT_TITLE = "Scroll Unlock";
 const INACTIVE_TITLE = "waiting timer paused ⏸️";
+const WAITING_WINDOW_CHECK_INTERVAL_MS = 1000;
+
+interface WaitingPageStatus {
+  focused: boolean;
+  largeEnough: boolean;
+}
+
+function waitingWindowMetrics(): WaitingWindowMetrics {
+  return {
+    outerWidth: window.outerWidth,
+    outerHeight: window.outerHeight,
+    availWidth: window.screen.availWidth,
+    availHeight: window.screen.availHeight,
+  };
+}
+
+function currentWaitingPageStatus(): WaitingPageStatus {
+  return {
+    focused: document.visibilityState === "visible" && document.hasFocus(),
+    largeEnough: isWaitingWindowLargeEnough(waitingWindowMetrics()),
+  };
+}
 
 function destination(): string | undefined {
   return new URLSearchParams(window.location.search).get("dest") ?? undefined;
@@ -33,8 +60,8 @@ export function Gateway() {
   const dest = destination();
   const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS);
   const [dayState, setDayState] = useState<DayState>(DEFAULT_DAY_STATE);
-  const [active, setActive] = useState(
-    document.visibilityState === "visible" && document.hasFocus(),
+  const [waitingPageStatus, setWaitingPageStatus] = useState(
+    currentWaitingPageStatus,
   );
   const [trackedAverageMs, setTrackedAverageMs] = useState<number | null>(null);
   const [customMinutes, setCustomMinutes] = useState("");
@@ -71,36 +98,58 @@ export function Gateway() {
   }, [dayState.wakeDayStart]);
 
   useEffect(() => {
-    const sync = () => {
-      const next = document.visibilityState === "visible" && document.hasFocus();
-      setActive(next);
-      if (dayState.accessFlowPhase === "waiting") {
-        void sendCommand({ type: "access:setWaitingFocus", focused: next });
+    const waitingCountdownActive =
+      dayState.accessFlowPhase === "waiting" &&
+      !dayState.waitingTimerElapsed;
+    let lastReportedEligibility: boolean | undefined;
+
+    const updateStatus = (next: WaitingPageStatus) => {
+      setWaitingPageStatus((current) =>
+        current.focused === next.focused &&
+          current.largeEnough === next.largeEnough
+          ? current
+          : next
+      );
+      const eligible = isWaitingPageEligible(next.focused, next.largeEnough);
+      if (
+        waitingCountdownActive &&
+        eligible !== lastReportedEligibility
+      ) {
+        lastReportedEligibility = eligible;
+        void sendCommand({ type: "access:setWaitingFocus", focused: eligible });
       }
-      document.title =
-        dayState.accessFlowPhase === "waiting" && !next
-          ? INACTIVE_TITLE
-          : DEFAULT_TITLE;
+      document.title = waitingCountdownActive && !eligible
+        ? INACTIVE_TITLE
+        : DEFAULT_TITLE;
+    };
+    const sync = () => {
+      updateStatus(currentWaitingPageStatus());
     };
     const onPageHide = () => {
-      setActive(false);
-      if (dayState.accessFlowPhase === "waiting") {
-        void sendCommand({ type: "access:setWaitingFocus", focused: false });
-      }
+      updateStatus({
+        focused: false,
+        largeEnough: isWaitingWindowLargeEnough(waitingWindowMetrics()),
+      });
     };
     document.addEventListener("visibilitychange", sync);
     window.addEventListener("focus", sync);
     window.addEventListener("blur", sync);
+    window.addEventListener("resize", sync);
     window.addEventListener("pagehide", onPageHide);
+    const checkInterval = waitingCountdownActive
+      ? window.setInterval(sync, WAITING_WINDOW_CHECK_INTERVAL_MS)
+      : undefined;
     sync();
     return () => {
       document.removeEventListener("visibilitychange", sync);
       window.removeEventListener("focus", sync);
       window.removeEventListener("blur", sync);
+      window.removeEventListener("resize", sync);
       window.removeEventListener("pagehide", onPageHide);
+      if (checkInterval !== undefined) window.clearInterval(checkInterval);
       document.title = DEFAULT_TITLE;
     };
-  }, [dayState.accessFlowPhase, dayState.wakeDayStart]);
+  }, [dayState.accessFlowPhase, dayState.waitingTimerElapsed]);
 
   const pick = (minutes: number) => {
     void sendCommand({ type: "access:chooseAllowance", minutes, destUrl: dest });
@@ -151,7 +200,20 @@ export function Gateway() {
           timerElapsed={dayState.waitingTimerElapsed}
           onQuestionsComplete={questionsComplete}
         />
-        {dayState.accessFlowPhase === "waiting" && !active && (
+        {dayState.accessFlowPhase === "waiting" &&
+          !dayState.waitingTimerElapsed &&
+          !waitingPageStatus.largeEnough && (
+          <FullPageOverlay labelledBy="inactive-title">
+            <div>
+              <h1 class="scrulk-card-title" id="inactive-title">Resize this tab</h1>
+              <p class="scrulk-card-copy">The waiting period only continues if this tab has a large enough size.</p>
+            </div>
+          </FullPageOverlay>
+        )}
+        {dayState.accessFlowPhase === "waiting" &&
+          !dayState.waitingTimerElapsed &&
+          waitingPageStatus.largeEnough &&
+          !waitingPageStatus.focused && (
           <FullPageOverlay labelledBy="inactive-title">
             <div>
               <h1 class="scrulk-card-title" id="inactive-title">Return to this tab</h1>

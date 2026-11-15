@@ -81,6 +81,7 @@ Calendar probably needs more horizontal screen real estate, current look should 
 
 metrics idea: capture moving average of "outlier scrolling". my average right now is 11 mins per day, that seems suspiciously good, but I'm also trying to measure binge scrolling, which is less frequent. so maybe that's measuring a moving average of my top 5% outlier scroll sessions? another idea could also just be plotting a normal distribution of scrolling...
 * how long was this binge scroll session compared to your last one? what about the ones before? what do your trendlines look like?
+    * and this seems distinct from median...
 
 *wonderful* idea: A DNS, MITM proxy (with trusted root certificate) that just loads scroll unlock whenever you use it. must run a server then to store data in the backend. instead of browser extension pages, something like `scroll-unlock.local` could be used? or, best user-experience, the extension communicates with the locally running server. extension settings modify the server settings. if we get connection to the server (heartbeat), hide all shadow DOM and just let DNS injection handle everything.
 * Value: If I want to get around this, i can just open a different browser, open a private browsing window, and I'm stopped. i never fuck with my DNS settings. Editing my hosts file is super inconvenient. Also, you can get it on multiple devices in sync for cheap
@@ -98,11 +99,17 @@ TODO: focus mode timer flashes on load
 hey, where are negative streaks shown? are they on the waiting confirm screen? still?
 
 idea: a way to share your calendar view on a webserver, as an embed/iframe (works easy with DNS). it's like github's green squares, and it's public accountability
+    * requires a server. could give each user a uuid they can reroll (or set), and I only save uuid's on my server that have at least a few days of usage...
+
+dynamic scale for the calendar grid. so instead of doing only every 1h, make scale options for 15 min, 30 min, and 1hr, add rules on which scale option to pick, and when to hide them (if tracked or total time obscure them)
 
 
 * make everything the same width as the "waiting" tab. then make the .cal-bottom actually be in line with the calendar, on the left, as a vertical grid of .day-drawer and .month-stats. also, make it so that .cal-bottom is an aside, not .day-drawer
 * I need something that makes my trends easier to see. On "summary" can I put a graph that shows something like 7d 30d 90d all trend lines, overlaid with total time and tracked time? so it'll look like a stock, almost, just not candelsticks.
     * consider instead, a normal distribution of my scrolling habits, and where today is?
+* Should probably replace average with median, right? or at least, show the median in the month card + as a summary card...
+
+* on calendar, arrow keys should move left/right a day
 
 
 ## Ideas I doubt I could personally implement, or perhaps could use

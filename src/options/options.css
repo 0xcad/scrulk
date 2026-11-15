@@ -865,7 +865,8 @@ dl dd small {
 }
 
 .month-stats .trend {
-  margin-left: 6px;
+  display: block;
+  margin-left: 0;
   opacity: 0.6;
 }
 

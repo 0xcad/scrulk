@@ -76,19 +76,20 @@ describe("nextWakeUpAt", () => {
 });
 
 describe("formatDuration", () => {
-  it("shows mm:ss under an hour", () => {
-    expect(formatDuration(0)).toBe("00:00");
-    expect(formatDuration(5_000)).toBe("00:05");
-    expect(formatDuration(65_000)).toBe("01:05");
+  it("shows minutes and padded seconds under an hour", () => {
+    expect(formatDuration(0)).toBe("0m 00s");
+    expect(formatDuration(5_000)).toBe("0m 05s");
+    expect(formatDuration(65_000)).toBe("1m 05s");
   });
 
-  it("shows h:mm:ss at and over an hour", () => {
-    expect(formatDuration(3_600_000)).toBe("1:00:00");
-    expect(formatDuration(3_725_000)).toBe("1:02:05");
+  it("shows hours and padded minutes without seconds at and over an hour", () => {
+    expect(formatDuration(3_600_000)).toBe("1h 00m");
+    expect(formatDuration(3_725_000)).toBe("1h 02m");
+    expect(formatDuration(37_859_000)).toBe("10h 30m");
   });
 
   it("clamps negatives to zero", () => {
-    expect(formatDuration(-1_000)).toBe("00:00");
+    expect(formatDuration(-1_000)).toBe("0m 00s");
   });
 });
 

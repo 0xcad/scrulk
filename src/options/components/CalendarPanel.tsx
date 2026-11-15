@@ -1,6 +1,6 @@
 import { useEffect, useState } from "preact/hooks";
 import { type DayRecord } from "../../shared/history";
-import { CalendarGrid } from "./CalendarGrid";
+import { CalendarChart } from "./CalendarChart";
 import { DayDrawer } from "./DayDrawer";
 import { MonthStats } from "./MonthStats";
 
@@ -31,13 +31,14 @@ export function CalendarPanel({ days, selectedDate, onSelect, installedAt, showA
 
   return (
     <>
-      <CalendarGrid
+      <CalendarChart
         days={days}
         selectedDate={selectedDate}
         onSelect={onSelect}
         viewMonth={viewMonth}
         onViewMonthChange={setViewMonth}
         installedAt={installedAt}
+        showAllSitesTime={showAllSitesTime}
       />
       <div class="cal-bottom">
         <DayDrawer days={days} selectedDate={selectedDate} onSelect={onSelect} showAllSitesTime={showAllSitesTime} />

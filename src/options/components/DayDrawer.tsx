@@ -25,12 +25,13 @@ interface Props {
 function formatLong(date: string): string {
   const [y, m, d] = date.split("-").map(Number);
   if (!y || !m || !d) return date;
-  return new Date(y, m - 1, d).toLocaleDateString(undefined, {
-    weekday: "long",
-    month: "long",
-    day: "numeric",
-    year: "numeric",
-  });
+  const date = new Date(y, m - 1, d);
+  const options = { weekday: "long", month: "long", day: "numeric" };
+
+  if (date.getFullYear() !== new Date().getFullYear()) {
+    options.year = "numeric";
+  }
+  return date.toLocaleDateString(undefined, options);
 }
 
 /**

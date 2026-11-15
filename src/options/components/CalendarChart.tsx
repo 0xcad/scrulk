@@ -19,12 +19,13 @@ interface Props {
 interface CalendarDay {
   day: number;
   date: string;
-  isMonday: boolean;
+  weekday: string;
 }
 
 const CHART_HEADROOM = 1.12;
 const HOUR_MS = 60 * 60_000;
 const HOUR_GUIDE_EXCLUSION_MS = 10 * 60_000;
+const WEEKDAY_MARKERS = ["S", "M", "T", "W", "T", "F", "S"];
 
 function pad(n: number): string {
   return n.toString().padStart(2, "0");
@@ -160,7 +161,9 @@ export function CalendarChart({
       out.push({
         day,
         date: ymd(viewMonth.year, viewMonth.month, day),
-        isMonday: new Date(viewMonth.year, viewMonth.month, day).getDay() === 1,
+        weekday: WEEKDAY_MARKERS[
+          new Date(viewMonth.year, viewMonth.month, day).getDay()
+        ] ?? "",
       });
     }
     return out;
@@ -362,9 +365,9 @@ export function CalendarChart({
                   </span>
                   <span class="cal-day-label">
                     <span class="cal-day-num">{calendarDay.day}</span>
-                    {calendarDay.isMonday && (
-                      <span class="cal-monday-marker" aria-hidden="true">M</span>
-                    )}
+                    <span class="cal-weekday-marker" aria-hidden="true">
+                      {calendarDay.weekday}
+                    </span>
                     {hasNotes && !isPreInstall && (
                       <span class="cal-notes-dot" aria-hidden="true" />
                     )}

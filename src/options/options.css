@@ -545,7 +545,7 @@ dl dd small {
   flex-direction: column;
   align-items: center;
   justify-content: flex-start;
-  gap: 1px;
+  gap: 3px;
   min-width: 0;
   padding-top: 4px;
   font-size: 12px;
@@ -554,7 +554,7 @@ dl dd small {
   font-variant-numeric: tabular-nums;
 }
 
-.cal-monday-marker {
+.cal-weekday-marker {
   font-size: 10px;
   line-height: 12px;
   font-weight: 600;
@@ -565,9 +565,9 @@ dl dd small {
 }
 
 .cal-day-slot.selected .cal-day-num {
-  text-decoration: underline;
-  text-decoration-thickness: 1.5px;
-  text-underline-offset: 2px;
+  border-top: 1px solid;
+  padding-top: 2px;
+  margin-top: 4px;
 }
 
 .cal-average-line {

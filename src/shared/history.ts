@@ -84,16 +84,29 @@ export async function upsertDay(
   return next;
 }
 
-export async function getRunningAverageMs(
+export interface RunningUsageAverages {
+  trackedMs: number | null;
+  allSitesMs: number | null;
+}
+
+export async function getRunningUsageAverages(
   excludeDate?: string,
-): Promise<number> {
+): Promise<RunningUsageAverages> {
   const all = await getAllDays();
   const filtered = excludeDate
-    ? all.filter((d) => d.date !== excludeDate)
+    ? all.filter((day) => day.date !== excludeDate)
     : all;
-  if (filtered.length === 0) return 0;
-  const sum = filtered.reduce((acc, d) => acc + d.totalMs, 0);
-  return sum / filtered.length;
+  const allSitesDays = filtered.filter((day) => day.allSitesMs !== undefined);
+
+  return {
+    trackedMs: filtered.length > 0
+      ? filtered.reduce((sum, day) => sum + day.totalMs, 0) / filtered.length
+      : null,
+    allSitesMs: allSitesDays.length > 0
+      ? allSitesDays.reduce((sum, day) => sum + (day.allSitesMs ?? 0), 0) /
+        allSitesDays.length
+      : null,
+  };
 }
 
 /**

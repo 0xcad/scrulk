@@ -1,7 +1,17 @@
 import { useEffect, useState } from "preact/hooks";
-import { type DayRecord, getRunningAverageMs } from "../../shared/history";
+import {
+  type DayRecord,
+  getRunningUsageAverages,
+  type RunningUsageAverages,
+} from "../../shared/history";
 import { formatDuration } from "../../shared/wakeDay";
+import { AverageArrow } from "./AverageArrow";
 import { UsageLegend, UsagePie } from "./UsagePie";
+import {
+  percentageDifference,
+  trendDirection,
+  type TrendDirection,
+} from "./usageTrends";
 
 interface Props {
   /** All loaded records, sorted ascending by date. */
@@ -23,29 +33,30 @@ function formatLong(date: string): string {
   });
 }
 
-function trendArrow(diff: number): string {
-  if (diff > 60_000) return "↑";
-  if (diff < -60_000) return "↓";
-  return "→";
-}
-
 /**
  * Detail drawer for one day. Shows usage / notes; trend arrow
  * compares against the running average across all *other* recorded days.
  * Prev/next buttons hop to the surrounding days that have data.
  */
 export function DayDrawer({ days, selectedDate, onSelect, showAllSitesTime }: Props) {
-  const [avgExcluding, setAvgExcluding] = useState<number | null>(null);
+  const [averages, setAverages] = useState<RunningUsageAverages | null>(null);
   const record = selectedDate
     ? days.find((d) => d.date === selectedDate) ?? null
     : null;
 
   useEffect(() => {
     if (selectedDate === null) {
-      setAvgExcluding(null);
+      setAverages(null);
       return;
     }
-    void getRunningAverageMs(selectedDate).then(setAvgExcluding);
+    let active = true;
+    setAverages(null);
+    void getRunningUsageAverages(selectedDate).then((next) => {
+      if (active) setAverages(next);
+    });
+    return () => {
+      active = false;
+    };
   }, [selectedDate]);
 
   if (selectedDate === null || record === null) {
@@ -60,8 +71,15 @@ export function DayDrawer({ days, selectedDate, onSelect, showAllSitesTime }: Pr
   const prev = idx > 0 ? days[idx - 1] : undefined;
   const next = idx >= 0 && idx < days.length - 1 ? days[idx + 1] : undefined;
 
-  const diff = avgExcluding !== null ? record.totalMs - avgExcluding : 0;
-  const showTrend = avgExcluding !== null && days.length > 1;
+  const trackedAverageMs = averages?.trackedMs ?? null;
+  const allSitesAverageMs = averages?.allSitesMs ?? null;
+  const trackedTrend = trackedAverageMs === null || trackedAverageMs <= 0
+    ? null
+    : trendDirection(record.totalMs, trackedAverageMs, 60_000);
+  const allSitesTrend = record.allSitesMs === undefined ||
+      allSitesAverageMs === null || allSitesAverageMs <= 0
+    ? null
+    : trendDirection(record.allSitesMs, allSitesAverageMs, 60_000);
 
   return (
     <aside class="day-drawer">
@@ -92,16 +110,27 @@ export function DayDrawer({ days, selectedDate, onSelect, showAllSitesTime }: Pr
         {showAllSitesTime && (
           <>
             <dt>Time on all sites</dt>
-            <dd>{record.allSitesMs === undefined ? "—" : formatDuration(record.allSitesMs)}</dd>
+            <dd>
+              {record.allSitesMs === undefined ? "—" : formatDuration(record.allSitesMs)}
+              {allSitesTrend && allSitesAverageMs !== null && (
+                <UsageTrend
+                  direction={allSitesTrend}
+                  valueMs={record.allSitesMs ?? 0}
+                  averageMs={allSitesAverageMs}
+                />
+              )}
+            </dd>
           </>
         )}
         <dt>Time on tracked sites</dt>
         <dd>
           {formatDuration(record.totalMs)}
-          {showTrend && (
-            <small class="trend" title={`avg ${formatDuration(avgExcluding ?? 0)}`}>
-              {" "}{trendArrow(diff)} vs avg
-            </small>
+          {trackedTrend && trackedAverageMs !== null && (
+            <UsageTrend
+              direction={trackedTrend}
+              valueMs={record.totalMs}
+              averageMs={trackedAverageMs}
+            />
           )}
         </dd>
         <dt>Focus time</dt>
@@ -110,5 +139,27 @@ export function DayDrawer({ days, selectedDate, onSelect, showAllSitesTime }: Pr
         <dd class="notes">{record.notes ?? "—"}</dd>
       </dl>
     </aside>
+  );
+}
+
+function UsageTrend({
+  direction,
+  valueMs,
+  averageMs,
+}: {
+  direction: TrendDirection;
+  valueMs: number;
+  averageMs: number;
+}) {
+  const percentage = percentageDifference(valueMs, averageMs);
+  if (percentage === null) return null;
+  return (
+    <small class="trend" title={`avg ${formatDuration(averageMs)}`}>
+      {" "}
+      {direction === "same"
+        ? `→ ${percentage.toFixed(1)}%`
+        : <AverageArrow direction={direction} percentage={percentage} />}
+      {" vs avg"}
+    </small>
   );
 }

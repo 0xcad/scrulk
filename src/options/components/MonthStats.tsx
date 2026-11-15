@@ -1,35 +1,103 @@
 import { useMemo } from "preact/hooks";
 import { type DayRecord } from "../../shared/history";
 import { formatDuration } from "../../shared/wakeDay";
+import { AverageArrow } from "./AverageArrow";
+import {
+  type CalendarMonth,
+  monthNavigationBounds,
+  shiftMonth,
+} from "./calendarNavigation";
+import {
+  monthlyUsage,
+  percentageDifference,
+  trendDirection,
+  type TrendDirection,
+} from "./usageTrends";
 
 interface Props {
   days: DayRecord[];
-  viewMonth: { year: number; month: number };
+  viewMonth: CalendarMonth;
+  onViewMonthChange: (month: CalendarMonth) => void;
+  installedAt: number;
   showAllSitesTime: boolean;
 }
 
-export function MonthStats({ days, viewMonth, showAllSitesTime }: Props) {
-  const { avg, allSitesAvg, count } = useMemo(() => {
-    const prefix = `${viewMonth.year}-${String(viewMonth.month + 1).padStart(2, "0")}`;
-    const monthDays = days.filter((d) => d.date.startsWith(prefix));
-    if (monthDays.length === 0) return { avg: null, allSitesAvg: null, count: 0 };
-    const sum = monthDays.reduce((acc, d) => acc + d.totalMs, 0);
-    const allSitesDays = monthDays.filter((d) => d.allSitesMs !== undefined);
-    const allSitesSum = allSitesDays.reduce((acc, d) => acc + (d.allSitesMs ?? 0), 0);
+export function MonthStats({
+  days,
+  viewMonth,
+  onViewMonthChange,
+  installedAt,
+  showAllSitesTime,
+}: Props) {
+  const { current, previous, previousMonthLabel } = useMemo(() => {
+    const previousMonth = new Date(viewMonth.year, viewMonth.month - 1, 1);
     return {
-      avg: sum / monthDays.length,
-      allSitesAvg: allSitesDays.length > 0 ? allSitesSum / allSitesDays.length : null,
-      count: monthDays.length,
+      current: monthlyUsage(days, viewMonth.year, viewMonth.month),
+      previous: monthlyUsage(
+        days,
+        previousMonth.getFullYear(),
+        previousMonth.getMonth(),
+      ),
+      previousMonthLabel: previousMonth.toLocaleDateString(undefined, {
+        month: "short",
+      }).replace(/\.$/, ""),
     };
   }, [days, viewMonth]);
 
   const monthName = new Date(viewMonth.year, viewMonth.month, 1)
     .toLocaleDateString(undefined, { month: "long" });
+  const today = new Date();
+  const installDate = installedAt > 0 ? new Date(installedAt) : null;
+  const { atInstallMonth, atCurrentMonth } = monthNavigationBounds(
+    viewMonth,
+    installedAt,
+    today.getTime(),
+  );
 
   return (
     <div class="month-stats">
-      <h4 class="month-stats-title">{monthName}</h4>
-      {avg === null ? (
+      <div class="month-stats-nav">
+        <button
+          type="button"
+          disabled={atInstallMonth || installDate === null}
+          onClick={() => installDate && onViewMonthChange({
+            year: installDate.getFullYear(),
+            month: installDate.getMonth(),
+          })}
+          aria-label="First month"
+        >
+          «
+        </button>
+        <button
+          type="button"
+          disabled={atInstallMonth}
+          onClick={() => onViewMonthChange(shiftMonth(viewMonth, -1))}
+          aria-label="Previous month"
+        >
+          ←
+        </button>
+        <h4 class="month-stats-title">{monthName}</h4>
+        <button
+          type="button"
+          disabled={atCurrentMonth}
+          onClick={() => onViewMonthChange(shiftMonth(viewMonth, 1))}
+          aria-label="Next month"
+        >
+          →
+        </button>
+        <button
+          type="button"
+          disabled={atCurrentMonth}
+          onClick={() => onViewMonthChange({
+            year: today.getFullYear(),
+            month: today.getMonth(),
+          })}
+          aria-label="Current month"
+        >
+          »
+        </button>
+      </div>
+      {current.trackedAverageMs === null ? (
         <p class="month-stats-empty">No data</p>
       ) : (
         <>
@@ -37,16 +105,72 @@ export function MonthStats({ days, viewMonth, showAllSitesTime }: Props) {
             {showAllSitesTime && (
               <>
                 <dt>Avg all-sites time</dt>
-                <dd>{allSitesAvg === null ? "—" : formatDuration(allSitesAvg)}</dd>
+                <dd>
+                  {current.allSitesAverageMs === null
+                    ? "—"
+                    : formatDuration(current.allSitesAverageMs)}
+                  {current.allSitesAverageMs !== null &&
+                    previous.allSitesAverageMs !== null &&
+                    previous.allSitesAverageMs > 0 && (
+                    <MonthTrend
+                      direction={trendDirection(
+                        current.allSitesAverageMs,
+                        previous.allSitesAverageMs,
+                        60_000,
+                      )}
+                      valueMs={current.allSitesAverageMs}
+                      previousAverageMs={previous.allSitesAverageMs}
+                      previousMonthLabel={previousMonthLabel}
+                    />
+                  )}
+                </dd>
               </>
             )}
             <dt>Avg {showAllSitesTime ? "tracked " : ""}daily usage</dt>
-            <dd>{formatDuration(avg)}</dd>
+            <dd>
+              {formatDuration(current.trackedAverageMs)}
+              {previous.trackedAverageMs !== null && previous.trackedAverageMs > 0 && (
+                <MonthTrend
+                  direction={trendDirection(
+                    current.trackedAverageMs,
+                    previous.trackedAverageMs,
+                    60_000,
+                  )}
+                  valueMs={current.trackedAverageMs}
+                  previousAverageMs={previous.trackedAverageMs}
+                  previousMonthLabel={previousMonthLabel}
+                />
+              )}
+            </dd>
             <dt>Days recorded</dt>
-            <dd>{count}</dd>
+            <dd>{current.dayCount}</dd>
           </dl>
         </>
       )}
     </div>
+  );
+}
+
+function MonthTrend({
+  direction,
+  valueMs,
+  previousAverageMs,
+  previousMonthLabel,
+}: {
+  direction: TrendDirection;
+  valueMs: number;
+  previousAverageMs: number;
+  previousMonthLabel: string;
+}) {
+  const percentage = percentageDifference(valueMs, previousAverageMs);
+  if (percentage === null) return null;
+  return (
+    <small class="trend" title={`previous month avg ${formatDuration(previousAverageMs)}`}>
+      {" "}
+      {direction === "same"
+        ? `→ ${percentage.toFixed(1)}%`
+        : <AverageArrow direction={direction} percentage={percentage} />}
+      {` vs ${previousMonthLabel}.`}
+    </small>
   );
 }

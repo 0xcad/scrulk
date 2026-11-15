@@ -2,6 +2,7 @@ import { useMemo } from "preact/hooks";
 import { type DayRecord } from "../../shared/history";
 import { formatDuration } from "../../shared/wakeDay";
 import { UsagePie } from "./UsagePie";
+import { monthKey, monthNavigationBounds, shiftMonth } from "./calendarNavigation";
 
 interface Props {
   days: DayRecord[];
@@ -28,10 +29,6 @@ function monthLabel(year: number, month: number): string {
   });
 }
 
-function monthKey(year: number, month: number): string {
-  return `${year}-${pad(month + 1)}`;
-}
-
 const WEEKDAYS = ["S", "M", "T", "W", "T", "F", "S"];
 
 export function CalendarGrid({
@@ -44,19 +41,21 @@ export function CalendarGrid({
 }: Props) {
   const today = new Date();
   const todayKey = ymd(today.getFullYear(), today.getMonth(), today.getDate());
-  const currentMonthKey = monthKey(today.getFullYear(), today.getMonth());
-  const viewKey = monthKey(viewMonth.year, viewMonth.month);
+  const viewKey = monthKey(viewMonth);
 
   const installDate = installedAt > 0 ? new Date(installedAt) : null;
   const installMonthKey = installDate
-    ? monthKey(installDate.getFullYear(), installDate.getMonth())
+    ? monthKey({ year: installDate.getFullYear(), month: installDate.getMonth() })
     : null;
   const installDateKey = installDate
     ? ymd(installDate.getFullYear(), installDate.getMonth(), installDate.getDate())
     : null;
 
-  const atInstallMonth = installMonthKey !== null && viewKey <= installMonthKey;
-  const atCurrentMonth = viewKey >= currentMonthKey;
+  const { atInstallMonth, atCurrentMonth } = monthNavigationBounds(
+    viewMonth,
+    installedAt,
+    today.getTime(),
+  );
 
   const recordByDate = useMemo(() => {
     const map = new Map<string, DayRecord>();
@@ -77,18 +76,8 @@ export function CalendarGrid({
     return out;
   }, [viewMonth]);
 
-  const prev = () =>
-    onViewMonthChange(
-      viewMonth.month === 0
-        ? { year: viewMonth.year - 1, month: 11 }
-        : { ...viewMonth, month: viewMonth.month - 1 },
-    );
-  const next = () =>
-    onViewMonthChange(
-      viewMonth.month === 11
-        ? { year: viewMonth.year + 1, month: 0 }
-        : { ...viewMonth, month: viewMonth.month + 1 },
-    );
+  const prev = () => onViewMonthChange(shiftMonth(viewMonth, -1));
+  const next = () => onViewMonthChange(shiftMonth(viewMonth, 1));
   const goToInstall = () => {
     if (installDate) {
       onViewMonthChange({ year: installDate.getFullYear(), month: installDate.getMonth() });

@@ -76,10 +76,10 @@ describe("nextWakeUpAt", () => {
 });
 
 describe("formatDuration", () => {
-  it("shows m:ss under an hour", () => {
-    expect(formatDuration(0)).toBe("0:00");
-    expect(formatDuration(5_000)).toBe("0:05");
-    expect(formatDuration(65_000)).toBe("1:05");
+  it("shows mm:ss under an hour", () => {
+    expect(formatDuration(0)).toBe("00:00");
+    expect(formatDuration(5_000)).toBe("00:05");
+    expect(formatDuration(65_000)).toBe("01:05");
   });
 
   it("shows h:mm:ss at and over an hour", () => {
@@ -88,7 +88,7 @@ describe("formatDuration", () => {
   });
 
   it("clamps negatives to zero", () => {
-    expect(formatDuration(-1_000)).toBe("0:00");
+    expect(formatDuration(-1_000)).toBe("00:00");
   });
 });
 

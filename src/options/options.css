@@ -386,6 +386,8 @@ label.row small {
   font-variant-numeric: tabular-nums;
 }
 
+small.avg-arrow-percentage { font-size: 0.8rem; }
+
 .avg-arrow {
   display: inline-block;
   margin-left: 10px;
@@ -397,6 +399,12 @@ label.row small {
 
 .avg-arrow.up { color: #c0392b; }
 .avg-arrow.down { color: #27867a; }
+
+.avg-arrow .avg-arrow-percentage {
+  margin-left: 0.25em;
+  opacity: 1;
+  text-align: inherit;
+}
 
 .streak-today {
   font-size: 14px;
@@ -593,7 +601,9 @@ dl dd small {
   padding: 2px 10px;
 }
 
-.day-nav button:disabled, .cal-head button:disabled {
+.day-nav button:disabled,
+.cal-head button:disabled,
+.month-stats-nav button:disabled {
   cursor: not-allowed;
   opacity: 0.4;
 }
@@ -603,6 +613,18 @@ dl dd small {
 }
 
 .day-drawer .trend {
+  margin-left: 6px;
+  opacity: 0.6;
+}
+
+.trend .avg-arrow {
+  margin-left: 0;
+  font-size: 1em;
+  opacity: 1;
+  vertical-align: baseline;
+}
+
+.month-stats .trend {
   margin-left: 6px;
   opacity: 0.6;
 }
@@ -624,10 +646,24 @@ dl dd small {
   flex-shrink: 0;
 }
 
+.month-stats-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.month-stats-nav button {
+  padding: 2px 10px;
+}
+
 .month-stats-title {
-  margin: 0 0 8px;
+  margin: 0;
   font-size: 13px;
   font-weight: 600;
+  flex: 1;
+  text-align: center;
 }
 
 .month-stats-empty {

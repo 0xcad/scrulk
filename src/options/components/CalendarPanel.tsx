@@ -41,7 +41,13 @@ export function CalendarPanel({ days, selectedDate, onSelect, installedAt, showA
       />
       <div class="cal-bottom">
         <DayDrawer days={days} selectedDate={selectedDate} onSelect={onSelect} showAllSitesTime={showAllSitesTime} />
-        <MonthStats days={days} viewMonth={viewMonth} showAllSitesTime={showAllSitesTime} />
+        <MonthStats
+          days={days}
+          viewMonth={viewMonth}
+          onViewMonthChange={setViewMonth}
+          installedAt={installedAt}
+          showAllSitesTime={showAllSitesTime}
+        />
       </div>
     </>
   );

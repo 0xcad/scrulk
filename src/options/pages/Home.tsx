@@ -9,7 +9,13 @@ import {
 import { DEFAULT_DAY_STATE, effectiveAllSitesMs, effectiveFocusMs, effectiveMs, liveUsageStreakCount, type DayState } from "../../shared/dayState";
 import type { Settings } from "../../shared/settings";
 import { formatDuration, formatUptime } from "../../shared/wakeDay";
+import {
+  AverageArrow,
+  type AverageDirection,
+  shouldShowAveragePercentage,
+} from "../components/AverageArrow";
 import { CalendarPanel } from "../components/CalendarPanel";
+import { percentageDifference } from "../components/usageTrends";
 export function Home() {
   const [settings, setSettings] = useState<Settings | null>(null);
   const [state, setState] = useState<DayState>(DEFAULT_DAY_STATE);
@@ -82,10 +88,16 @@ export function Home() {
     ? allSitesDays.reduce((acc, d) => acc + (d.allSitesMs ?? 0), 0) / allSitesDays.length
     : null;
   const avgMs = settings.alwaysShowTimer ? allSitesAvgMs : trackedAvgMs;
-  const avgDirection: "up" | "down" | null =
-    avgMs === null || todayMs === avgMs
+  const avgDirection: AverageDirection | null =
+    avgMs === null || avgMs <= 0 || todayMs === avgMs
       ? null
       : todayMs > avgMs
+        ? "up"
+        : "down";
+  const trackedAvgDirection: AverageDirection | null =
+    trackedAvgMs === null || trackedAvgMs <= 0 || trackedMs === trackedAvgMs
+      ? null
+      : trackedMs > trackedAvgMs
         ? "up"
         : "down";
 
@@ -97,12 +109,27 @@ export function Home() {
           <div class="today-time-row primary">
             <span class="big-number">
               {formatDuration(todayMs)}
-              {avgDirection && <AverageArrow direction={avgDirection} />}
+              {avgDirection && avgMs !== null && (
+                <DashboardAverageArrow
+                  direction={avgDirection}
+                  value={todayMs}
+                  average={avgMs}
+                />
+              )}
             </span>
             <small>total</small>
           </div>
           <div class="today-time-row secondary">
-            <span>{formatDuration(trackedMs)}</span>
+            <span>
+              {formatDuration(trackedMs)}
+              {trackedAvgDirection && trackedAvgMs !== null && (
+                <DashboardAverageArrow
+                  direction={trackedAvgDirection}
+                  value={trackedMs}
+                  average={trackedAvgMs}
+                />
+              )}
+            </span>
             <small class="tracked-label">tracked</small>
           </div>
           <div class="today-time-row secondary">
@@ -115,7 +142,13 @@ export function Home() {
           <div class="today-time-row primary">
             <span class="big-number">
               {formatDuration(todayMs)}
-              {avgDirection && <AverageArrow direction={avgDirection} />}
+              {avgDirection && avgMs !== null && (
+                <DashboardAverageArrow
+                  direction={avgDirection}
+                  value={todayMs}
+                  average={avgMs}
+                />
+              )}
             </span>
             <small class="tracked-label">tracked</small>
           </div>
@@ -175,14 +208,31 @@ export function Home() {
   );
 }
 
-function AverageArrow({ direction }: { direction: "up" | "down" }) {
+function DashboardAverageArrow({
+  direction,
+  value,
+  average,
+}: {
+  direction: AverageDirection;
+  value: number;
+  average: number;
+}) {
+  const aboveAverage = direction === "up";
+  const percentage = percentageDifference(value, average);
+  if (percentage === null) return null;
+  const percentageLabel = `${percentage.toFixed(1)}%`;
+  const showPercentage = shouldShowAveragePercentage(direction, percentage);
+  const comparisonLabel = showPercentage ? `${percentageLabel} ` : "";
   return (
-    <span
-      class={`avg-arrow ${direction}`}
-      title={direction === "up" ? "Above your average — raising it" : "Below your average — lowering it"}
-      aria-label={direction === "up" ? "above average" : "below average"}
-    >
-      {direction === "up" ? "↗" : "↘"}
-    </span>
+    <AverageArrow
+      direction={direction}
+      percentage={percentage}
+      title={aboveAverage
+        ? `${comparisonLabel}above your average — raising it`
+        : `${comparisonLabel}below your average — lowering it`}
+      ariaLabel={aboveAverage
+        ? `${comparisonLabel}above average`
+        : `${comparisonLabel}below average`}
+    />
   );
 }
